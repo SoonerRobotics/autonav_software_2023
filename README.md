@@ -1,2 +1,2 @@
-# IGVC/AutoNav 2023 Software
+# igvc_software_2023
 
