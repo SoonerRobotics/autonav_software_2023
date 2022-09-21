@@ -3,7 +3,7 @@
 <package format="3">
     <name>autonav_comm</name>
     <version>1.0.0</version>
-    <description>An empty AutoNav ROS package</description>
+    <description>The AutoNav package for handling communication protocols</description>
     <maintainer email="dylan.zemlin@gmail.com">Dylan Zemlin</maintainer>
     <license>MIT License</license>
 

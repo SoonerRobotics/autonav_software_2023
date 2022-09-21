@@ -56,7 +56,7 @@ setup(
          glob(os.path.join('launch', '*.xml')))
     ],
     install_requires=['setuptools'],
-    maintainer='$name',
+    maintainer='$author',
     maintainer_email='$email',
     description='An empty AutoNav ROS package',
     license='MIT License',

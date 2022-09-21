@@ -16,9 +16,13 @@ setup(
          glob(os.path.join('launch', '*.xml')))
     ],
     install_requires=['setuptools'],
-    maintainer='',
+    maintainer='Dylan Zemlin',
     maintainer_email='dylan.zemlin@gmail.com',
-    description='An empty AutoNav ROS package',
+    description='The AutoNav package for handling communication protocols',
     license='MIT License',
-    entry_points={}
+    entry_points={
+			"console_scripts": [
+				"can = src.can:main",
+			]
+		}
 )
