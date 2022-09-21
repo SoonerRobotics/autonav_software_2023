@@ -5,3 +5,6 @@ log
 
 # Python Stuff
 __pycache__
+
+# Visual Studio Code
+.vscode
