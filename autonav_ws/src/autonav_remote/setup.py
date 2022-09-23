@@ -20,5 +20,9 @@ setup(
     maintainer_email='dylan.zemlin@gmail.com',
     description='An empty AutoNav ROS package',
     license='MIT License',
-    entry_points={}
+    entry_points={
+			"console_scripts": [
+				"controller = autonav_remote.controller:main"
+			]
+		}
 )
