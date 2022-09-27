@@ -26,6 +26,8 @@ def main(args=None):
 
 	# Create the node and subscribe to the /joy topic
 	node = rclpy.create_node("autonav_comm_can")
+
+	# might actually need to use joy_node not joy
 	node.create_subscription(Joy, "/joy", onJoyReceived, 20)
 
 	# Create the publisher for the /autonav/motors/input topic
