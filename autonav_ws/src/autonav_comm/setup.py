@@ -22,7 +22,7 @@ setup(
     license='MIT License',
     entry_points={
 			"console_scripts": [
-				"can = src.can:main",
+				"can = autonav_comm.can:main",
 			]
 		}
 )
