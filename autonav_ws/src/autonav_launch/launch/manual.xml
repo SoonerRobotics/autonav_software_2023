@@ -1,0 +1,4 @@
+<launch>
+	<include file="$(find-pkg-share autonav_remote)/launch/controller.xml" />
+	<include file="$(find-pkg-share autonav_comm)/launch/can.xml" />
+</launch>
