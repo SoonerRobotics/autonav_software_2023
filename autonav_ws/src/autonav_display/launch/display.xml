@@ -1,0 +1,3 @@
+<launch>
+	<node pkg="autonav_display" exec="display" name="display" />
+</launch>
