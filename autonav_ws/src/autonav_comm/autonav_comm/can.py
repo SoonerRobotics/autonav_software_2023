@@ -7,9 +7,9 @@ from autonav_msgs.msg import MotorInput
 MAX_SPEED = 2.2
 CAN_ID_SEND_MOTOR = 10
 
-write_can: can.ThreadSafeBus = can.ThreadSafeBus(
+write_can: can.Bus = can.Bus(
 	bustype="slcan",
-	channel="/dev/igvc-can-835",
+	channel="/dev/autonav-can-835",
 	bitrate=100000
 )
 
@@ -21,8 +21,8 @@ def clamp(val, min, max):
 	return val
 
 def onMessage(data: MotorInput):
-	left_speed = clamp(int(data.left_motor / MAX_SPEED * 127), -128, 127)
-	right_speed = clamp(int(data.right_motor / MAX_SPEED * 127), -128, 127)
+	left_speed = clamp(int(-data.left_motor * 1.5 / MAX_SPEED * 127), -128, 127)
+	right_speed = clamp(int(-data.right_motor * 1.5 / MAX_SPEED * 127), -128, 127)
 
 	packed_data = struct.pack("bbB", left_speed, right_speed, int(MAX_SPEED * 10))
 	can_msg = can.Message(arbitration_id=CAN_ID_SEND_MOTOR, data=packed_data)
@@ -33,6 +33,10 @@ def onMessage(data: MotorInput):
 
 def main(args=None):
 	rclpy.init(args=args)
+
+	# Mobility Start message
+	# mobility_start = can.Message(arbitration_id=9)
+	# write_can.send(mobility_start)
 
 	node = rclpy.create_node("autonav_comm_can")
 	node.create_subscription(MotorInput, "/autonav/motors/input", onMessage, 20)
