@@ -38,9 +38,81 @@ BU_:
 
 BO_ 0 EmergencyStop: 0 Vector__XXX
 
+BO_ 1 MobilityStop: 0 Vector__XXX
+
+BO_ 8 ResetMotors: 0 Vector__XXX
+
+BO_ 9 MobilityStart: 0 Vector__XXX
+
+BO_ 10 MotorCommand: 4 Vector__XXX
+ SG_ MC_LeftSpeed : 0|16@1- (0.001,0) [-2.2|2.2] "m/s" Vector__XXX
+ SG_ MC_RightSpeed : 16|16@1- (0.001,0) [-2.2|2.2] "m/s" Vector__XXX
+
+BO_ 11 VelocityFeedback: 4 Vector__XXX
+ SG_ VF_LeftSpeed : 0|16@1- (0.001,0) [-2.2|2.2] "m/s" Vector__XXX
+ SG_ VF_RightSpeed : 16|16@1- (0.001,0) [-2.2|2.2] "m/s" Vector__XXX
+
+BO_ 13 SafetyLights: 2 Vector__XXX
+ SG_ Command : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Parameter : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 14 OdometryFeedback: 6 Vector__XXX
+ SG_ OF_dx : 0|16@1- (1000,0) [0|0] "mm" Vector__XXX
+ SG_ OF_dy : 16|16@1- (1000,0) [0|0] "mm" Vector__XXX
+ SG_ OF_dh : 32|16@1- (1000,0) [0|0] "rad" Vector__XXX
+
+BO_ 100 TuneP: 5 Vector__XXX
+ SG_ TP_tune : 0|32@1- (1,0) [0|0] "PP" Vector__XXX
+ SG_ TP_select : 32|8@1+ (1,0) [0|2] "" Vector__XXX
+
+BO_ 101 TuneI: 5 Vector__XXX
+ SG_ TI_tune : 0|32@1- (1,0) [0|0] "PI" Vector__XXX
+ SG_ TI_select : 32|1@1+ (1,0) [0|2] "" Vector__XXX
+
+BO_ 102 TuneD: 5 Vector__XXX
+ SG_ TD_tune : 0|32@1- (1,0) [0|0] "PD" Vector__XXX
+ SG_ TD_select : 32|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 1000 RemoteDebug: 8 Vector__XXX
+ SG_ LastMessage : 7|7@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ String : 8|56@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Index : 0|7@1+ (1,0) [0|0] "" Vector__XXX
+
 
 
 CM_ BO_ 0 "Any device receiving this message should stop all motor instructions, if applicable.
 
 ";
+CM_ BO_ 1 "Any device receiving this message should pause all motor instructions, if applicable. Mobility Start (ID 9) reset this.";
+CM_ BO_ 8 "Reset motor controller state including PID error accumulation and velocity estimation.
+
+";
+CM_ BO_ 9 "Any device receiving this message should resume all motor instructions, if applicable.";
+CM_ BO_ 10 "Commands the motor controller linear velocity setpoint.
+
+";
+CM_ BO_ 11 "Current linear velocity estimate of each wheel. Follows the same 3 byte format ID=10, ";
+CM_ BO_ 13 "Commands the safety lights. Allows a variety of different light commands (e.g. solid, blinking) with optional parameters (e.g. blink rate).
+
+";
+CM_ BO_ 14 "Current estimated robot delta odometry. Feedback is given in right-handed, robot frame-of-reference coordinates.";
+CM_ BO_ 100 "Sets the PID P parameter.
+
+";
+CM_ BO_ 101 "Sets the PID I
+ parameter.
+
+";
+CM_ BO_ 102 "Sets the PID D parameter.
+
+";
+CM_ BO_ 1000 "Send a notification to the E-Stop remote display. Notifications over 7 characters are sent over multiple messages using byte 0 as an index.
+
+";
+CM_ SG_ 1000 LastMessage "If this is the last message in the string then this value is set to 1 otherwise it is 0.";
+CM_ SG_ 1000 String "7 Byte string";
+CM_ SG_ 1000 Index "7 bit unsigned int of message index. 0 is the first set of data.";
+SIG_VALTYPE_ 100 TP_tune : 1;
+SIG_VALTYPE_ 101 TI_tune : 1;
+SIG_VALTYPE_ 102 TD_tune : 1;
 
