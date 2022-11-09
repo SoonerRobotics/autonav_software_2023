@@ -5,7 +5,7 @@ We are using [ROS2 Humble](https://docs.ros.org/en/humble/index.html) on Ubuntu 
 
 ## Contribution
 
-**TODO**
+See [contribution.md](/docs/contribution.md) for more details.
 
 ## Building
 
