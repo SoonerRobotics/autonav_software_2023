@@ -10,7 +10,7 @@ For more information about using a codespace for working on GitHub documentation
 
 1. Fork the repository.
 2. Ensure ROS2 is installed and available.
-3. Create a branch with the format, `/YEAR/MONTH/PACKAGE/DESCRIPTOR`, and make your changes locally. For example, this would be the branch for fixing the JOY node in November of 2022: `/2022/11/remote/deadzonefix`. Please zero pad the month to a total of 2 digits!
+3. Create a branch with the format, `/YEAR/MONTH/TEAM/DESCRIPTOR`, and make your changes locally. For example, this would be the branch for fixing the JOY node in November of 2022: `/2022/11/software/deadzonefix`. Please zero pad the month to a total of 2 digits!
 
 ### Commit your update
 
