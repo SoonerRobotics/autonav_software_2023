@@ -1,11 +1,11 @@
 # autonav_software_2023
 
 Software for the 2023 [Intelligent Ground Vehicle Competition](http://www.igvc.org/), AutoNav challenge.  
-We are using [ROS2 Humble](https://docs.ros.org/en/humble/index.html) on Ubuntu 22.04.
+We are using [ROS2 Humble](https://docs.ros.org/en/humble/index.html) on [Ubuntu 22.04](https://releases.ubuntu.com/22.04/).
 
 ## Contribution
 
-**TODO**
+See [contribution.md](/docs/contribution.md) for more details.
 
 ## Building
 

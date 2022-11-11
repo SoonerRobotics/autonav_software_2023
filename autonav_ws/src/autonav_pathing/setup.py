@@ -18,7 +18,7 @@ setup(
     install_requires=['setuptools'],
     maintainer='Dylan Zemlin',
     maintainer_email='dylan.zemlin@gmail.com',
-    description='An empty AutoNav ROS package',
+    description='Handles path finding, following and other related topics',
     license='MIT License',
     entry_points={}
 )

@@ -3,7 +3,7 @@
 <package format="3">
     <name>autonav_pathing</name>
     <version>1.0.0</version>
-    <description>An empty AutoNav ROS package</description>
+    <description>Handles path finding, following and other related topics</description>
     <maintainer email="dylan.zemlin@gmail.com">Dylan Zemlin</maintainer>
     <license>MIT License</license>
 
