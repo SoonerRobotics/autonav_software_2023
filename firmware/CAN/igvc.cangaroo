@@ -1,9 +1,18 @@
 <cangaroo-workspace>
  <tabs>
-  <tab mode="aggregated" title="Trace" type="TraceWindow" TimestampMode="2">
+  <tab title="Trace" type="TraceWindow" TimestampMode="2" mode="aggregated">
    <LinearTraceView AutoScroll="0"/>
    <AggregatedTraceView SortColumn="-1"/>
   </tab>
  </tabs>
- <setup/>
+ <setup>
+  <network name="Network 1">
+   <interfaces>
+    <interface bitrate="500000" bitrate-fd="4000000" auto-restart-time="100" triple-sampling="0" auto-restart="0" one-shot="0" driver="CANable SLCAN" sample-point-fd="875" type="can" name="COM14" sample-point="875" listen-only="0" can-fd="0" configure="1"/>
+   </interfaces>
+   <databases>
+    <database type="dbc" filename="C:/Users/tyler/Documents/autonav_software_2023/firmware/CAN/autonav.dbc"/>
+   </databases>
+  </network>
+ </setup>
 </cangaroo-workspace>
