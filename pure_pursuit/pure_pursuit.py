@@ -1,6 +1,6 @@
 import math
 
-# Gracefully stolen from https://github.com/xiaoxiae/PurePursuitAlgorithm/blob/master/src/main/PurePursuit.java
+# Algorithm source: https://github.com/xiaoxiae/PurePursuitAlgorithm/blob/master/src/main/PurePursuit.java
 class pure_pursuit:
     def initialize(self):
         self.path = []
@@ -12,7 +12,7 @@ class pure_pursuit:
         self.path.append((x, y))
 
     def get_lookahead_point(self, a, b, r):
-        lookahead = (2,0)
+        lookahead = None
 
         for i in range(len(self.path)-1):
 
@@ -58,7 +58,7 @@ class pure_pursuit:
 
             # check that the new point is actually on the segment
             # segment min x < goal x < segment max x, or segment min y < goal y < segment max y
-            print(f'segment_min_x {min(p1[0], p2[0])} < new_x_add {new_x_add} < segment_max_x {max(p1[0], p2[0])}')
+            # print(f'segment_min_x {min(p1[0], p2[0])} < new_x_add {new_x_add} < segment_max_x {max(p1[0], p2[0])}')
             valid_intersection_add = min(p1[0], p2[0]) < new_x_add and new_x_add < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_add and new_y_add < max(p1[1], p2[1])
             valid_intersection_sub = min(p1[0], p2[0]) < new_x_sub and new_x_sub < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_sub and new_y_sub < max(p1[1], p2[1])
 
