@@ -9,36 +9,38 @@ imu_publisher: Publisher = None
 def readImu():
     s = VnSensor()
 
-    if(not s.connect()):
+    isConnected = s.is_connected
+    if(not isConnected):
         s.connect('/dev/ttyUSB0', 115200)
 
-    accelData = s.read_acceleration_measurements
-    ypr = s.read_yaw_pitch_roll
+    accelData = s.read_acceleration_measurements()
+    ypr = s.read_yaw_pitch_roll()
 
-    accel_x = accelData.x
-    accel_y = accelData.y
-    accel_z = accelData.z
+    data = ImuData()
 
-    yaw = ypr.x
-    pitch = ypr.y
-    roll = ypr.z
+    data.accel_x = accelData.x
+    data.accel_y = accelData.y
+    data.accel_z = accelData.z
+
+    data.yaw = ypr.x
+    data.pitch = ypr.y
+    data.roll = ypr.z
+
+    imu_publisher.publish(data)
 
 
 def main(args=None):
     global imu_publisher
     rclpy.init(args=args)
 
-    s = VnSensor()
-    s.connect('/dev/ttyUSB0', 115200)
-
-	# Mobility Start message
-	# mobility_start = can.Message(arbitration_id=9)
-	# write_can.send(mobility_start)
-
     node = rclpy.create_node("autonav_comm_imu")
-    imu_publisher = node.create_subscription(ImuData, "/autonav/odemetry/imu", 20)
+    imu_publisher = node.create_publisher(ImuData, "/autonav/odemetry/imu", 20)
 
+    imuUpdateTimer = node.create_timer(0.5, readImu)
 
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
+if __name__ == "__main__":
+	main()
