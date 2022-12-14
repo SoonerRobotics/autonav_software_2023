@@ -1,3 +1,6 @@
+#includes Orb feature detection implementation by github:niconielsen32 link: https://github.com/niconielsen32/VisualSLAM
+#adapted for ROS 2 and Ubuntu 22 for VNAV course
+
 import os
 import cv2
 import time
