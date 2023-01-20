@@ -16,13 +16,11 @@ class pure_pursuit:
 
         for i in range(len(self.path)-1):
 
-            # TODO
             #  Make segment between each point
             seg_start = self.path[i]
             seg_end = self.path[i+1]
 
             
-            # TODO
             #  Intersect segments with circle
             
             # translate the segment to the origin
