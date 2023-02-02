@@ -1,33 +1,42 @@
+import math
 # get a list of object points that can be "seen"
 
 # get the farthest points on each object from this list
 
 # get a list of road edge points that can be "seen"
-#draw a circle around the object points for avoidance
+# draw a circle around the object points for avoidance
 
-# Get the vertices
-point1 = [3, 2]
-point2 = [4, 3]
-point3 = [2,1]
+# This is a mathematical version of this technique: https://www.mathsisfun.com/geometry/construct-trianglecircum.html
+class circumscriber:
+    
+    def __init__(self, p1, p2, p3):
+        self.point1 = p1
+        self.point2 = p2
+        self.point3 = p3
 
-# Bisect 2 of the vertices
-def bisect(p1, p2):
-    bisection = [(p1[0] + p2[0]) / 2, p1[1] + p2[1] / 2]
+    # finds the circumcenter of the triangle and the radius of the circumscribing circle
+    def circumscribe(self):
+        # solve the triangle: https://socratic.org/questions/how-do-you-find-the-three-angles-of-the-triangle-with-the-given-vertices-a-1-0-b
+        # get side lengths of the triangle
+        length_a = math.sqrt((self.point2[0] - self.point3[0])**2 + (self.point2[1] - self.point3[1])**2) 
+        length_b = math.sqrt((self.point1[0] - self.point3[0])**2 + (self.point1[1] - self.point3[1])**2)
+        length_c = math.sqrt((self.point1[0] - self.point2[0])**2 + (self.point1[1] - self.point2[1])**2)
+        
+        # apply the law of cosines to find each angle
+        cos_arg_a = (length_b**2 + length_c**2 - length_a**2) / (2 * length_b * length_c)
+        angle_a = math.acos(cos_arg_a)
+        cos_arg_b = (length_a**2 + length_c**2 - length_b**2) / (2 * length_c * length_a)
+        angle_b = math.acos(cos_arg_b)
+        cos_arg_c = (length_a**2 + length_b**2 - length_c**2) / (2 * length_a * length_b)
+        angle_c = math.acos(cos_arg_c)
+        
+        # circumcenter formula: https://www.cuemath.com/geometry/circumcenter/
+        x = (self.point1[0] * math.sin(2 * angle_a) + self.point2[0] * math.sin(2 * angle_b) + self.point3[0] * math.sin(2 * angle_c)) / (math.sin(2 * angle_a) + math.sin(2 * angle_b) + math.sin(2 * angle_c))
+        y = (self.point1[1] * math.sin(2 * angle_a) + self.point2[1] * math.sin(2 * angle_b) + self.point3[1] * math.sin(2 * angle_c)) / (math.sin(2 * angle_a) + math.sin(2 * angle_b) + math.sin(2 * angle_c))
+        circumcenter = (x, y)     
 
-    return bisection
+        # the radius of the circumscribing circle
+        radius = math.sqrt((circumcenter[0] - self.point1[0])**2 + (circumcenter[1] - self.point1[1])**2)
 
-bisection1 = bisect(point1, point2)
-bisection2 = bisect(point2, point3)
-
-# draw lines perpendicular to these points and the line
-# equation of 1st perpendicular bisector y + by1  = - 1/m(x+bx1)
-# m = (y2 - y1/ x2 - x1)
-# y = (-(x2 - x1 / y2 - y1) * (x + bx1)) - by1
-
-# equation of 2nd perpendicular bisector y + by3 = - 1/m(x+bx3)
-# m = (y3 - y2/ x3 - x2)
-# y = (-(x3 - x2 / y3 - y2) * (x + bx3)) - by3
-# intersect them mathematically
-
-
-# find intersection
+        return [circumcenter, radius]
+        

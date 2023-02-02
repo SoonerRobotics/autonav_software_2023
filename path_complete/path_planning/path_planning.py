@@ -180,13 +180,21 @@ class path_planning:
                     # The clockwise angle difference is just the rest of the circle excluded by the counterclockwise difference
                     dtheta_clockwise = -1 * ((2 * math.pi) - dtheta_counter_clockwise)
                     print(f"dtheta_clockwise {dtheta_clockwise}")
-                    dtheta5t = dtheta_counter_clockwise / 5
+
+                    # go clockwise or counter-clockwise depending on which theta is smaller
+                    if abs(dtheta_counter_clockwise) < abs(dtheta_clockwise):
+                        print("Counter-clockwise is shorter")
+                        dtheta5t = dtheta_counter_clockwise / 5
+                    else:
+                        print("Clockwise is shorter")
+                        dtheta5t = dtheta_clockwise / 5
+                    
                     print(f"dtheta5t {dtheta5t}")
 
                     # this for loop draws points along the edge of the avoidance circles
                     for k in range(0, 5):
                         print(f"dtheta5t * k {dtheta5t * (k)}")
-                        points.append(((((safety_d * (math.cos(theta1t_arg + (dtheta5t * (k))))) + self.obstacles[j][0]), ((safety_d * math.sin(theta1t_arg + (dtheta5t * (k)))) + self.obstacles[j][1]))))
+                        points.append((((((safety_d+ .1) * (math.cos(theta1t_arg + (dtheta5t * (k))))) + self.obstacles[j][0]), (((safety_d + .1)* math.sin(theta1t_arg + (dtheta5t * (k)))) + self.obstacles[j][1]))))
                         print(f"point is {points}")
                         print(len(self.final))
                     
