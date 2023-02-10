@@ -23,6 +23,7 @@ setup(
     entry_points={
 			"console_scripts": [
 				"can = autonav_comm.can:main",
+                "imu = autonav_comm.imu:main",
 			]
 		}
 )
