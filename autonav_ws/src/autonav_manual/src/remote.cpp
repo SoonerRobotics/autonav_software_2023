@@ -19,11 +19,11 @@ public:
 private:
   void on_joy_received(const sensor_msgs::msg::Joy &msg) const
   {
-    RCLCPP_INFO(this->get_logger(), "Received Joy: %f | %f", msg.axes[1], msg.axes[3]);
+    RCLCPP_INFO(this->get_logger(), "Received Joy: %f | %f", msg.axes[2], msg.axes[5]);
 
     autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-    package.left_motor = msg.axes[1];
-    package.right_motor = msg.axes[3];
+    package.left_motor = (1 - msg.axes[5]) * 0.5;
+    package.right_motor = (1 - msg.axes[2]) * 0.5;
     motor_publisher->publish(package);
   }
 
