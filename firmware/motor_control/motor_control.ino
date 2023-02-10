@@ -1,7 +1,10 @@
 #include "TickTwo.h"
 #include <ACAN2515.h>
+#include "motor.h"
 
 const int ledPin = LED_BUILTIN;
+const int CANLED = 0;
+const int LED0 = 1;
 
 const int encoderLeftB = 3;
 const int encoderLeftA = 2;
@@ -20,11 +23,14 @@ static const byte MCP2515_MISO = 8 ; // SDO output of MCP2515
 static const byte MCP2515_CS  = 9 ;  // CS input of MCP2515
 static const byte MCP2515_INT = 7 ;  // INT output of MCP2515
 
-motor leftMotor(leftMotorPin, true);
-motor rightMotor(rightMotorPin, false);
+ACAN2515 can (MCP2515_CS, SPI1, MCP2515_INT) ;
+static const uint32_t QUARTZ_FREQUENCY = 8UL * 1000UL * 1000UL ; // 8 MHz
+const int CanMsgLen = 8;
 
-//TODO: CAN DEFINE
+// motor leftMotor(leftMotorPin, true);
+// motor rightMotor(rightMotorPin, false);
 
+void configureCan();
 void setFiveMilliSecFlag();
 void setTenMilliSecFlag();
 void setFiftyMilliSecFlag();
@@ -43,7 +49,11 @@ bool FIFTY_MS_FLAG = false; //TODO: flag to keep track of 50 ms flag
 
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED0, OUTPUT);
+  digitalWrite (LED0, HIGH);
+  pinMode(CANLED, OUTPUT);
+  digitalWrite (CANLED, HIGH);
+
   Serial.begin(9600);
   delay(2000);
   timer1.start();
@@ -53,32 +63,47 @@ void setup() {
 
 void loop() {
   updateTimers();
+  digitalWrite (LED0, LOW);
+  digitalWrite (CANLED, LOW);
+
 
   if(FIVE_MS_FLAG){ //TODO: CHANGE PLACE HOLDERS
+    digitalWrite (LED0, HIGH);
+    delay(100);
+    digitalWrite (LED0, LOW);
 
-    UpdateLeft();
-    UpdateRight();
+    // UpdateLeft();
+    // UpdateRight();
 
     FIVE_MS_FLAG = false;
   }
   if(TEN_MS_FLAG){
 
-    ReadCAN();
-    UpdatePID();
+    // ReadCAN();
+    // UpdatePID();
 
     FIVE_MS_FLAG = false;
   }
   if(FIFTY_MS_FLAG){
 
+    
+    digitalWrite (CANLED, HIGH);
+    delay(100);
+    digitalWrite (LED0, LOW);
     FIFTY_MS_FLAG = false;
     
   }
+}
 
 void updateTimers() {
   timer1.update();
   timer2.update();
   timer3.update();
   }
+
+void configureCan(){
+
+  } 
 void setFiveMilliSecFlag() {
   FIVE_MS_FLAG = true;
   }
