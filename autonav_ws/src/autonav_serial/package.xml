@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>autonav_serial</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="dylan.zemlin@gmail.com">dylan</maintainer>
-  <license>TODO: License declaration</license>
+  <version>1.0.0</version>
+  <description>Handles direct serial communication that is published to other nodes</description>
+  <maintainer email="dylan.zemlin@gmail.com">Dylan Zemlin</maintainer>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake_python</buildtool_depend>
   <exec_depend>ros2launch</exec_depend>
