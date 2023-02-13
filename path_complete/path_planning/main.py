@@ -5,19 +5,20 @@ import random
 # returns a random set of waypoints, obstacles, and a radius around those obstacles to path plan around them.
 def get_random_path_planning_simulation():
     rand_wps = []
-    rand_path_length = random.randint(4, 4)
+    rand_path_length = random.randint(4, 6)
     for i in range(rand_path_length):
         rand_x = random.randint(-5, 5)
         rand_y = random.randint(-5, 5)
-        rand_wps.append((rand_x, rand_y))
+        rand_wps.append((rand_x, rand_y, 0))
 
     rand_obstacles = []
     rand_amount_obstacles = random.randint(4, 4)
     for i in range(rand_amount_obstacles):
+        rand_safety_d = random.uniform(.5, .75)
         rand_obst_x = random.uniform(-5, 5)
         rand_obst_y = random.uniform(-5, 5)
-        rand_obstacles.append((rand_obst_x, rand_obst_y))
-    rand_safety_d = random.uniform(.5, .75)
+        rand_obstacles.append([rand_obst_x, rand_obst_y, rand_safety_d])
+    
 
 
     # deleting waypoints that are inside of objects
@@ -66,7 +67,7 @@ if __name__ == "__main__":
     
     # this generates a random set of parameters for the path planner
     path_test = get_random_path_planning_simulation()
-    path_planning_test.planning_test(path_test[0], path_test[1], path_test[2])
+    path_planning_test.planning_test(path_test[0], path_test[1])
     
     # commented out is a hardcoded test
     #waypoints = [(1,0), (2,2), (3,3)]

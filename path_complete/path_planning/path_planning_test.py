@@ -3,21 +3,22 @@ import numpy as np
 import math
 import path_planning
 
-def planning_test(wpoints, obstacles, safety_d):
+def planning_test(wpoints, obstacles):
     test = path_planning.path_planning()
     test.setpath(wpoints)
     test.setobstacles(obstacles)
-    test.intersections(safety_d)
-
+    test.intersections()
+    # here
+    print(f"Start test, test.final {test.final}")
     obstacle_circles = []
     obstacle_circles_2 = []
     for i in range(len(obstacles)):
         if i == 0:
-            obstacle_circles.append(plt.Circle(obstacles[i], safety_d, fill=False, zorder=2, label="Obstacles"))
-            obstacle_circles_2.append(plt.Circle(obstacles[i], safety_d, fill=False, zorder=2))
+            obstacle_circles.append(plt.Circle(obstacles[i], obstacles[i][2], fill=False, zorder=2, label="Obstacles"))
+            obstacle_circles_2.append(plt.Circle(obstacles[i], obstacles[i][2], fill=False, zorder=2))
         else:
-            obstacle_circles.append(plt.Circle(obstacles[i], safety_d, fill=False, zorder=2))
-            obstacle_circles_2.append(plt.Circle(obstacles[i], safety_d, fill=False, zorder=2))
+            obstacle_circles.append(plt.Circle(obstacles[i], obstacles[i][2], fill=False, zorder=2))
+            obstacle_circles_2.append(plt.Circle(obstacles[i], obstacles[i][2], fill=False, zorder=2))
     fig, (ax1, ax2) = plt.subplots(1, 2)
 
     ax1.set_ylim(-10, 10)
@@ -27,7 +28,12 @@ def planning_test(wpoints, obstacles, safety_d):
         ax1.add_artist(obstacle_circles_2[i])
         ax2.add_patch(obstacle_circles[i])
 
-    ex, why = zip(*test.path)
+    original_path = []
+    for i in range(len(test.path)):
+        original_path.append(test.path[i][0:2])
+
+    ex, why = zip(*original_path)
+    print(f"original_path {original_path}")
 
     ax1.set_ylim(-6, 6)
     ax1.set_xlim(-6, 6)
@@ -39,7 +45,14 @@ def planning_test(wpoints, obstacles, safety_d):
 
     ax1.set(xlabel='Before path planning')
 
-    x, y = zip(*test.final)
+    
+    print(f"test.final in PATH PLANNING TESTER {test.final}")
+
+    final_path = []
+    for i in range(len(test.final)):
+        final_path.append(test.final[i][0:2])
+    print(f"final path in PATH PLANNING TESTER {final_path}")
+    x, y = zip(*final_path)
     
     ax2.set_ylim(-6, 6)
     ax2.set_xlim(-6, 6)
