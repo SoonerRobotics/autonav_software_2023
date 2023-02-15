@@ -7,7 +7,7 @@ def planning_test(wpoints, obstacles):
     test = path_planning.path_planning()
     test.setpath(wpoints)
     test.setobstacles(obstacles)
-    test.intersections()
+    test.intersections("cw")
     # here
     print(f"Start test, test.final {test.final}")
     obstacle_circles = []

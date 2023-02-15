@@ -8,9 +8,13 @@ class path_planning:
     path = []
     obstacles = []
     final = []
+    clockwise = []
+    counter_clockwise = []
 
     def initialize(self, wpoints, obsts):
         self.path = wpoints.copy()
+        self.clockwise = wpoints.copy()
+        self.counter_clockwise = wpoints.copy()
         self.obstacles = obsts.copy()
         self.final = wpoints.copy()
     
@@ -52,62 +56,48 @@ class path_planning:
 
         return theta
 
-    def deep_intersections(self, path, start):
-        deep_intersections_working_path = path[start:]
-        for i in range(len(deep_intersections_working_path)):
-            # draw the segment
-            seg_start = self.final[i]
-            seg_end = self.path[i+1]
+    def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):
+        # go clockwise or counter-clockwise depending on which theta is smaller
+        points = []
+        dtheta_counter_clockwise = theta2 - theta1
+        
+        # normalize the counterclockwise angle difference so everything makes sense
+        if dtheta_counter_clockwise < 0:
+            dtheta_counter_clockwise += 2 * math.pi
+                    
+        # subtracting from the argument of cos and sin incrementally gives clockwise motion. 
+        # The clockwise angle difference is just the rest of the circle excluded by the counterclockwise difference
+        dtheta_clockwise = -1 * ((2 * math.pi) - dtheta_counter_clockwise)
 
-            # intersect the obstacles with the segment
-            for j in range(len(self.obstacles.copy())):
-                intersecting_point_1 = None
-                intersecting_point_2 = None
+        if rotation == "ccw":
+            dtheta5t = dtheta_counter_clockwise / 5
+        elif rotation == "cw":
+            print("Clockwise is shorter")
+            dtheta5t = dtheta_clockwise / 5
 
-                # translate the segment to the origin
-                p1 = seg_start[0] - self.obstacles[j][0], seg_start[1] - self.obstacles[j][1]
-                p2 = seg_end[0] - self.obstacles[j][0], seg_end[1] - self.obstacles[j][1]
-
-                # get dr, D, sgn(dy) and the discriminant to compute intersections from https://mathworld.wolfram.com/Circle-LineIntersection.html
-                # first implemented by https://github.com/xiaoxiae/PurePursuitAlgorithm/blob/master/src/main/PurePursuit.java
-                dx = p2[0] - p1[0]
-                dy = p2[1] - p1[1]
-
-                dr = math.sqrt((dx**2 + dy**2))
-                D = (p1[0]*p2[1]) - (p2[0]*p1[1])
-
-                print(f"self.obstacles[j] {self.obstacles[j]}")
-                discrim = self.obstacles[j][2]**2 * dr**2 - D**2
-
-                if dy < 0:
-                    sgn_dy = -1
-                else:
-                    sgn_dy = 1
-
-                # if the discriminant is < 0, the segment does not intersect the circle. If it = 0 then it is tangent to the circle
-                if discrim <= 0 or p1 == p2:
-                    continue
-
-                # x and y coordinates of the intersections are solved with the quadratic formula, giving 2 points, labeled _add and _sub respectively
-                # x1 = (D * dy + sign(dy) * dx * math.sqrt(discriminant)) / (d * d)
-                new_x_add = ((D * dy) + (sgn_dy * dx * math.sqrt(discrim))) / dr**2
-                new_y_add = ((-D * dx) + (abs(dy) * math.sqrt(discrim))) / dr**2
-
-                new_x_sub = ((D * dy) - (sgn_dy * dx * math.sqrt(discrim))) / dr**2
-                new_y_sub = ((-D * dx) - (abs(dy) * math.sqrt(discrim))) / dr**2
-
-                # check that the new point is actually on the segment
-                # segment min x < goal x < segment max x, or segment min y < goal y < segment max y
-                valid_intersection_add = min(p1[0], p2[0]) < new_x_add and new_x_add < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_add and new_y_add < max(p1[1], p2[1])
-                valid_intersection_sub = min(p1[0], p2[0]) < new_x_sub and new_x_sub < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_sub and new_y_sub < max(p1[1], p2[1])
-
-                return valid_intersection_add, valid_intersection_sub
+        # this for loop draws points along the edge of the avoidance circles
+        for k in range(0, 5):
+            print(f"dtheta5t * k {dtheta5t * (k)}")
+            points.append(((((obstacle[2]+ .1) * (math.cos(theta1 + (dtheta5t * (k))))) + obstacle[0]), (((obstacle[2] + .1)* math.sin(theta1+ (dtheta5t * (k)))) + obstacle[1]), 1))
+            print(f"point is {points}")
+            print(len(self.final))
+                    
+        # inserts the points in the right order into the waypoint list
+        for l in range(len(points)):
+            path.insert(starting_point + len(path) - orig_path_length + 1, points[l])
+        
+        return path
 
     # check for double intersections of the path of waypoints with the obstacles
-    def intersections(self):
-        original_path_length = len(self.path.copy())
+    def intersections(self, rotation):
+        # select the path to use from rotation
+
+        times_called = 0
+        working_path = self.path.copy()
+        original_path_length = len(self.path)
 
         for i in range(len(self.path)-1):
+            
             # draw the segment
             seg_start = self.path[i]
             seg_end = self.path[i+1]
@@ -117,6 +107,7 @@ class path_planning:
 
             # intersect the obstacles with the segment
             for j in range(len(self.obstacles.copy())):
+                
                 intersecting_point_1 = None
                 intersecting_point_2 = None
 
@@ -299,7 +290,7 @@ class path_planning:
                     print(f"after quadrant checking {theta1t_arg} {theta2t_arg}")
 
 
-                    print(f"safety_d {self.obstacles[j][2]}")
+                    """print(f"safety_d {self.obstacles[j][2]}")
                     print(f"Fake circle intersecting point 1 polar {(self.obstacles[j][2] * math.cos(theta1t_arg))}, {(self.obstacles[j][2] * math.sin(theta1t_arg))}")
                     print(f"Fake circle intersecting point 1 cartesian {(intersecting_point_1[0])}, {(intersecting_point_1[1])}")
                     print(f"Fake circle intersecting point 2 polar {(self.obstacles[j][2] * math.cos(theta2t_arg))}, {(self.obstacles[j][2] * math.sin(theta2t_arg))}")
@@ -309,46 +300,19 @@ class path_planning:
                     print(f"2nd intersection point polar {(self.obstacles[j][2] * math.cos(theta2t_arg)) + self.obstacles[j][0]}, {(self.obstacles[j][2] * math.sin(theta2t_arg) + self.obstacles[j][1])}")
                     print(f"2nd intersection point cartesian {(intersecting_point_2[0]) + self.obstacles[j][0]}, {(intersecting_point_2[1]) + self.obstacles[j][1]}")
                     print(f"theta1t_arg {theta1t_arg}")
-                    print(f"theta2t_arg {theta2t_arg}")
+                    print(f"theta2t_arg {theta2t_arg}")"""
 
-                    # get two different dtheta5ts, one for traversing the circle clockwise and the other for traversing it counter-clockwise. Pick whichever is smaller and use that.
-                    # dtheta5t is the same, but the arclengths for left and right will be different
-                    # really I just want to travel closer to the center of the path, if possible
-                    dtheta_counter_clockwise = theta2t_arg - theta1t_arg
-                    print(f"dtheta_counter_clockwise originally {dtheta_counter_clockwise}")
-
-                    # normalize the counterclockwise angle difference so everything makes sense
-                    if dtheta_counter_clockwise < 0:
-                        dtheta_counter_clockwise += 2 * math.pi
+                    working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg)
                     
-                    print(f"dtheta_counter_clockwise after checking for negative {dtheta_counter_clockwise}")
-
-                    # subtracting from the argument of cos and sin incrementally gives clockwise motion. 
-                    # The clockwise angle difference is just the rest of the circle excluded by the counterclockwise difference
-                    dtheta_clockwise = -1 * ((2 * math.pi) - dtheta_counter_clockwise)
-                    print(f"dtheta_clockwise {dtheta_clockwise}")
-
-                    # go clockwise or counter-clockwise depending on which theta is smaller
-                    if abs(dtheta_counter_clockwise) < abs(dtheta_clockwise):
-                        print("Counter-clockwise is shorter")
-                        dtheta5t = dtheta_counter_clockwise / 5
-                    else:
-                        print("Clockwise is shorter")
-                        dtheta5t = dtheta_clockwise / 5
                     
-                    print(f"dtheta5t {dtheta5t}")
+        if rotation == "cw":
+            self.clockwise = working_path
+        elif rotation == "ccw":
+            self.counter_clockwise = working_path
 
-                    # this for loop draws points along the edge of the avoidance circles
-                    for k in range(0, 5):
-                        print(f"dtheta5t * k {dtheta5t * (k)}")
-                        points.append(((((self.obstacles[j][2]+ .1) * (math.cos(theta1t_arg + (dtheta5t * (k))))) + self.obstacles[j][0]), (((self.obstacles[j][2] + .1)* math.sin(theta1t_arg + (dtheta5t * (k)))) + self.obstacles[j][1]), 1))
-                        print(f"point is {points}")
-                        print(len(self.final))
-                    
-                    # inserts the points in the right order into the waypoint list
-                    for l in range(len(points)):
-                        self.final.insert(i + len(self.final) - original_path_length + 1, points[l])
-        
+        self.final = self.clockwise
         print(f"obstacles {self.obstacles}")        
         print(f"original path {self.path}")
+        print(f"final clockwise path {self.clockwise}")
+        print(f"final counter clockwise path {self.counter_clockwise}")
         print(f"final path {self.final}")
