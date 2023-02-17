@@ -12,7 +12,7 @@ const int encoderLeftA = 2;
 const int encoderRightA = 4;
 const int encoderRightB = 5;
 
-const int leftMotorPwmPin = 12;
+const int leftMotorPwmPin = 16;
 const int rightMotorPwmPin = 14;
 
 const int estopPin = 27;
