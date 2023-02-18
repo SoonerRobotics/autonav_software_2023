@@ -58,6 +58,7 @@ def onMotorInput(input: MotorInput):
 
     left_speed = clamp(int(-input.left_motor / MAX_SPEED * 127), -128, 127)
     right_speed = clamp(int(-input.right_motor / MAX_SPEED * 127), -128, 127)
+    print(f"Sending motor message: {left_speed} {right_speed} {int(MAX_SPEED * 10)}")
     packed_data = struct.pack("bbB", left_speed, right_speed, int(MAX_SPEED * 10))
 
     can_msg = can.Message(arbitration_id=MOTOR_CONTROL, data=packed_data)
