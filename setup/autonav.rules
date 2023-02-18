@@ -1,0 +1,1 @@
+KERNEL=="ttyACM*", ATTRS{idVendor}=="ad50", ATTRS{idProduct}=="60c4", ATTRS{serial}=="002D00254E53511520363936", MODE:="0666", GROUP:="dialout", SYMLINK+="autonav-can-835"
