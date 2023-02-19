@@ -24,9 +24,9 @@ def on_read_imu():
     ypr = sensor.read_yaw_pitch_roll()
 
     data = IMUData()
-    data.accel_x = acceleration.accel_x
-    data.accel_y = acceleration.accel_y
-    data.accel_z = acceleration.accel_z
+    data.accel_x = acceleration.x
+    data.accel_y = acceleration.y
+    data.accel_z = acceleration.z
     data.yaw = ypr.x
     data.pitch = ypr.y
     data.roll = ypr.z
