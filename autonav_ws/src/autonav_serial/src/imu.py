@@ -17,6 +17,9 @@ def on_read_imu():
     if(not sensor.is_connected):
         sensor.connect("/dev/autonav-imu-200", 115200)
 
+    if(not sensor.is_connected):
+        return
+
     acceleration = sensor.read_acceleration_measurements()
     ypr = sensor.read_yaw_pitch_roll()
 
