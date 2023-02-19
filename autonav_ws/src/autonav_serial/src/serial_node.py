@@ -75,7 +75,7 @@ def main():
     node = rclpy.create_node("autonav_serial")
     node.create_subscription(MotorInput, "/autonav/MotorInput", onMotorInput, 10)
 
-    canbus = can.ThreadSafeBus(bustype = "slcan", channel = "autonav-can-835", bitrate = 100000)    
+    canbus = can.ThreadSafeBus(bustype = "slcan", channel = "/dev/autonav-can-835", bitrate = 100000)    
     # can_thread = CANReadThread()
     # can_thread.start()
 
