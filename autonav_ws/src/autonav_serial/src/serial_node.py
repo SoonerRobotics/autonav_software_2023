@@ -21,7 +21,7 @@ MOTOR_CONTROL = 10
 VELOCITY_FEEDBACK_ID = 11
 ODOMETRY_FEEDBACK_ID = 14
 
-MAX_SPEED = 2.2
+MOTOR_OFFSET = 35
 
 class CANReadThread(threading.Thread):
     def __init__(self):
@@ -56,9 +56,8 @@ def clamp(n, minn, maxn):
 def onMotorInput(input: MotorInput):
     global canbus
 
-    left_speed = int(input.left_motor * 10000)
-    right_speed = int(input.right_motor * 10000)
-    print(f"Sending motor message: {left_speed} {right_speed}")
+    left_speed = int(input.left_motor * MOTOR_OFFSET)
+    right_speed = int(input.right_motor * MOTOR_OFFSET)
     packed_data = struct.pack("hh", left_speed, right_speed)
 
     can_msg = can.Message(arbitration_id=MOTOR_CONTROL, data=packed_data)
