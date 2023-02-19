@@ -32,9 +32,18 @@ def on_read_imu():
     data.roll = ypr.z
     imu_publisher.publish(data)
 
+    # Get lat/long if the sensor has GPS fix
+    if(sensor.gps_fix):
+        gps = sensor.read_gps_solution_lla()
+        latitude = gps.latitude
+        longitude = gps.longitude
+
     log = Log()
     log.file = "imu_data"
-    log.data = f"{time.time()},{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll}"
+    bool_gps = 0 if sensor.gps_fix else 1
+    latitude_value = 0 if sensor.gps_fix else latitude
+    longitude_value = 0 if sensor.gps_fix else longitude
+    log.data = f"{time.time()},{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll},{bool_gps},{latitude_value},{longitude_value}"
     log_publisher.publish(log)
 
 def main():
@@ -48,7 +57,7 @@ def main():
 
     log = Log()
     log.file = "imu_data"
-    log.data = "time,accel_x,accel_y,accel_z,yaw,pitch,roll"
+    log.data = "time,accel_x,accel_y,accel_z,yaw,pitch,roll,gps_has_fix,latitude,longitude"
     log_publisher.publish(log)
 
     node.create_timer(0.5, on_read_imu())
