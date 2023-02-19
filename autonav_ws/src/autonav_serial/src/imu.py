@@ -51,7 +51,7 @@ def main():
 
     rclpy.init()
 
-    node = rclpy.create_node("autonav_serial")
+    node = rclpy.create_node("autonav_serial_imu")
     imu_publisher = node.create_publisher(IMUData, "/autonav/odemetry/imu", 20)
     log_publisher = node.create_publisher(Log, "/autonav/logging", 20)
 
@@ -60,7 +60,7 @@ def main():
     log.data = "time,accel_x,accel_y,accel_z,yaw,pitch,roll,gps_has_fix,latitude,longitude"
     log_publisher.publish(log)
 
-    node.create_timer(0.5, on_read_imu())
+    node.create_timer(0.5, on_read_imu)
 
     rclpy.spin(node)
     rclpy.shutdown()
