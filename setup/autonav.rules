@@ -1,3 +1,3 @@
 KERNEL=="ttyACM*", ATTRS{idVendor}=="ad50", ATTRS{idProduct}=="60c4", ATTRS{serial}=="002D00254E53511520363936", MODE:="0666", GROUP:="dialout", SYMLINK+="autonav-can-835"
 KERNEL=="ttyACM*", ATTRS{idVendor}=="ad50", ATTRS{idProduct}=="60c4", ATTRS{serial}=="0037001E5834570120343833", MODE:="0666", GROUP:="dialout", SYMLINK+="autonav-can-835"
-KERNEL=="ttyUSB*", ATTRS{idVendor}=="25a7", ATTRS{idProduct}=="fa23" ENV{ID_SERIAL_SHORT}=="0", MODE:="0666", GROUP:="dialout", SYMLINK+="autonav-imu-200"
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="AU057VHW", MODE:="0666", GROUP:="dialout", SYMLINK+="autonav-imu-200"

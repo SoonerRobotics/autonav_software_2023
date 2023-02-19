@@ -14,7 +14,7 @@ def on_read_imu():
     sensor = VmSensor()
 
     if(not sensor.is_connected):
-        sensor.connect("/dev/ttyUSB0", 115200)
+        sensor.connect("/dev/autonav-imu-200", 115200)
 
     acceleration = sensor.read_acceleration_measurements()
     ypr = sensor.read_yaw_pitch_roll()
