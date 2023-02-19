@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rclpy
+import time
 from vnpy import *
 
 from autonav_msgs.msg import IMUData
@@ -11,7 +12,7 @@ imu_publisher: Publisher = None
 log_publisher: Publisher = None
 
 def on_read_imu():
-    sensor = VmSensor()
+    sensor = VnSensor()
 
     if(not sensor.is_connected):
         sensor.connect("/dev/autonav-imu-200", 115200)
@@ -30,7 +31,7 @@ def on_read_imu():
 
     log = Log()
     log.file = "imu_data"
-    log.data = f"{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll}"
+    log.data = f"{time.time()},{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll}"
     log_publisher.publish(log)
 
 def main():
@@ -44,7 +45,7 @@ def main():
 
     log = Log()
     log.file = "imu_data"
-    log.data = "accel_x,accel_y,accel_z,yaw,pitch,roll"
+    log.data = "time,accel_x,accel_y,accel_z,yaw,pitch,roll"
     log_publisher.publish(log)
 
     node.create_timer(0.5, on_read_imu())
