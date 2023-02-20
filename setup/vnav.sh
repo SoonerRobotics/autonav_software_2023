@@ -1,7 +1,7 @@
 # Download and unzip vectornav files
 wget https://files.dylanzeml.in/vectornav.zip
 sudo mkdir /usr/local/vectornav
-sudo chown -R dylan:dylan /usr/local/vectornav
+sudo chown -R "$USER":"$USER" /usr/local/vectornav
 unzip -o vectornav.zip -d /usr/local/vectornav
 rm vectornav.zip
 
