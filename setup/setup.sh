@@ -1,14 +1,16 @@
 #!/bin/bash
 
+sudo apt update
+
+# Common dependencies
 bash common.sh
 
-# Copy services
-sudo cp autonav.service /etc/systemd/system/autonav.service
-sudo cp autonav_service.sh /usr/bin/autonav_service.sh
+# Vectornav Dependencies
+bash vnav.sh
 
-# chmod time :D
-sudo chmod +x /usr/bin/autonav_service.sh
-sudo chmod 644 /etc/systemd/system/autonav.service
+# Rosdep
+sudo apt-get install python3-rosdep2
+rosdep install --from-paths ../autonav_ws/src --ignore-src -y --rosdistro=humble
 
 # boot time
 echo "Use 'systemctl enable autonav' to enable the service at boot time."
