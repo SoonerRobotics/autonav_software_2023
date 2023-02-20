@@ -36,7 +36,7 @@ def on_read_imu():
     # Get lat/long if the sensor has GPS fix
     log = Log()
     log.file = "imu_data"
-    log.data = f"{time.time()},{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll},{sensor_register.gps_fix},{sensor_register.lla.x},{sensor_register.lla.y},{sensor_register.lla.y}"
+    log.data = f"{round(time.time()*1000)},{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll},{sensor_register.gps_fix},{sensor_register.lla.x},{sensor_register.lla.y},{sensor_register.lla.y}"
     log_publisher.publish(log)
 
 def main():
