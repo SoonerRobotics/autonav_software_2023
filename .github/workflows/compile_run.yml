@@ -2,7 +2,7 @@ name: Autonav Compilation Test
 
 on:
   schedule:
-    - cron: "0 0 12 ? * FRI *"
+    - cron: "0 0 12 ? * 5 *"
 
 jobs:
   compile:
