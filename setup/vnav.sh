@@ -7,4 +7,4 @@ rm vectornav.zip
 
 # Install vectornav
 cd /usr/local/vectornav/python
-sudo python3 setup.py install
+sudo python3 setup.py install -q
