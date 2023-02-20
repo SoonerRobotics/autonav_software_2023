@@ -11,8 +11,19 @@ from rclpy.publisher import Publisher
 imu_publisher: Publisher = None
 log_publisher: Publisher = None
 
+has_published_headers = False
+
 def on_read_imu():
+    global has_published_headers
     sensor = VnSensor()
+
+    if(not has_published_headers):
+        log = Log()
+        log.file = "imu_data"
+        log.data = "time,accel_x,accel_y,accel_z,yaw,pitch,roll,gps_locked,latitude,longitude,altitude"
+        log_publisher.publish(log)
+        has_published_headers = True
+        return
 
     if(not sensor.is_connected):
         sensor.connect("/dev/autonav-imu-200", 115200)
@@ -47,11 +58,6 @@ def main():
     node = rclpy.create_node("autonav_serial_imu")
     imu_publisher = node.create_publisher(IMUData, "/autonav/odemetry/imu", 20)
     log_publisher = node.create_publisher(Log, "/autonav/logging", 20)
-
-    log = Log()
-    log.file = "imu_data"
-    log.data = "time,accel_x,accel_y,accel_z,yaw,pitch,roll,gps_locked,latitude,longitude,altitude"
-    log_publisher.publish(log)
 
     node.create_timer(0.5, on_read_imu)
 
