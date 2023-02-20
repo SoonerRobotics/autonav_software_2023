@@ -11,6 +11,7 @@
   <exec_depend>ros2launch</exec_depend>
 
   <depend>rclpy</depend>
+  <depend>pyserial</depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>
