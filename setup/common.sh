@@ -1,7 +1,7 @@
 sudo apt-get update
 
 # Copy the udev rules to the correct location
-cp autonav.rules /etc/udev/rules.d/autonav.rules
+sudo cp autonav.rules /etc/udev/rules.d/autonav.rules
 
 # UDev rules are not reloaded automatically, so we need to do it manually
 sudo service udev reload
