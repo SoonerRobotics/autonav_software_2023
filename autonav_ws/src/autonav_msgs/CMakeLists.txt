@@ -19,8 +19,15 @@ set(msg_files
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+<<<<<<< HEAD
   ${msg_files}
   DEPENDENCIES builtin_interfaces
+=======
+	"msg/MotorFeedback.msg"
+	"msg/MotorInput.msg"
+	"msg/ImuData.msg"
+	"msg/GPSFeedback.msg"
+>>>>>>> main
 )
 
 ament_export_dependencies(rosidl_default_runtime)
