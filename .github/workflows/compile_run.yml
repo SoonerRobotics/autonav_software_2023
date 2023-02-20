@@ -1,5 +1,9 @@
 name: Autonav Compilation Test
 
+on:
+  schedule:
+    - cron: "0 0 12 ? * FRI *"
+
 jobs:
   compile:
     runs-on: ubuntu-22.04
