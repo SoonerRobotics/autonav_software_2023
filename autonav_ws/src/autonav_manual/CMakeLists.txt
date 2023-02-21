@@ -16,6 +16,15 @@ add_executable(remote_steamcontroller src/remote_steamcontroller.cpp)
 ament_target_dependencies(remote rclcpp sensor_msgs autonav_msgs)
 ament_target_dependencies(remote_steamcontroller rclcpp sensor_msgs autonav_msgs)
 
+# Install Python modules
+ament_python_install_package(${PROJECT_NAME})
+
+# Install Python executables
+install(PROGRAMS
+  src/steam.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(TARGETS
   remote
   remote_steamcontroller

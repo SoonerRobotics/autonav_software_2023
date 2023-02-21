@@ -8,8 +8,10 @@
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>rclpy</depend>
   <depend>autonav_msgs</depend>
   <exec_depend>ros2launch</exec_depend>
 

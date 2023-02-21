@@ -1,0 +1,4 @@
+float32 joystick_x
+float32 joystick_y
+float32 trackpad_x
+float32 trackpad_y
