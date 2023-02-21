@@ -69,7 +69,7 @@ private:
 
 		if (abs(joystick_x) > AutonavConstants::DEADZONE)
 		{
-			steering = joystick_x * AutonavConstants::MAX_SPEED;
+			steering = -joystick_x * AutonavConstants::MAX_SPEED;
 		}
 
 		package.left_motor = clamp(throttle - steering * 0.6, -AutonavConstants::MAX_SPEED, AutonavConstants::MAX_SPEED);
