@@ -14,7 +14,7 @@ ament_python_install_package(${PROJECT_NAME})
 
 # Install Python executables
 install(PROGRAMS
-	src/serial.py
+	src/serial_node.py
 	src/imu.py
 	DESTINATION lib/${PROJECT_NAME}
 	)

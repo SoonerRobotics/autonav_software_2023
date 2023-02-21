@@ -12,10 +12,13 @@ find_package(sensor_msgs REQUIRED)
 find_package(autonav_msgs REQUIRED)
 
 add_executable(remote src/remote.cpp)
+add_executable(remote_steamcontroller src/remote_steamcontroller.cpp)
 ament_target_dependencies(remote rclcpp sensor_msgs autonav_msgs)
+ament_target_dependencies(remote_steamcontroller rclcpp sensor_msgs autonav_msgs)
 
 install(TARGETS
   remote
+  remote_steamcontroller
   DESTINATION lib/${PROJECT_NAME}
 )
 

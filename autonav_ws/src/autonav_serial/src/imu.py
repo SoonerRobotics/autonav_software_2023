@@ -59,7 +59,7 @@ def main():
     imu_publisher = node.create_publisher(IMUData, "/autonav/odemetry/imu", 20)
     log_publisher = node.create_publisher(Log, "/autonav/logging", 20)
 
-    node.create_timer(0.5, on_read_imu)
+    node.create_timer(1, on_read_imu)
 
     rclpy.spin(node)
     rclpy.shutdown()

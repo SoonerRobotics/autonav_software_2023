@@ -20,7 +20,7 @@ source /install/setup.sh
 
 Follow the steps in [building](#building) and then run the following command
 ```bash
-ros2 launch autonav_launch manual.xml
+ros2 launch autonav_launch managed_manual.xml
 ```
 
 ## VSCode
