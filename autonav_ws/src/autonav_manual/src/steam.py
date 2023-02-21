@@ -13,10 +13,22 @@ pub: Publisher = None
 
 def on_callback(_, sci: SteamControllerInput):
     msg = SteamInput()
-    msg.trackpad_x = float(sci.rpad_x)
-    msg.trackpad_y = float(sci.rpad_y)
-    msg.joystick_x = float(sci.lpad_x)
-    msg.joystick_y = float(sci.lpad_y)
+    msg.status = int(sci.status)
+    msg.seq = int(sci.seq)
+    msg.buttons = int(sci.buttons)
+    msg.ltrig = float(sci.ltrig) / 255
+    msg.rtrig = float(sci.rtrig) / 255
+    msg.lpad_x = float(sci.lpad_x) / 32768
+    msg.lpad_y = float(sci.lpad_y) / 32768
+    msg.rpad_x = float(sci.rpad_x) / 32768
+    msg.rpad_y = float(sci.rpad_y) / 32768
+    msg.gpitch = float(sci.gpitch)
+    msg.groll = float(sci.groll)
+    msg.gyaw = float(sci.gyaw)
+    msg.q1 = float(sci.q1)
+    msg.q1 = float(sci.q2)
+    msg.q1 = float(sci.q3)
+    msg.q1 = float(sci.q4)
     pub.publish(msg)
 
 

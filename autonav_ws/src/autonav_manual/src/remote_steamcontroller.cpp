@@ -10,9 +10,9 @@ long lastMessageTime = 0;
 
 namespace AutonavConstants
 {
-	const float MAX_STEAM_VALUE = 32766;
-	const int DEADZONE = 0.15;
-	const int MAX_SPEED = 1.4;
+	const float STEERING_VOID = 0.4;
+	const float DEADZONE = 0.15;
+	const float MAX_SPEED = 1.4;
 	const int TIMER_INTERVAL = 50;
 	const long TIMEOUT = 1000;
 }
@@ -58,20 +58,24 @@ private:
 		float throttle = 0;
 		float steering = 0;
 
-		float trackpad_y = msg.trackpad_y / AutonavConstants::MAX_STEAM_VALUE;
-		float joystick_x = msg.joystick_x / AutonavConstants::MAX_STEAM_VALUE;
+		if (abs(msg.ltrig) > AutonavConstants::DEADZONE || abs(msg.rtrig) > AutonavConstants::DEADZONE)
+		{
+			throttle = (1 - msg.rtrig) * AutonavConstants::MAX_SPEED * 0.8;
+			throttle = throttle - (1 - msg.ltrig) * AutonavConstants::MAX_SPEED * 0.8;
+		}
+
+		if(abs(msg.rpad_x) > AutonavConstants::STEERING_VOID)
+		{
+			float real = msg.rpad_x - AutonavConstants::STEERING_VOID;
+			if(msg.rpad_x < 0)
+			{
+				real = -real;
+			}
+
+			steering = real * AutonavConstants::MAX_SPEED;
+		}
 
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		if (abs(trackpad_y) > AutonavConstants::DEADZONE)
-		{
-			throttle = trackpad_y * AutonavConstants::MAX_SPEED * 0.75;
-		}
-
-		if (abs(joystick_x) > AutonavConstants::DEADZONE)
-		{
-			steering = -joystick_x * AutonavConstants::MAX_SPEED;
-		}
-
 		package.left_motor = clamp(throttle - steering * 0.6, -AutonavConstants::MAX_SPEED, AutonavConstants::MAX_SPEED);
 		package.right_motor = clamp(throttle + steering * 0.6, -AutonavConstants::MAX_SPEED, AutonavConstants::MAX_SPEED);
 		motor_publisher->publish(package);
