@@ -10,11 +10,12 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(autonav_msgs REQUIRED)
+find_package(autonav_libs REQUIRED)
 
 add_executable(remote src/remote.cpp)
 add_executable(remote_steamcontroller src/remote_steamcontroller.cpp)
-ament_target_dependencies(remote rclcpp sensor_msgs autonav_msgs)
-ament_target_dependencies(remote_steamcontroller rclcpp sensor_msgs autonav_msgs)
+ament_target_dependencies(remote rclcpp sensor_msgs autonav_msgs autonav_libs)
+ament_target_dependencies(remote_steamcontroller rclcpp sensor_msgs autonav_msgs autonav_libs)
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})

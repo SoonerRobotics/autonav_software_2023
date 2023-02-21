@@ -17,6 +17,7 @@ set(msg_files
   "msg/MotorInput.msg"
   "msg/IMUData.msg"
   "msg/SteamInput.msg"
+  "msg/ConBusInstruction.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
