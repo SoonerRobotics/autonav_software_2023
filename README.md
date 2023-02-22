@@ -3,17 +3,20 @@
 Software for the 2023 [Intelligent Ground Vehicle Competition](http://www.igvc.org/), AutoNav challenge, the **Weeb Wagon**.  
 We are using [ROS2 Humble](https://docs.ros.org/en/humble/index.html) on [Ubuntu 22.04](https://releases.ubuntu.com/22.04/).
 
-## Contribution
+## Dependencies
 
-See [contribution.md](/docs/contribution.md) for more details.
+To setup all dependencies, run the following two commands. It is **CRITICAL** you do **NOT** run these commmands as **sudo**
+```bash
+cd setup
+./setup.sh
+```
 
 ## Building
 
 ```bash
-source /opt/ros/humble/setup.sh
-
+source /opt/ros/humble/setup.bash
 colcon build
-source /install/setup.sh
+source /install/setup.bash
 ```
 
 ## Manual/Remote Control
@@ -23,10 +26,7 @@ Follow the steps in [building](#building) and then run the following command
 ros2 launch autonav_launch managed_manual.xml
 ```
 
-## VSCode
-
-VSCode has a fantastic [extension](https://marketplace.visualstudio.com/items?itemName=ms-iot.vscode-ros) that supports ROS development. On top of this, running code the following way can ensure you are getting the most support.  
-First, follow the [building](#building) steps and then run the following command
+Or, for the steam controller
 ```bash
-code .
+ros2 launch autonav_launch managed_manual_steam.xml
 ```
