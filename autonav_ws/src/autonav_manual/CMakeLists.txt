@@ -5,36 +5,20 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
+# Dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(autonav_msgs REQUIRED)
 find_package(autonav_libs REQUIRED)
 
-add_executable(remote src/remote.cpp)
-add_executable(remote_steamcontroller src/remote_steamcontroller.cpp)
-ament_target_dependencies(remote rclcpp sensor_msgs autonav_msgs autonav_libs)
-ament_target_dependencies(remote_steamcontroller rclcpp sensor_msgs autonav_msgs autonav_libs)
-
-# Install Python modules
-ament_python_install_package(${PROJECT_NAME})
-
-# Install Python executables
-install(PROGRAMS
-  src/steam.py
-  DESTINATION lib/${PROJECT_NAME}
-)
+# C++
+add_executable(example src/example.cpp)
+ament_target_dependencies(example rclcpp sensor_msgs autonav_msgs autonav_libs)
 
 install(TARGETS
-  remote
-  remote_steamcontroller
+  example
   DESTINATION lib/${PROJECT_NAME}
-)
-
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
 )
 
 ament_package()

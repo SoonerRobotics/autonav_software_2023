@@ -1,4 +1,4 @@
-int32 target
-int32 opcode
+int32 device
 int32 address
-string value
+int8 opcode
+uint8[] data

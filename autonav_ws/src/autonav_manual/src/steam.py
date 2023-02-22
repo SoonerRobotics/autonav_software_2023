@@ -45,6 +45,7 @@ def main(args = None):
     pub = node.create_publisher(SteamInput, "/autonav/joy/steam", 20)
 
     steam_thread = threading.Thread(target=start_steam_controller)
+    steam_thread.daemon = True
     steam_thread.start()
 
     rclpy.spin(node)
