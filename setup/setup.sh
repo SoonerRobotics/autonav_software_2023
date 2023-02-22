@@ -9,6 +9,9 @@ bash common.sh
 # Vectornav Dependencies
 bash vnav.sh
 
+# Steam Controller Dependencies
+bash steam.sh
+
 # Rosdep
 # sudo apt-get install python3-rosdep2 -y
 # rosdep install --from-paths ../autonav_ws/src --ignore-src -y --rosdistro=humble
