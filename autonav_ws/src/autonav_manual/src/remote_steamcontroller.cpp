@@ -60,19 +60,19 @@ private:
 
 		if (abs(msg.ltrig) > AutonavConstants::DEADZONE || abs(msg.rtrig) > AutonavConstants::DEADZONE)
 		{
-			throttle = (1 - msg.rtrig) * AutonavConstants::MAX_SPEED * 0.8;
-			throttle = throttle - (1 - msg.ltrig) * AutonavConstants::MAX_SPEED * 0.8;
+			throttle = (1 - -msg.rtrig) * AutonavConstants::MAX_SPEED * 0.8;
+			throttle = throttle - (1 - -msg.ltrig) * AutonavConstants::MAX_SPEED * 0.8;
 		}
 
 		if(abs(msg.rpad_x) > AutonavConstants::STEERING_VOID)
 		{
-			float real = msg.rpad_x - AutonavConstants::STEERING_VOID;
+			float real = abs(msg.rpad_x) - AutonavConstants::STEERING_VOID;
 			if(msg.rpad_x < 0)
 			{
 				real = -real;
 			}
 
-			steering = real * AutonavConstants::MAX_SPEED;
+			steering = -real * AutonavConstants::MAX_SPEED;
 		}
 
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();

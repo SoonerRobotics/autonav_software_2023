@@ -13,7 +13,7 @@ using std::placeholders::_1;
 
 namespace AutonavConstants
 {
-	std::string LOG_PATH = "/home/autonav/logs";
+	std::string LOG_PATH = "/home/autonav/logs/";
 	std::string LOG_FILE_EXT = ".log";
 	std::string TOPIC = "/autonav/logging";
 }
