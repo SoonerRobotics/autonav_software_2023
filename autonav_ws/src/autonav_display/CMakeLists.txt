@@ -16,7 +16,8 @@ set(OpenGL_GL_PREFERENCE GLVND)
 find_package(glfw3 3.3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../imgui)
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../deps/imgui)
+set(IMGUI_PLOTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../deps/implot)
 add_library(imgui SHARED
   ${IMGUI_DIR}/imgui.cpp
   ${IMGUI_DIR}/imgui_demo.cpp
@@ -25,11 +26,17 @@ add_library(imgui SHARED
   ${IMGUI_DIR}/imgui_tables.cpp
   ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
   ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+
+  ${IMGUI_PLOTS_DIR}/implot.cpp
+  ${IMGUI_PLOTS_DIR}/implot_demo.cpp
+  ${IMGUI_PLOTS_DIR}/implot_items.cpp
 )
 target_include_directories(imgui PUBLIC
   $<BUILD_INTERFACE:${IMGUI_DIR}>
   $<INSTALL_INTERFACE:include>
   $<BUILD_INTERFACE:${IMGUI_DIR}/backends>
+  $<INSTALL_INTERFACE:include>
+  $<BUILD_INTERFACE:${IMGUI_PLOTS_DIR}>
   $<INSTALL_INTERFACE:include>
 )
 
@@ -55,6 +62,10 @@ install(FILES
   ${IMGUI_DIR}/imstb_textedit.h
   ${IMGUI_DIR}/backends/imgui_impl_glfw.h
   ${IMGUI_DIR}/backends/imgui_impl_opengl3.h
+
+  ${IMGUI_PLOTS_DIR}/implot.h
+  ${IMGUI_PLOTS_DIR}/implot_internal.h
+
   DESTINATION include
 )
 
