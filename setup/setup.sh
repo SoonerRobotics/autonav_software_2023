@@ -14,6 +14,10 @@ bash steam.sh
 
 # Submodules
 git submodule update --init --recursive
+touch imgui/COLCON_IGNORE
+
+# ImGUI Dependencies
+sudo apt install libglfw3-dev libglew-dev -y
 
 # Rosdep
 # sudo apt-get install python3-rosdep2 -y
