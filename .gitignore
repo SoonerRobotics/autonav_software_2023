@@ -15,4 +15,4 @@ setup/vectorsecrets.txt
 
 # Git Submodules
 imgui
-imgui.ini
+**/imgui.ini
