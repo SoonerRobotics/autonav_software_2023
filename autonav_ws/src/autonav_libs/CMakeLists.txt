@@ -12,7 +12,7 @@ find_package(autonav_msgs REQUIRED)
 
 # C++ Library Garbage
 include_directories(include)
-add_library(autonav_libs src/autonav.cpp src/conbus.py src/canbus.py)
+add_library(autonav_libs src/autonav.cpp)
 ament_export_targets(autonav_libs HAS_LIBRARY_TARGET)
 ament_target_dependencies(autonav_libs
   "rclcpp"
@@ -35,7 +35,7 @@ install(
 # Install and export python files
 ament_python_install_package(${PROJECT_NAME})
 install(
-  PROGRAMS src/canbus.py src/conbus.py
+  PROGRAMS ${PROJECT_NAME}/canbus.py ${PROJECT_NAME}/conbus.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
