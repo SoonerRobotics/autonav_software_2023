@@ -1,10 +1,14 @@
 from enum import Enum
 
+from autonav_msgs.msg import ConBusInstruction
+
 
 class Opcode(Enum):
     READ = 0
-    WRITE = 1
-    READ_ALL = 2
+    READ_ACK = 1
+    WRITE = 2
+    WRITE_ACK = 3
+    READ_ALL = 4
 
 
 class Device(Enum):
@@ -14,26 +18,45 @@ class Device(Enum):
 
 
 class Controller():
-    def __init__(self):
+    def __init__(self, id, publisher):
         self.registers = [0] * 100
+        self.id = id
+        self.publisher = publisher
 
-    def read(self, register):
-        if register < 0 or register >= len(self.registers):
-            raise ValueError("Register out of range")
+    def read(self, message):
+        if message.device != self.id:
+            return
 
-        return self.registers[register]
+        self.publisher.publish(ConBusInstruction(
+            device=self.id,
+            opcode=Opcode.READ_ACK,
+            register=message.register,
+            value=self.registers[message.register]
+        ))
 
-    def write(self, register, value):
-        if register < 0 or register >= len(self.registers):
-            raise ValueError("Register out of range")
+    def write(self, instruction: ConBusInstruction):
+        if instruction.device != self.id:
+            return
 
-        self.registers[register] = value
+        self.registers[instruction.register] = instruction.value
+        self.publisher.publish(ConBusInstruction(
+            device=self.id,
+            opcode=Opcode.WRITE_ACK,
+            register=instruction.register,
+            value=instruction.value
+        ))
 
     def read_all(self):
-        return self.registers
+        for i in range(len(self.registers)):
+            self.publisher.publish(ConBusInstruction(
+                device=self.id,
+                opcode=Opcode.READ_ACK,
+                register=i,
+                value=self.registers[i]
+            ))
 
     def __getitem__(self, key):
         return self.registers[key]
-    
+
     def __setitem__(self, key, value):
         self.registers[key] = value

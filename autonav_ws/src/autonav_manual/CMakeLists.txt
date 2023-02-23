@@ -16,8 +16,16 @@ find_package(autonav_libs REQUIRED)
 add_executable(example src/example.cpp)
 ament_target_dependencies(example rclcpp sensor_msgs autonav_msgs autonav_libs)
 
+add_executable(remote src/remote.cpp)
+ament_target_dependencies(remote rclcpp sensor_msgs autonav_msgs autonav_libs)
+
+add_executable(steamremote src/remote_steamcontroller.cpp)
+ament_target_dependencies(steamremote rclcpp sensor_msgs autonav_msgs autonav_libs)
+
 install(TARGETS
   example
+  remote
+  steamremote
   DESTINATION lib/${PROJECT_NAME}
 )
 

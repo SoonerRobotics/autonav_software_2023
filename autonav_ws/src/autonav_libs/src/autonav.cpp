@@ -34,7 +34,6 @@ void Controller::write(uint8_t device, uint8_t address, uint8_t *data, uint8_t l
 	}
 }
 
-// Create definition for Controller::onInstruction
 void Controller::onInstruction(const autonav_msgs::msg::ConBusInstruction::SharedPtr msg)
 {
 	if (msg->device != _device)
@@ -60,7 +59,6 @@ void Controller::onInstruction(const autonav_msgs::msg::ConBusInstruction::Share
 	case Opcode::WRITE:
 		write(msg->device, msg->address, msg->data.data(), msg->data.size());
 		msg->opcode = Opcode::WRITE_ACK;
-		RCLCPP_INFO(rclcpp::get_logger("conbus"), "Write: %d %d %d | %d", msg->opcode, msg->device, msg->address, msg->data.size());
 		_publisher->publish(*msg);
 		break;
 
@@ -77,4 +75,30 @@ void Controller::onInstruction(const autonav_msgs::msg::ConBusInstruction::Share
 		}
 		break;
 	}
+}
+
+void Controller::setDefaultRegisters(std::vector<register_entry> defaultRegisters)
+{
+	for (int i = 0; i < defaultRegisters.size(); i++)
+	{
+		_registers[defaultRegisters[i].address] = defaultRegisters[i];
+	}
+}
+
+// ConbusNode
+
+ConbusNode::ConbusNode(int device, std::string node_name) : Node(node_name)
+{
+	_publisher = this->create_publisher<autonav_msgs::msg::ConBusInstruction>("/autonav/conbus", 10);
+	_controller = Controller(device, _publisher);
+	_subscriber = this->create_subscription<autonav_msgs::msg::ConBusInstruction>("/autonav/conbus", 10, std::bind(&Controller::onInstruction, &_controller, std::placeholders::_1));
+}
+
+ConbusNode::~ConbusNode()
+{
+}
+
+Controller ConbusNode::getController()
+{
+	return _controller;
 }
