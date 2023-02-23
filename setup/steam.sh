@@ -1,6 +1,7 @@
 # Steam Controller driver setup
 git clone https://github.com/ynsta/steamcontroller
-mv steamcontroller ~/steamcontroller
+sudo rm -rf ~/steamcontroller
+sudo mv steamcontroller ~/steamcontroller
 cd ~/steamcontroller
 
 

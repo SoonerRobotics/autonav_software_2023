@@ -13,8 +13,8 @@ bash vnav.sh
 bash steam.sh
 
 # Submodules
-git submodule update --init --recursive
-touch imgui/COLCON_IGNORE
+git submodule update --remote --merge
+touch ../imgui/COLCON_IGNORE
 
 # ImGUI Dependencies
 sudo apt install libglfw3-dev libglew-dev -y
