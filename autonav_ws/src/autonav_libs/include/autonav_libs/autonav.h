@@ -142,7 +142,6 @@ namespace Autonav
 
             // Write Address
 
-
             void writeLong(uint8_t address, long value)
             {
                 uint8_t *data = (uint8_t *)&value;
@@ -197,7 +196,18 @@ namespace Autonav
                 write(_device, address, (uint8_t *)&data, 4);
             }
 
-            // bruh
+            // Write To Device / Address
+
+            void writeFloatTo(uint8_t device, uint8_t address, float value)
+            {
+                int32_t data = (int32_t)(value * 1000000.0);
+
+                autonav_msgs::msg::ConBusInstruction instruction;
+                instruction.device = device;
+                instruction.address = address;
+                instruction.data = std::vector<uint8_t>((uint8_t *)&data, (uint8_t *)&data + 4);
+                _publisher->publish(instruction);
+            }
 
             register_entry &operator[](int index)
             {

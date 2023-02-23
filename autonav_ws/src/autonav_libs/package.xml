@@ -8,9 +8,11 @@
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <!-- <buildtool_depend>ament_cmake_python</buildtool_depend> -->
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
   <depend>autonav_msgs</depend>
