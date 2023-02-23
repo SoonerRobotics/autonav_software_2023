@@ -12,7 +12,3 @@ __pycache__
 # VNav
 setup/vectornav.zip
 setup/vectorsecrets.txt
-
-# Git Submodules
-imgui
-**/imgui.ini
