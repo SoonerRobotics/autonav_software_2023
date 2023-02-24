@@ -2,6 +2,7 @@
 
 import rclpy
 import cv2
+import time
 import threading
 from steamcontroller import SteamController
 from steamcontroller import SteamControllerInput
@@ -33,8 +34,15 @@ def on_callback(_, sci: SteamControllerInput):
 
 
 def start_steam_controller():
-    sc = SteamController(callback = on_callback)
-    sc.run()
+    try:
+        sc = SteamController(callback = on_callback)
+        sc.run()
+    except KeyboardInterrupt:
+        sc.close()
+        pass
+    except ValueError:
+        time.sleep(5)
+        start_steam_controller()
 
 
 def main(args = None):

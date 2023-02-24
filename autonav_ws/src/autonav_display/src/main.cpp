@@ -29,11 +29,6 @@ static void glfw_error_callback(int error, const char *description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-bool has_flag(int flags, int flag)
-{
-	return (flags & flag) == flag;
-}
-
 class DisplayNode : public rclcpp::Node
 {
 public:
@@ -87,7 +82,7 @@ public:
 		// Increase font size
 		io.Fonts->AddFontDefault();
 		ImFontConfig config;
-		config.SizePixels = 20.0f;
+		config.SizePixels = 40.0f;
 		io.Fonts->AddFontDefault(&config);
 
 		// Setup Dear ImGui style
@@ -98,12 +93,17 @@ public:
 		ImGui_ImplOpenGL3_Init(glsl_version);
 
 		// Set to full screen
-		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
+		// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
 		ImGui::SetNextWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Once);
 	}
 
 	void render()
 	{
+		if(glfwWindowShouldClose(window))
+		{
+			rclcpp::shutdown();
+		}
+
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 		glfwPollEvents();
@@ -145,11 +145,6 @@ public:
 					ImGui::Text("Right Joystick: (%.1f, %.1f)", steam_data.rpad_x, steam_data.rpad_y);
 					ImGui::Text("Left Trigger: %.1f", steam_data.ltrig);
 					ImGui::Text("Right Trigger: %.1f", steam_data.rtrig);
-					for(int i = 0; i < 31; i++)
-					{
-						bool is_flagged = (steam_data.buttons & (1 << i)) != 0;
-						ImGui::Text("Button %d: %s", i, is_flagged ? "true" : "false");
-					}
 
 					ImGui::EndTabItem();
 				}
