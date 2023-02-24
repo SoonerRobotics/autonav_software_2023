@@ -1,6 +1,6 @@
 int32 status
 int32 seq
-int64 buttons
+bool[] buttons
 
 float32 ltrig
 float32 rtrig

@@ -19,7 +19,8 @@ set(msg_files
   "msg/SteamInput.msg"
   "msg/ConBusInstruction.msg"
   "msg/GPSData.msg"
-  "msg/NodeState.msg"
+  "msg/DeviceState.msg"
+  "msg/SystemState.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

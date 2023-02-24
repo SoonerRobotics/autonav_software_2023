@@ -29,10 +29,10 @@ static void glfw_error_callback(int error, const char *description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-class DisplayNode : public rclcpp::Node
+class DisplayNode : public Autonav::ROS::AutoNode
 {
 public:
-	DisplayNode() : Node("display_node")
+	DisplayNode() : Autonav::ROS::AutoNode(Autonav::Device::DISPLAY_NODE, "autonav_display")
 	{
 		setup_imgui();
 
@@ -95,11 +95,13 @@ public:
 		// Set to full screen
 		// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
 		ImGui::SetNextWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Once);
+
+		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
 	}
 
 	void render()
 	{
-		if(glfwWindowShouldClose(window))
+		if (glfwWindowShouldClose(window))
 		{
 			rclcpp::shutdown();
 		}
@@ -123,6 +125,8 @@ public:
 			{
 				if (ImGui::BeginTabItem("General Data"))
 				{
+					ImGui::Text("System State: %d", _systemState);
+
 					ImGui::SeparatorText("GPS Data");
 					ImGui::Text("Latitude: %f", gps_data.latitude);
 					ImGui::Text("Longitude: %f", gps_data.longitude);
@@ -135,7 +139,7 @@ public:
 					ImGui::Text("Yaw: %f", imu_data.yaw);
 					ImGui::Text("Acceleration: (%f, %f, %f)", imu_data.accel_x, imu_data.accel_y, imu_data.accel_z);
 					ImGui::Text("Angular Velocity: (%f, %f, %f)", imu_data.angular_x, imu_data.angular_y, imu_data.angular_z);
-					
+
 					ImGui::SeparatorText("Motor Data");
 					ImGui::Text("Left Motor: %.1f", motor_data.left_motor);
 					ImGui::Text("Right Motor: %.1f", motor_data.right_motor);
@@ -145,6 +149,24 @@ public:
 					ImGui::Text("Right Joystick: (%.1f, %.1f)", steam_data.rpad_x, steam_data.rpad_y);
 					ImGui::Text("Left Trigger: %.1f", steam_data.ltrig);
 					ImGui::Text("Right Trigger: %.1f", steam_data.rtrig);
+					for (int i = 0; i < steam_data.buttons.size(); i++)
+					{
+						ImGui::Text("Button %d: %d", i, steam_data.buttons[i]);
+					}
+
+					ImGui::SeparatorText("Device States");
+					// Intereate through the device states, keeping track of the index
+					for (int i = 0; i < _deviceStates.size(); i++)
+					{
+						auto state = _deviceStates[i];
+						if (state <= 0)
+						{
+							continue;
+						}
+
+						// auto stateStr = Autonav::getDeviceStr((Autonav::Device)i);
+						ImGui::Text("%d: %d", i, state);
+					}
 
 					ImGui::EndTabItem();
 				}
