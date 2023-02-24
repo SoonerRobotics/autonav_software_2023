@@ -9,15 +9,6 @@ using std::placeholders::_1;
 
 long lastMessageTime = 0;
 
-enum RegisterID
-{
-	DEADZONE = 0,
-	MAX_SPEED = 1,
-	TIMEOUT = 2,
-	TIMER_INTERVAL = 3,
-	STEERING_VOID = 4
-};
-
 float clamp(float value, float min, float max)
 {
 	if (value < min)
@@ -27,27 +18,21 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-class SteamNode : public Autonav::ConBus::ConbusNode
+class SteamNode : public rclcpp::Node
 {
 public:
-	SteamNode() : Autonav::ConBus::ConbusNode(0, "autonav_manual_steamremote")
+	SteamNode() : Node("remote_steamcontroller")
 	{
-		_controller.writeFloat(RegisterID::DEADZONE, 0.1);
-		_controller.writeFloat(RegisterID::MAX_SPEED, 0.5);
-		_controller.writeInt32(RegisterID::TIMEOUT, 1000);
-		_controller.writeInt32(RegisterID::TIMER_INTERVAL, 100);
-		_controller.writeFloat(RegisterID::STEERING_VOID, 0.1);
-
 		subscription_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&SteamNode::on_steam_received, this, _1));
 		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
-		timer_ = this->create_wall_timer(std::chrono::milliseconds(_controller.readInt32(RegisterID::TIMER_INTERVAL)), std::bind(&SteamNode::on_timer_elapsed, this));
+		timer_ = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&SteamNode::on_timer_elapsed, this));
 	}
 
 private:
 	void on_timer_elapsed()
 	{
 		long currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-		if (currentTime - lastMessageTime < _controller.readInt32(RegisterID::TIMEOUT))
+		if (currentTime - lastMessageTime < 500)
 		{
 			return;
 		}
@@ -64,9 +49,9 @@ private:
 
 		float throttle = 0;
 		float steering = 0;
-		const float deadzone = _controller.readFloat(RegisterID::DEADZONE);
-		const float maxSpeed = _controller.readFloat(RegisterID::MAX_SPEED);
-		const float steeringVoid = _controller.readFloat(RegisterID::STEERING_VOID);
+		const float deadzone = 0.1f;
+		const float maxSpeed = 2.0f;
+		const float steeringVoid = 0.35f;
 
 		if (abs(msg.ltrig) > deadzone || abs(msg.rtrig) > deadzone)
 		{
@@ -90,10 +75,6 @@ private:
 		package.right_motor = clamp(throttle + steering * 0.6, -maxSpeed, maxSpeed);
 		motor_publisher->publish(package);
 	}
-
-	rclcpp::Publisher<autonav_msgs::msg::ConBusInstruction>::SharedPtr _conpublisher;
-	rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr _consubscriber;
-	Autonav::ConBus::Controller _controller;
 
 	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr motor_publisher;
 	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr subscription_;

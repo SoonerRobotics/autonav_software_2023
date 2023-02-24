@@ -3,5 +3,6 @@
     <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" />
     <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial_core" />
     <node pkg="autonav_manual" exec="steam.py" name="autonav_joy_steam" />>
-    <node pkg="autonav_manual" exec="remote_steamcontroller" name="autonav_remote" />
+    <node pkg="autonav_manual" exec="steamremote" name="autonav_remote" />
+    <node pkg="autonav_display" exec="imgui_test" name="autonav_display" output="screen" />
 </launch>
