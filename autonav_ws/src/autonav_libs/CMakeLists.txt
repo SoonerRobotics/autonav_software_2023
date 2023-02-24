@@ -12,7 +12,8 @@ find_package(autonav_msgs REQUIRED)
 
 # C++ Library Garbage
 include_directories(include)
-add_library(autonav_libs src/autonav.cpp)
+set(SRCS src/common.cpp)
+add_library(autonav_libs SHARED ${SRCS})
 ament_export_targets(autonav_libs HAS_LIBRARY_TARGET)
 ament_target_dependencies(autonav_libs
   "rclcpp"

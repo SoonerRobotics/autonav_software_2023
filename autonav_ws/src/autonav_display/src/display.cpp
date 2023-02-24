@@ -13,13 +13,23 @@
 #include <GLFW/glfw3.h>
 
 // ROS Imports
-#include "autonav_libs/autonav.h"
+#include "autonav_libs/common.h"
 #include "rclcpp/rclcpp.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 
 #include "autonav_msgs/msg/imu_data.hpp"
 #include "autonav_msgs/msg/gps_data.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/steam_input.hpp"
+#include "std_msgs/msg/header.h"
+#include "sensor_msgs/msg/image.hpp"
+
+// Other Imports
+#include "cv_bridge/cv_bridge.h"
+#include <image_transport/image_transport.hpp>
+#include "opencv4/opencv2/opencv.hpp"
+
+// TODO: Fix image flashing issue
 
 const char *glsl_version = "#version 130";
 GLFWwindow *window;
@@ -40,8 +50,22 @@ public:
 		imu_subscriber_ = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::on_imu_data, this, std::placeholders::_1));
 		motor_subscriber_ = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::on_motor_data, this, std::placeholders::_1));
 		steam_subscriber_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::on_steam_data, this, std::placeholders::_1));
+		camera_subscriber_ = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::on_camera_data, this, std::placeholders::_1));
+		render_clock = this->create_wall_timer(std::chrono::milliseconds(1000 / 60), std::bind(&DisplayNode::render, this));
 
-		render_clock = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&DisplayNode::render, this));
+		// Default Configuration
+		_config.write(0, 32);
+	}
+
+	~DisplayNode()
+	{
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImPlot::DestroyContext();
+		ImGui::DestroyContext();
+
+		glfwDestroyWindow(window);
+		glfwTerminate();
 	}
 
 	void setup_imgui()
@@ -54,8 +78,6 @@ public:
 
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-		// glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | Weeb Wagon", NULL, NULL);
@@ -79,37 +101,44 @@ public:
 		ImGuiIO &io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-		// Increase font size
-		io.Fonts->AddFontDefault();
-		ImFontConfig config;
-		config.SizePixels = 40.0f;
-		io.Fonts->AddFontDefault(&config);
-
-		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
 
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init(glsl_version);
 
-		// Set to full screen
-		// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
-		ImGui::SetNextWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Once);
+		// Custom Font
+		std::string path = ament_index_cpp::get_package_share_directory(this->get_name());
+		auto font = io.Fonts->AddFontFromFileTTF((path + "/fonts/RobotoMono-VariableFont_wght.ttf").c_str(), 32.0f);
+		io.FontDefault = font;
+		ImGui_ImplOpenGL3_DestroyFontsTexture();
+		ImGui_ImplOpenGL3_CreateFontsTexture();
 
+		// Screen Size Adapations
+		io.DisplaySize = ImVec2(mode->width, mode->height);
+		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+
+		// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
+		ImGui::SetNextWindowSize(ImVec2(mode->width * 0.5, mode->height * 0.5), ImGuiCond_Once);
+
+		// Send out our device state
 		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
 	}
 
 	void render()
 	{
-		if (glfwWindowShouldClose(window))
+		if (glfwWindowShouldClose(window) || !rclcpp::ok())
 		{
+			if (rclcpp::ok())
+			{
+				this->setDeviceState(Autonav::State::DeviceState::OFF);
+			}
+
 			rclcpp::shutdown();
 		}
 
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 		glfwPollEvents();
-
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -151,28 +180,93 @@ public:
 					ImGui::Text("Right Trigger: %.1f", steam_data.rtrig);
 					for (int i = 0; i < steam_data.buttons.size(); i++)
 					{
-						ImGui::Text("Button %d: %d", i, steam_data.buttons[i]);
+						ImGui::Text("Button %d: %s", i, steam_data.buttons[i] ? "Pressed" : "Released");
 					}
 
 					ImGui::SeparatorText("Device States");
-					// Intereate through the device states, keeping track of the index
-					for (int i = 0; i < _deviceStates.size(); i++)
+					for(auto it = _deviceStates.begin(); it != _deviceStates.end(); it++)
 					{
-						auto state = _deviceStates[i];
-						if (state <= 0)
-						{
-							continue;
-						}
-
-						// auto stateStr = Autonav::getDeviceStr((Autonav::Device)i);
-						ImGui::Text("%d: %d", i, state);
+						auto device = it->first;
+						auto state = it->second;
+						ImGui::Text("%s: %s", Autonav::deviceToString(device).c_str(), Autonav::deviceStateToString(state).c_str());
 					}
 
+					if (this->has_image)
+					{
+						GLuint texture;
+						cv::cvtColor(image, image, cv::COLOR_BGR2RGBA);
+						glGenTextures(1, &texture);
+						glBindTexture(GL_TEXTURE_2D, texture);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+						glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
+						ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(texture)), ImVec2(image.cols, image.rows));
+					}
 					ImGui::EndTabItem();
 				}
+
+				if (ImGui::BeginTabItem("Maps & Path Planning"))
+				{
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem("Configuration"))
+				{
+					ImGui::Text("Font Size: %d", _config.read<int32_t>(0));
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem("Preferences"))
+				{
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem("Debug"))
+				{
+					char cwd[1024];
+					if (getcwd(cwd, sizeof(cwd)) != NULL)
+					{
+						ImGui::Text("Current working dir: %s", cwd);
+					}
+					else
+					{
+						ImGui::Text("Current working dir: %s", "Error getting current working directory");
+					}
+
+					std::string path = ament_index_cpp::get_package_share_directory(this->get_name());
+					ImGui::Text("Package directory: %s", path.c_str());
+					ImGui::EndTabItem();
+
+					// Show a tree of all topics
+					if (ImGui::TreeNode("Topics"))
+					{
+						auto _topics = this->get_topic_names_and_types();
+						for (auto topic : _topics)
+						{
+							ImGui::Text("%s", topic.first.c_str());
+							for (auto type : topic.second)
+							{
+								ImGui::Text("  %s", type.c_str());
+							}
+						}
+						ImGui::TreePop();
+					}
+
+					// Show a tree of all nodes
+					if (ImGui::TreeNode("Nodes"))
+					{
+						auto _nodes = this->get_node_names();
+						for (auto node : _nodes)
+						{
+							ImGui::Text("%s", node.c_str());
+						}
+						ImGui::TreePop();
+					}
+				}
+
 				ImGui::EndTabBar();
 			}
-
 			ImGui::End();
 		}
 
@@ -180,24 +274,10 @@ public:
 		int display_w, display_h;
 		glfwGetFramebufferSize(window, &display_w, &display_h);
 		glViewport(0, 0, display_w, display_h);
-		glClearColor(
-			clear_color.x * clear_color.w, clear_color.y * clear_color.w,
-			clear_color.z * clear_color.w, clear_color.w);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 		glfwSwapBuffers(window);
-	}
-
-	void destroy()
-	{
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImPlot::DestroyContext();
-		ImGui::DestroyContext();
-
-		glfwDestroyWindow(window);
-		glfwTerminate();
 	}
 
 	// Other Callbacks
@@ -221,12 +301,32 @@ public:
 		this->steam_data = *data;
 	}
 
+	void on_camera_data(const sensor_msgs::msg::CompressedImage::SharedPtr data)
+	{
+		cv_bridge::CvImagePtr cv_ptr;
+		try
+		{
+			cv_ptr = cv_bridge::toCvCopy(data, sensor_msgs::image_encodings::BGR8);
+		}
+		catch (cv_bridge::Exception &e)
+		{
+			RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
+			return;
+		}
+
+		// Convert to opencv mat
+		this->has_image = true;
+		this->image = cv_ptr->image;
+	}
+
 private:
 	rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr conbus_subscriber_;
 	rclcpp::Subscription<autonav_msgs::msg::GPSData>::SharedPtr gps_subscriber_;
 	rclcpp::Subscription<autonav_msgs::msg::IMUData>::SharedPtr imu_subscriber_;
 	rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr motor_subscriber_;
 	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr steam_subscriber_;
+	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_subscriber_;
+
 	rclcpp::TimerBase::SharedPtr render_clock;
 
 private:
@@ -234,6 +334,8 @@ private:
 	autonav_msgs::msg::IMUData imu_data;
 	autonav_msgs::msg::MotorInput motor_data;
 	autonav_msgs::msg::SteamInput steam_data;
+	cv::Mat image;
+	bool has_image = false;
 };
 
 int main(int, char **)
@@ -243,6 +345,5 @@ int main(int, char **)
 	auto node = std::make_shared<DisplayNode>();
 	rclcpp::spin(node);
 	rclcpp::shutdown();
-	node->destroy();
 	return 0;
 }

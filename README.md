@@ -3,6 +3,12 @@
 Software for the 2023 [Intelligent Ground Vehicle Competition](http://www.igvc.org/), AutoNav challenge, the **Weeb Wagon**.  
 We are using [ROS2 Humble](https://docs.ros.org/en/humble/index.html) on [Ubuntu 22.04](https://releases.ubuntu.com/22.04/).
 
+## Cloning
+When you clone this repository, it is critical you clone with submodules
+```bash
+git clone git@github.com:SoonerRobotics/autonav_software_2023.git --recurse-submodules
+```
+
 ## Dependencies
 
 To setup all dependencies, run the following two commands. It is **CRITICAL** you do **NOT** run these commmands as **sudo**
@@ -10,6 +16,8 @@ To setup all dependencies, run the following two commands. It is **CRITICAL** yo
 cd setup
 ./setup.sh
 ```
+
+Additionally, you will need to install OpenCV on your system. **TODO: FILL THIS IN LATER**
 
 ## Building
 

@@ -3,7 +3,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/steam_input.hpp"
-#include "autonav_libs/autonav.h"
+#include "autonav_libs/common.h"
 
 using std::placeholders::_1;
 

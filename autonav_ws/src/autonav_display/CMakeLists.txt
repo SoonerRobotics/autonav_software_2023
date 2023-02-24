@@ -10,6 +10,11 @@ find_package(ament_cmake REQUIRED)
 find_package(autonav_msgs REQUIRED)
 find_package(autonav_libs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4 NO_DEFAULT_PATH)
 
 # IMGUI Dependencies
 set(OpenGL_GL_PREFERENCE GLVND)
@@ -44,17 +49,25 @@ target_link_libraries(imgui PUBLIC glfw OpenGL::GL GLEW::GLEW)
 target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_INCLUDE_IMCONFIG_H)
 ament_export_targets(export_imgui HAS_LIBRARY_TARGET)
 
-add_executable(imgui_test src/main.cpp)
-ament_target_dependencies(imgui_test
-  "autonav_msgs"
-  "autonav_libs"
-  "rclcpp"
+add_executable(primary_display src/display.cpp)
+ament_target_dependencies(primary_display
+  autonav_msgs
+  autonav_libs
+  rclcpp
+  cv_bridge
+  image_transport
+  sensor_msgs
+  std_msgs
+  OpenCV
 )
-target_link_libraries(imgui_test imgui)
+target_link_libraries(primary_display imgui)
 
 ament_export_include_directories(include)
 ament_export_libraries(imgui)
 ament_export_dependencies(glfw OpenGL GLEW)
+
+# Set OpenCV include directories
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 install(FILES
   ${IMGUI_DIR}/imgui.h
@@ -75,10 +88,13 @@ install(TARGETS imgui EXPORT export_imgui
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-install(TARGETS imgui_test
+install(TARGETS primary_display
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+install(DIRECTORY ${IMGUI_DIR}/misc/fonts DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY fonts DESTINATION share/${PROJECT_NAME})
 
 ament_package()
