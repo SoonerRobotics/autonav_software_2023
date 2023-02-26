@@ -35,9 +35,9 @@ install(
 
 # Install and export python files
 ament_python_install_package(${PROJECT_NAME})
-install(
-  PROGRAMS ${PROJECT_NAME}/canbus.py ${PROJECT_NAME}/conbus.py
-  DESTINATION lib/${PROJECT_NAME}
-)
+# install(
+#   PROGRAMS ${PROJECT_NAME}/canbus.py ${PROJECT_NAME}/conbus.py
+#   DESTINATION lib/${PROJECT_NAME}
+# )
 
 ament_package()

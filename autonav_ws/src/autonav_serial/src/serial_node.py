@@ -3,49 +3,71 @@
 import rclpy
 import can
 import struct
+from enum import Enum
 
 from rclpy.node import Node
 from autonav_msgs.msg import MotorInput
-
-
-node: Node = None
-canbus: can.Bus = None
-
-MOTOR_CONTROL = 10
-MOTOR_OFFSET = 35
+from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState
 
 
 def clamp(n, minn, maxn):
     return max(min(maxn, n), minn)
 
 
-def onMotorInput(input: MotorInput):
-    global canbus
+MOTOR_CONTROL_ID = 10
 
-    left_speed = int(input.left_motor * MOTOR_OFFSET)
-    right_speed = int(input.right_motor * MOTOR_OFFSET)
-    packed_data = struct.pack("hh", left_speed, right_speed)
 
-    can_msg = can.Message(arbitration_id=MOTOR_CONTROL, data=packed_data)
+class Registers(Enum):
+    MOTOR_OFFSET = 0
 
-    try:
-        canbus.send(can_msg)
-    except can.CanError:
-        print("Failed to send motor message :(")
+
+class SerialMotors(AutoNode):
+    def __init__(self):
+        super().__init__(Device.SERIAL_IMU, "autonav_serial_motors")
+
+        self.motor_subscriber = self.create_subscription(
+            MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
+        self.canbus = None
+        self.config.writeFloat(Registers.MOTOR_OFFSET.value, 35.0)
+        
+        self.set_state(DeviceState.STANDBY)
+
+    def on_motor_input(self, input: MotorInput):
+        if self.canbus is None:
+            self.canbus = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
+        
+            try:
+                with open("/dev/autonav-can-835", "r") as f:
+                    pass
+
+                if self.state != DeviceState.OPERATING:
+                    self.set_state(DeviceState.OPERATING)
+            except:
+                self.canbus = None
+                if self.state != DeviceState.STANDBY:
+                    self.set_state(DeviceState.STANDBY)
+
+        left_speed = int(input.left_motor *
+                         self.config.readFloat(Registers.MOTOR_OFFSET.value))
+        right_speed = int(input.right_motor *
+                          self.config.readFloat(Registers.MOTOR_OFFSET.value))
+        packed_data = struct.pack("hh", left_speed, right_speed)
+
+        can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
+
+        try:
+            self.canbus.send(can_msg)
+        except can.CanError:
+            print("Failed to send motor message :(")
+
 
 def main():
     global node, canbus
 
     rclpy.init()
-
-    node = rclpy.create_node("autonav_serial_core")
-    node.create_subscription(MotorInput, "/autonav/MotorInput", onMotorInput, 10)
-
-    canbus = can.ThreadSafeBus(bustype = "slcan", channel = "/dev/autonav-can-835", bitrate = 100000)    
-
-    rclpy.spin(node)
-    canbus.shutdown()
+    rclpy.spin(SerialMotors())
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()

@@ -18,6 +18,15 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
+enum Registers
+{
+	TIMEOUT_DELAY = 0,
+	STEERING_DEADZONE = 1,
+	THROTTLE_DEADZONE = 2,
+	MAX_SPEED = 3,
+	SPEED_OFFSET = 4
+};
+
 class SteamNode : public Autonav::ROS::AutoNode
 {
 public:
@@ -26,7 +35,13 @@ public:
 		subscription_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&SteamNode::on_steam_received, this, _1));
 		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 		timer_ = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&SteamNode::on_timer_elapsed, this));
-	
+
+		this->_config.write(Registers::TIMEOUT_DELAY, 500);
+		this->_config.write(Registers::STEERING_DEADZONE, 0.35f);
+		this->_config.write(Registers::THROTTLE_DEADZONE, 0.1f);
+		this->_config.write(Registers::MAX_SPEED, 2.0f);
+		this->_config.write(Registers::SPEED_OFFSET, 0.6f);
+		
 		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
 	}
 
@@ -34,7 +49,7 @@ private:
 	void on_timer_elapsed()
 	{
 		long currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-		if (currentTime - lastMessageTime < 500)
+		if (currentTime - lastMessageTime < this->_config.read<int32_t>(Registers::TIMEOUT_DELAY) || this->_systemState != Autonav::State::SystemState::MANUAL)
 		{
 			return;
 		}
@@ -49,11 +64,17 @@ private:
 	{
 		lastMessageTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
+		if (this->_systemState != Autonav::State::SystemState::MANUAL)
+		{
+			return;
+		}
+
 		float throttle = 0;
 		float steering = 0;
-		const float deadzone = 0.1f;
-		const float maxSpeed = 2.0f;
-		const float steeringVoid = 0.35f;
+		const float deadzone = this->_config.read<float>(Registers::THROTTLE_DEADZONE);
+		const float maxSpeed = this->_config.read<float>(Registers::MAX_SPEED);
+		const float steeringVoid = this->_config.read<float>(Registers::STEERING_DEADZONE);
+		const float offset = this->_config.read<float>(Registers::SPEED_OFFSET);
 
 		if (abs(msg.ltrig) > deadzone || abs(msg.rtrig) > deadzone)
 		{
@@ -73,8 +94,8 @@ private:
 		}
 
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = clamp(throttle - steering * 0.6, -maxSpeed, maxSpeed);
-		package.right_motor = clamp(throttle + steering * 0.6, -maxSpeed, maxSpeed);
+		package.left_motor = clamp(throttle - steering * offset, -maxSpeed, maxSpeed);
+		package.right_motor = clamp(throttle + steering * offset, -maxSpeed, maxSpeed);
 		motor_publisher->publish(package);
 	}
 

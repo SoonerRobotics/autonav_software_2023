@@ -39,6 +39,11 @@ static void glfw_error_callback(int error, const char *description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+enum Register
+{
+	FONT_SIZE = 0
+};
+
 class DisplayNode : public Autonav::ROS::AutoNode
 {
 public:
@@ -52,9 +57,6 @@ public:
 		steam_subscriber_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::on_steam_data, this, std::placeholders::_1));
 		camera_subscriber_ = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::on_camera_data, this, std::placeholders::_1));
 		render_clock = this->create_wall_timer(std::chrono::milliseconds(1000 / 60), std::bind(&DisplayNode::render, this));
-
-		// Default Configuration
-		_config.write(0, 32);
 	}
 
 	~DisplayNode()
@@ -109,7 +111,7 @@ public:
 
 		// Custom Font
 		std::string path = ament_index_cpp::get_package_share_directory(this->get_name());
-		auto font = io.Fonts->AddFontFromFileTTF((path + "/fonts/RobotoMono-VariableFont_wght.ttf").c_str(), 32.0f);
+		auto font = io.Fonts->AddFontFromFileTTF((path + "/fonts/RobotoMono-VariableFont_wght.ttf").c_str(), 24.0f);
 		io.FontDefault = font;
 		ImGui_ImplOpenGL3_DestroyFontsTexture();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
@@ -123,6 +125,8 @@ public:
 
 		// Send out our device state
 		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
+
+		this->_config.requestAllRemoteRegisters();
 	}
 
 	void render()
@@ -141,6 +145,7 @@ public:
 		glfwPollEvents();
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
+
 		ImGui::NewFrame();
 
 		{
@@ -184,7 +189,7 @@ public:
 					}
 
 					ImGui::SeparatorText("Device States");
-					for(auto it = _deviceStates.begin(); it != _deviceStates.end(); it++)
+					for (auto it = _deviceStates.begin(); it != _deviceStates.end(); it++)
 					{
 						auto device = it->first;
 						auto state = it->second;
@@ -213,7 +218,64 @@ public:
 
 				if (ImGui::BeginTabItem("Configuration"))
 				{
-					ImGui::Text("Font Size: %d", _config.read<int32_t>(0));
+					if (ImGui::Checkbox("Show Raw", &this->show_conbus_raw))
+					{
+					}
+
+					if (ImGui::Button("Request All"))
+					{
+						this->_config.requestAllRemoteRegisters();
+					}
+
+					for (auto it = this->_config.begin(); it != this->_config.end(); it++)
+					{
+						auto register_id = it->first;
+						ImGui::SeparatorText(Autonav::deviceToString((Autonav::Device)register_id).c_str());
+						for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+						{
+							auto address = it2->first;
+							ImGui::Text("0x%02X:", address);
+							auto type = it2->second[0];
+							if (type == Autonav::Configuration::AddressType::INTEGER)
+							{
+								int value = _config.read<int32_t>((Autonav::Device)register_id, address);
+								if (ImGui::InputInt((std::to_string(address) + std::to_string(register_id)).c_str(), &value))
+								{
+									_config.writeTo((Autonav::Device)register_id, address, value);
+								}
+							}
+							else if (type == Autonav::Configuration::AddressType::FLOAT)
+							{
+								float value = _config.read<float>((Autonav::Device)register_id, address);
+								if (ImGui::InputFloat((std::to_string(address) + std::to_string(register_id)).c_str(), &value))
+								{
+									_config.writeTo((Autonav::Device)register_id, address, value);
+								}
+							}
+							else if (type == Autonav::Configuration::AddressType::BOOLEAN)
+							{
+								bool value = _config.read<bool>((Autonav::Device)register_id, address);
+								if (ImGui::Checkbox((std::to_string(address) + std::to_string(register_id)).c_str(), &value))
+								{
+									_config.writeTo((Autonav::Device)register_id, address, value);
+								}
+							}
+							if (this->show_conbus_raw)
+							{
+								// Print raw bytes on the same line
+								ImGui::SameLine();
+								ImGui::Text(" : ");
+								ImGui::SameLine();
+								for (int i = 0; i < it2->second.size(); i++)
+								{
+									ImGui::SameLine();
+									ImGui::Text("%02X", it2->second[i]);
+								}
+							}
+							ImGui::NewLine();
+						}
+					}
+
 					ImGui::EndTabItem();
 				}
 
@@ -314,10 +376,12 @@ public:
 			return;
 		}
 
-		// Convert to opencv mat
 		this->has_image = true;
 		this->image = cv_ptr->image;
 	}
+
+private:
+	bool show_conbus_raw = false;
 
 private:
 	rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr conbus_subscriber_;

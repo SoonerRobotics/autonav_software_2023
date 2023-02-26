@@ -1,5 +1,8 @@
 #include "autonav_libs/common.h"
 
+// cout includes
+#include <iostream>
+
 namespace Autonav
 {
 	namespace ROS
@@ -64,7 +67,7 @@ namespace Autonav
 		{
 			_device = device;
 
-			// _conbusSubscriber = node.create_subscription<autonav_msgs::msg::ConBusInstruction>("/autonav/conbus", 10, std::bind(&Conbus::onConbus, this, std::placeholders::_1));
+			_conbusSubscriber = node->create_subscription<autonav_msgs::msg::ConBusInstruction>("/autonav/conbus", 10, std::bind(&Conbus::onConbusInstruction, this, std::placeholders::_1));
 			_conbusPublisher = node->create_publisher<autonav_msgs::msg::ConBusInstruction>("/autonav/conbus", 10);
 		}
 
@@ -73,199 +76,82 @@ namespace Autonav
 		}
 
 		// TODO: Tell everyone else about our config changes!
-		void Conbus::write(uint8_t address, std::vector<uint8_t> data)
+		void Conbus::writeBytes(uint8_t address, std::vector<uint8_t> data)
 		{
-			this->_registers[_device][address] = data;
+			_registers[_device][address] = data;
+
+			auto msg = autonav_msgs::msg::ConBusInstruction();
+			msg.device = static_cast<uint8_t>(_device);
+			msg.address = address;
+			msg.data = data;
+			msg.opcode = ConbusOpcode::READ_ACK;
+			_conbusPublisher->publish(msg);
 		}
 
-		void Conbus::write(uint8_t address, uint8_t data)
-		{
-			this->_registers[_device][address] = {data};
-		}
-
-		void Conbus::write(uint8_t address, uint16_t data)
-		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)};
-		}
-
-		void Conbus::write(uint8_t address, uint32_t data)
-		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)};
-		}
-
-		void Conbus::write(uint8_t address, uint64_t data)
-		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data >> 56), static_cast<uint8_t>(data >> 48), static_cast<uint8_t>(data >> 40), static_cast<uint8_t>(data >> 32), static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)};
-		}
-
-		void Conbus::write(uint8_t address, int8_t data)
-		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data)};
-		}
-
-		void Conbus::write(uint8_t address, int16_t data)
-		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)};
-		}
 
 		void Conbus::write(uint8_t address, int32_t data)
 		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)};
-		}
-
-		void Conbus::write(uint8_t address, int64_t data)
-		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data >> 56), static_cast<uint8_t>(data >> 48), static_cast<uint8_t>(data >> 40), static_cast<uint8_t>(data >> 32), static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)};
+			writeBytes(address, {AddressType::INTEGER, 0, static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
 		}
 
 		void Conbus::write(uint8_t address, float data)
 		{
-			auto dataInt = *reinterpret_cast<uint32_t *>(&data) & 0xFFFFFFFF;
-			this->_registers[_device][address] = {static_cast<uint8_t>(dataInt >> 24), static_cast<uint8_t>(dataInt >> 16), static_cast<uint8_t>(dataInt >> 8), static_cast<uint8_t>(dataInt & 0xFF)};
+			auto dataInt = static_cast<int32_t>(data * FLOAT_PRECISION);
+			writeBytes(address, {AddressType::FLOAT, 0, static_cast<uint8_t>(dataInt >> 24), static_cast<uint8_t>(dataInt >> 16), static_cast<uint8_t>(dataInt >> 8), static_cast<uint8_t>(dataInt & 0xFF)});
 		}
 
 		void Conbus::write(uint8_t address, bool data)
 		{
-			this->_registers[_device][address] = {static_cast<uint8_t>(data)};
+			writeBytes(address, {AddressType::BOOLEAN, 0, static_cast<uint8_t>(data)});
 		}
 
 		// Read
-
-		template <>
-		std::vector<uint8_t> Conbus::read(uint8_t address)
-		{
-			return this->_registers[_device][address];
-		}
-
-		template <>
-		uint8_t Conbus::read(uint8_t address)
-		{
-			return this->_registers[_device][address][0];
-		}
-
-		template <>
-		uint16_t Conbus::read(uint8_t address)
-		{
-			return (this->_registers[_device][address][0] << 8) | this->_registers[_device][address][1];
-		}
-
-		template <>
-		uint32_t Conbus::read(uint8_t address)
-		{
-			return (this->_registers[_device][address][0] << 24) | (this->_registers[_device][address][1] << 16) | (this->_registers[_device][address][2] << 8) | this->_registers[_device][address][3];
-		}
-
-		template <>
-		uint64_t Conbus::read(uint8_t address)
-		{
-			return (this->_registers[_device][address][0] << 56) | (this->_registers[_device][address][1] << 48) | (this->_registers[_device][address][2] << 40) | (this->_registers[_device][address][3] << 32) | (this->_registers[_device][address][4] << 24) | (this->_registers[_device][address][5] << 16) | (this->_registers[_device][address][6] << 8) | this->_registers[_device][address][7];
-		}
-
-		template <>
-		int8_t Conbus::read(uint8_t address)
-		{
-			return static_cast<int8_t>(this->_registers[_device][address][0]);
-		}
-
-		template <>
-		int16_t Conbus::read(uint8_t address)
-		{
-			return static_cast<int16_t>((this->_registers[_device][address][0] << 8) | this->_registers[_device][address][1]);
-		}
-
 		template <>
 		int32_t Conbus::read(uint8_t address)
 		{
-			return static_cast<int32_t>((this->_registers[_device][address][0] << 24) | (this->_registers[_device][address][1] << 16) | (this->_registers[_device][address][2] << 8) | this->_registers[_device][address][3]);
-		}
-
-		template <>
-		int64_t Conbus::read(uint8_t address)
-		{
-			return static_cast<int64_t>((this->_registers[_device][address][0] << 56) | (this->_registers[_device][address][1] << 48) | (this->_registers[_device][address][2] << 40) | (this->_registers[_device][address][3] << 32) | (this->_registers[_device][address][4] << 24) | (this->_registers[_device][address][5] << 16) | (this->_registers[_device][address][6] << 8) | this->_registers[_device][address][7]);
+			return static_cast<int32_t>((this->_registers[_device][address][2] << 24) | (this->_registers[_device][address][3] << 16) | (this->_registers[_device][address][24] << 8) | this->_registers[_device][address][5]);
 		}
 
 		template <>
 		float Conbus::read(uint8_t address)
 		{
-			auto dataInt = (this->_registers[_device][address][0] << 24) | (this->_registers[_device][address][1] << 16) | (this->_registers[_device][address][2] << 8) | this->_registers[_device][address][3];
-			dataInt &= 0xFFFFFFFF;
-			return *reinterpret_cast<float *>(&dataInt);
+			auto data = static_cast<uint32_t>((this->_registers[_device][address][2] << 24) | (this->_registers[_device][address][3] << 16) | (this->_registers[_device][address][4] << 8) | this->_registers[_device][address][5]);
+			float realData = data / FLOAT_PRECISION;
+			return realData;
 		}
 
 		template <>
 		bool Conbus::read(uint8_t address)
 		{
-			return this->_registers[_device][address][0] != 0;
+			return this->_registers[_device][address][2] != 0;
 		}
 
 		// Write To
-
 		void Conbus::publishWrite(Device device, uint8_t address, std::vector<uint8_t> data)
 		{
 			auto msg = autonav_msgs::msg::ConBusInstruction();
 			msg.device = device;
 			msg.address = address;
 			msg.data = data;
-			msg.opcode = 2;
+			msg.opcode = ConbusOpcode::WRITE;
 			_conbusPublisher->publish(msg);
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, std::vector<uint8_t> data)
-		{
-			this->publishWrite(device, address, data);
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, uint8_t data)
-		{
-			this->publishWrite(device, address, {data});
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, uint16_t data)
-		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, uint32_t data)
-		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, uint64_t data)
-		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data >> 56), static_cast<uint8_t>(data >> 48), static_cast<uint8_t>(data >> 40), static_cast<uint8_t>(data >> 32), static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, int8_t data)
-		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data)});
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, int16_t data)
-		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
 		}
 
 		void Conbus::writeTo(Device device, uint8_t address, int32_t data)
 		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
-		}
-
-		void Conbus::writeTo(Device device, uint8_t address, int64_t data)
-		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data >> 56), static_cast<uint8_t>(data >> 48), static_cast<uint8_t>(data >> 40), static_cast<uint8_t>(data >> 32), static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
+			auto dataBytes = std::vector<uint8_t>();
+			this->publishWrite(device, address, {AddressType::INTEGER, 0, static_cast<uint8_t>(data >> 24), static_cast<uint8_t>(data >> 16), static_cast<uint8_t>(data >> 8), static_cast<uint8_t>(data & 0xFF)});
 		}
 
 		void Conbus::writeTo(Device device, uint8_t address, float data)
 		{
-			auto dataInt = *reinterpret_cast<uint32_t *>(&data);
-			dataInt &= 0xFFFFFFFF;
-			this->publishWrite(device, address, {static_cast<uint8_t>(dataInt >> 24), static_cast<uint8_t>(dataInt >> 16), static_cast<uint8_t>(dataInt >> 8), static_cast<uint8_t>(dataInt & 0xFF)});
+			auto dataInt = static_cast<int32_t>(data * FLOAT_PRECISION);
+			this->publishWrite(device, address, {AddressType::FLOAT, 0, static_cast<uint8_t>(dataInt >> 24), static_cast<uint8_t>(dataInt >> 16), static_cast<uint8_t>(dataInt >> 8), static_cast<uint8_t>(dataInt & 0xFF)});
 		}
 
 		void Conbus::writeTo(Device device, uint8_t address, bool data)
 		{
-			this->publishWrite(device, address, {static_cast<uint8_t>(data)});
+			this->publishWrite(device, address, {AddressType::BOOLEAN, 0, static_cast<uint8_t>(data)});
 		}
 
 		// Read From
@@ -275,7 +161,7 @@ namespace Autonav
 			auto msg = autonav_msgs::msg::ConBusInstruction();
 			msg.device = device;
 			msg.address = address;
-			msg.opcode = 0;
+			msg.opcode = ConbusOpcode::READ;
 			_conbusPublisher->publish(msg);
 		}
 
@@ -284,61 +170,146 @@ namespace Autonav
 			this->publishRead(device, address);
 		}
 
-		void Conbus::requestAllRemoteRegisters(Device device)
+		void Conbus::requestAllRemoteRegistersFrom(Device device)
 		{
 			auto msg = autonav_msgs::msg::ConBusInstruction();
 			msg.device = device;
 			msg.address = 0;
-			msg.opcode = 5;
+			msg.opcode = ConbusOpcode::READ_ALL;
 			_conbusPublisher->publish(msg);
+		}
+
+		void Conbus::requestAllRemoteRegisters()
+		{
+			requestAllRemoteRegistersFrom(Autonav::Device::LOGGING);
+			requestAllRemoteRegistersFrom(Autonav::Device::MANUAL_CONTROL);
+			requestAllRemoteRegistersFrom(Autonav::Device::SERIAL_CAN);
+			requestAllRemoteRegistersFrom(Autonav::Device::SERIAL_IMU);
+			requestAllRemoteRegistersFrom(Autonav::Device::STEAM_TRANSLATOR);
+		}
+
+		template <>
+		bool Conbus::read(Device device, uint8_t address)
+		{
+			return this->_registers[device][address][2] != 0;
+		}
+
+		template <>
+		int32_t Conbus::read(Device device, uint8_t address)
+		{
+			return static_cast<int32_t>((this->_registers[device][address][2] << 24) | (this->_registers[device][address][3] << 16) | (this->_registers[device][address][4] << 8) | this->_registers[device][address][5]);
+		}
+
+		template <>
+		float Conbus::read(Device device, uint8_t address)
+		{
+			auto data = (this->_registers[device][address][2] << 24) | (this->_registers[device][address][3] << 16) | (this->_registers[device][address][4] << 8) | this->_registers[device][address][5];
+			float realData = data / FLOAT_PRECISION;
+			return realData;
 		}
 
 		// Callbacks
 
 		void Conbus::onConbusInstruction(const autonav_msgs::msg::ConBusInstruction::SharedPtr msg)
 		{
-			if (msg->opcode == 0 && msg->device == _device)
+			if (msg->opcode == ConbusOpcode::READ && msg->device == _device)
 			{
-				auto registerData = this->_registers[_device][msg->address];
+				if (this->_registers.find(_device) == this->_registers.end())
+				{
+					return;
+				}
+
+				auto deviceRegister = this->_registers[_device];
+				if (deviceRegister.find(msg->address) == deviceRegister.end())
+				{
+					return;
+				}
+
+				auto registerData = deviceRegister[msg->address];
+				if (registerData.size() == 0)
+				{
+					return;
+				}
+
 				auto reply = autonav_msgs::msg::ConBusInstruction();
 				reply.device = _device;
 				reply.address = msg->address;
-				reply.opcode = 1;
+				reply.opcode = ConbusOpcode::READ_ACK;
 				reply.data = registerData;
 				_conbusPublisher->publish(reply);
+			}
+
+			if (msg->opcode == ConbusOpcode::READ_ACK)
+			{
+				if(this->_registers.find(msg->device) == this->_registers.end())
+				{
+					auto newRegister = std::map<uint8_t, std::vector<uint8_t>>();
+					newRegister[msg->address] = msg->data;
+					this->_registers[msg->device] = newRegister;
+					return;
+				}
+
+				auto deviceRegister = this->_registers[msg->device];
+				deviceRegister[msg->address] = msg->data;
+				this->_registers[msg->device] = deviceRegister;
+			}
+
+			if (msg->opcode == ConbusOpcode::WRITE && msg->device == _device)
+			{
+				if(this->_registers.find(msg->device) == this->_registers.end())
+				{
+					auto deviceRegister = std::map<uint8_t, std::vector<uint8_t>>();
+					deviceRegister[msg->address] = msg->data;
+					this->_registers[msg->device] = deviceRegister;
+					return;
+				}
+
+				auto deviceRegister = this->_registers[msg->device];
+				deviceRegister[msg->address] = msg->data;
+				this->_registers[msg->device] = deviceRegister;
 				return;
 			}
 
-			if (msg->opcode == 1)
+			if (msg->opcode == ConbusOpcode::WRITE_ACK)
 			{
-				auto deviceRegisters = this->_registers[msg->device];
-				deviceRegisters[msg->address] = msg->data;
-				this->_registers[msg->device] = deviceRegisters;
+				if(this->_registers.find(msg->device) == this->_registers.end())
+				{
+					auto newRegister = std::map<uint8_t, std::vector<uint8_t>>();
+					newRegister[msg->address] = msg->data;
+					this->_registers[msg->device] = newRegister;
+					return;
+				}
+
+				auto deviceRegister = this->_registers[msg->device];
+				deviceRegister[msg->address] = msg->data;
+				this->_registers[msg->device] = deviceRegister;
 				return;
 			}
 
-			if (msg->opcode == 2)
+			if (msg->opcode == ConbusOpcode::READ_ALL && msg->device == _device)
 			{
-				// Write to a register
-				auto deviceRegisters = this->_registers[msg->device];
-				deviceRegisters[msg->address] = msg->data;
-				this->_registers[msg->device] = deviceRegisters;
-				return;
-			}
-
-			if (msg->opcode == 5 && msg->device == _device)
-			{
-				// Read all of our registers and publish them as opcode 1
 				for (auto const &[address, data] : this->_registers[_device])
 				{
 					auto msg = autonav_msgs::msg::ConBusInstruction();
 					msg.device = _device;
 					msg.address = address;
-					msg.opcode = 1;
+					msg.opcode = ConbusOpcode::READ_ACK;
 					msg.data = data;
 					_conbusPublisher->publish(msg);
 				}
 			}
+		}
+
+		// Iterators
+		
+		std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator Conbus::begin()
+		{
+			return _registers.begin();
+		}
+
+		std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator Conbus::end()
+		{
+			return _registers.end();
 		}
 	}
 }

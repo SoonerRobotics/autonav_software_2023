@@ -11,12 +11,14 @@ namespace Autonav
 {
     enum Device : uint8_t
     {
+        FIRST = 1,
         STEAM_TRANSLATOR = 100,
         MANUAL_CONTROL = 101,
         DISPLAY_NODE = 102,
         SERIAL_IMU = 103,
         SERIAL_CAN = 104,
-        LOGGING = 105
+        LOGGING = 105,
+        LAST = 255
     };
 
     namespace State
@@ -91,6 +93,25 @@ namespace Autonav
 
     namespace Configuration
     {
+		const int FLOAT_PRECISION = 10000000;
+		const int MAX_DEVICE_ID = 200;
+
+        enum ConbusOpcode
+        {
+            READ = 0,
+            READ_ACK = 1,
+            WRITE = 2,
+            WRITE_ACK = 3,
+            READ_ALL = 4
+        };
+
+        enum AddressType
+        {
+            INTEGER = 0,
+            FLOAT = 1,
+            BOOLEAN = 2
+        };
+
         class Conbus
         {
         public:
@@ -98,36 +119,28 @@ namespace Autonav
             ~Conbus();
 
         public:
-            void write(uint8_t registerAddress, std::vector<uint8_t> data);
-            void write(uint8_t registerAddress, uint8_t data);
-            void write(uint8_t registerAddress, uint16_t data);
-            void write(uint8_t registerAddress, uint32_t data);
-            void write(uint8_t registerAddress, uint64_t data);
-            void write(uint8_t registerAddress, int8_t data);
-            void write(uint8_t registerAddress, int16_t data);
+            void writeBytes(uint8_t registerAddress, std::vector<uint8_t> data);
             void write(uint8_t registerAddress, int32_t data);
-            void write(uint8_t registerAddress, int64_t data);
             void write(uint8_t registerAddress, float data);
             void write(uint8_t registerAddress, bool data);
 
-            void writeTo(Device device, uint8_t registerAddress, std::vector<uint8_t> data);
-            void writeTo(Device device, uint8_t registerAddress, uint8_t data);
-            void writeTo(Device device, uint8_t registerAddress, uint16_t data);
-            void writeTo(Device device, uint8_t registerAddress, uint32_t data);
-            void writeTo(Device device, uint8_t registerAddress, uint64_t data);
-            void writeTo(Device device, uint8_t registerAddress, int8_t data);
-            void writeTo(Device device, uint8_t registerAddress, int16_t data);
             void writeTo(Device device, uint8_t registerAddress, int32_t data);
-            void writeTo(Device device, uint8_t registerAddress, int64_t data);
             void writeTo(Device device, uint8_t registerAddress, float data);
             void writeTo(Device device, uint8_t registerAddress, bool data);
 
             template <typename T>
             T read(uint8_t registerAddress);
 
-            void requestRemoteRegister(Device device, uint8_t registerAddress);
-            void requestAllRemoteRegisters(Device device);
+            template <typename T>
+            T read(Device device, uint8_t registerAddress);
 
+            void requestRemoteRegister(Device device, uint8_t registerAddress);
+            void requestAllRemoteRegistersFrom(Device device);
+            void requestAllRemoteRegisters();
+
+            // Create iterators to read through devices
+            std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator begin();
+            std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator end();
         private:
             void publishWrite(Device device, uint8_t address, std::vector<uint8_t> data);
             void publishRead(Device device, uint8_t address);
