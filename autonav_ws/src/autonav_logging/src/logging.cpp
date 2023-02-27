@@ -49,12 +49,12 @@ void append_to_file(const std::string &name, const std::string &contents)
 	out.close();
 }
 
-class SteamNode : public rclcpp::Node
+class JoyNode : public rclcpp::Node
 {
 public:
-	SteamNode() : Node("autonav_logging")
+	JoyNode() : Node("autonav_logging")
 	{
-		subscription_ = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&SteamNode::on_log_received, this, _1));
+		subscription_ = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&JoyNode::on_log_received, this, _1));
 	}
 
 private:
@@ -69,7 +69,7 @@ private:
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<SteamNode>());
+	rclcpp::spin(std::make_shared<JoyNode>());
 	rclcpp::shutdown();
 	return 0;
 }

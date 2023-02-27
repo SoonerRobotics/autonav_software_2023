@@ -1,17 +1,18 @@
 import rclpy
+import time
 from rclpy.node import Node
 from enum import Enum
-
 from autonav_msgs.msg import ConBusInstruction, Log, DeviceState, SystemState
 
 
 class Device(Enum):
     STEAM_TRANSLATOR = 100
-    MANUAL_CONTROL = 101
-    DISPLAY_NODE = 102
-    SERIAL_IMU = 103
-    SERIAL_CAN = 104
-    LOGGING = 105
+    MANUAL_CONTROL_STEAM = 101
+    MANUAL_CONTROL_XBOX = 102
+    DISPLAY_NODE = 103
+    SERIAL_IMU = 104
+    SERIAL_CAN = 105
+    LOGGING = 106
 
 
 class DeviceStateEnum(Enum):
@@ -42,12 +43,6 @@ class LogLevel(Enum):
     WARNING = 2
     ERROR = 3
     CRITICAL = 4
-    
-
-class AddressType(Enum):
-    INTEGER = 0
-    FLOAT = 1
-    BOOL = 2
 
 
 FLOAT_PRECISION = 10000000.0
@@ -66,20 +61,20 @@ class Conbus:
 
     def intToBytes(self, data: int):
         byts = data.to_bytes(4, byteorder="big", signed=True)
-        byts = bytes([AddressType.INTEGER.value, 0]) + byts
+        byts = bytes([0]) + byts
         return byts
 
     def floatToBytes(self, data: float):
         data = int(data * FLOAT_PRECISION)
         byts = self.intToBytes(data)
-        byts = bytes([AddressType.FLOAT.value, 0]) + byts[2:]
+        byts = bytes([0]) + byts[1:]
         return byts
 
     def boolToBytes(self, data: bool):
         if data:
-            return bytes([AddressType.BOOL.value, 0, 1])
+            return bytes([0, 1])
         else:
-            return bytes([AddressType.BOOL.value, 0, 0])
+            return bytes([0, 0])
 
     def write(self, address: int, data: bytes, dontPublish=False):
         if self.device.value not in self.registers:
@@ -118,14 +113,14 @@ class Conbus:
         if byts is None:
             return None
 
-        if len(byts) == 6:
+        if len(byts) == 5:
             # Convert last 4 bytes from big endian to int
-            return int.from_bytes(byts[2:], byteorder="big", signed=True)
+            return int.from_bytes(byts[1:], byteorder="big", signed=True)
 
         raise Exception("Invalid integer size")
 
     def readBool(self, address: int):
-        return bool(self.readInt(address))
+        return self.readBytes(address)[1] == 1
 
     def readFloat(self, address: int):
         return self.readInt(address) / FLOAT_PRECISION
@@ -193,6 +188,17 @@ class AutoNode(Node):
         self.system_state = SystemState()
         self.system_state.estop = False
         self.system_state.state = SystemStateEnum.DISABLED.value
+        
+        # Set all device states to OFF
+        self.deviceStates[Device.DISPLAY_NODE] = DeviceStateEnum.OFF
+        self.deviceStates[Device.LOGGING] = DeviceStateEnum.OFF
+        self.deviceStates[Device.MANUAL_CONTROL_STEAM] = DeviceStateEnum.OFF
+        self.deviceStates[Device.MANUAL_CONTROL_XBOX] = DeviceStateEnum.OFF
+        self.deviceStates[Device.SERIAL_CAN] = DeviceStateEnum.OFF
+        self.deviceStates[Device.SERIAL_IMU] = DeviceStateEnum.OFF
+        
+        
+        time.sleep(1)
         
         self.set_state(DeviceStateEnum.STANDBY)
         

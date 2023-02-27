@@ -27,14 +27,14 @@ enum Registers
 	SPEED_OFFSET = 4
 };
 
-class SteamNode : public Autonav::ROS::AutoNode
+class JoyNode : public Autonav::ROS::AutoNode
 {
 public:
-	SteamNode() : AutoNode(Autonav::Device::MANUAL_CONTROL, "remote_steamcontroller")
+	JoyNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_STEAM, "remote_steamcontroller")
 	{
-		subscription_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&SteamNode::on_steam_received, this, _1));
+		subscription_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&JoyNode::on_steam_received, this, _1));
 		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
-		timer_ = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&SteamNode::on_timer_elapsed, this));
+		timer_ = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
 
 		this->_config.write(Registers::TIMEOUT_DELAY, 500);
 		this->_config.write(Registers::STEERING_DEADZONE, 0.35f);
@@ -107,7 +107,7 @@ private:
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<SteamNode>());
+	rclcpp::spin(std::make_shared<JoyNode>());
 	rclcpp::shutdown();
 	return 0;
 }

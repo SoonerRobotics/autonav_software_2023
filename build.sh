@@ -1,3 +1,3 @@
 source /opt/ros/humble/setup.bash
 cd autonav_ws
-colcon build
+colcon build --symlink-install

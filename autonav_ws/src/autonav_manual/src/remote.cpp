@@ -16,13 +16,13 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-class SteamNode : public rclcpp::Node
+class JoyNode : public rclcpp::Node
 {
 public:
-	SteamNode() : Node("autonav_manual_remote")
+	JoyNode() : Node("autonav_manual_remote")
 	{
 		subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
-			"/joy", 10, std::bind(&SteamNode::on_joy_received, this, _1));
+			"/joy", 10, std::bind(&JoyNode::on_joy_received, this, _1));
 
 		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
 	}
@@ -58,7 +58,7 @@ private:
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<SteamNode>());
+	rclcpp::spin(std::make_shared<JoyNode>());
 	rclcpp::shutdown();
 	return 0;
 }

@@ -39,10 +39,135 @@ static void glfw_error_callback(int error, const char *description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-enum Register
+static ImVec4 deviceStateToColor(Autonav::State::DeviceState state)
 {
-	FONT_SIZE = 0
-};
+	switch (state)
+	{
+	case Autonav::State::DeviceState::OFF:
+		return ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+	case Autonav::State::DeviceState::STANDBY:
+		return ImVec4(0.5f, 0.5f, 0.0f, 1.0f);
+	case Autonav::State::DeviceState::READY:
+		return ImVec4(0.0f, 0.5f, 0.0f, 1.0f);
+	case Autonav::State::DeviceState::OPERATING:
+		return ImVec4(0.0f, 0.5f, 0.5f, 1.0f);
+	default:
+		return ImVec4(0.5f, 0.0f, 0.0f, 1.0f);
+	}
+}
+
+void showSerialConfiguration(Autonav::ROS::AutoNode *node)
+{
+	auto can_reg = node->_config.getRegistersForDevice(Autonav::Device::SERIAL_CAN);
+	if (can_reg.size() == 0)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("Serial Configuration");
+	for (auto it = can_reg.begin(); it != can_reg.end(); it++)
+	{
+		auto address = it->first;
+		auto data = it->second;
+
+		switch (address)
+		{
+		case 0: // Motor Offset
+		{
+			auto data = node->_config.read<float>(Autonav::Device::SERIAL_CAN, address);
+			if (ImGui::InputFloat("Motor Offset", &data))
+			{
+				node->_config.writeTo(Autonav::Device::SERIAL_CAN, address, data);
+			}
+			break;
+		}
+		}
+	}
+}
+
+void showIMUConfiguration(Autonav::ROS::AutoNode *node)
+{
+	auto imu_reg = node->_config.getRegistersForDevice(Autonav::Device::SERIAL_IMU);
+	if (imu_reg.size() == 0)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("IMU Configuration");
+	for (auto it = imu_reg.begin(); it != imu_reg.end(); it++)
+	{
+		auto address = it->first;
+		auto data = it->second;
+
+		switch (address)
+		{
+		case 0: // Read Rate
+		case 1: // Not Found Retry Time
+		case 2: // Bad Connection Retry
+		{
+			auto data = node->_config.read<float>(Autonav::Device::SERIAL_IMU, address);
+			auto title = address == 0 ? "Read Rate (s)" : address == 1 ? "Not Found Retry (s)"
+																	   : "Bad Connection Retry (s)";
+			if (ImGui::InputFloat(title, &data))
+			{
+				node->_config.writeTo(Autonav::Device::SERIAL_IMU, address, data);
+			}
+			break;
+		}
+		}
+	}
+}
+
+void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
+{
+	auto steam_reg = node->_config.getRegistersForDevice(Autonav::Device::MANUAL_CONTROL_STEAM);
+	if (steam_reg.size() == 0)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("Steam Controller Configuration");
+	for (auto it = steam_reg.begin(); it != steam_reg.end(); it++)
+	{
+		auto address = it->first;
+		auto data = it->second;
+
+		switch (address)
+		{
+		case 0: // Timeout Delay
+		{
+			auto data = node->_config.read<int32_t>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
+			if (ImGui::InputInt("Timeout Delay", &data))
+			{
+				node->_config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
+			}
+			break;
+		}
+
+		case 1: // Steering Deadzone
+		case 2: // Throttle Deadzone
+		case 3: // Max Speed
+		case 4: // Speed Offset
+		{
+			auto data = node->_config.read<float>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
+			auto title = address == 1 ? "Steering Deadzone" : address == 2 ? "Throttle Deadzone"
+														  : address == 3   ? "Max Speed"
+																		   : "Speed Offset";
+			if (ImGui::InputFloat(title, &data))
+			{
+				node->_config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
+			}
+			break;
+		}
+		}
+	}
+}
+
+void showNodeState(Autonav::ROS::AutoNode *node, Autonav::Device device)
+{
+	auto state = node->_deviceStates[device];
+	ImGui::TextColored(deviceStateToColor(state), "%s: %s", Autonav::deviceToString(device), Autonav::deviceStateToString(state));
+}
 
 class DisplayNode : public Autonav::ROS::AutoNode
 {
@@ -189,12 +314,13 @@ public:
 					}
 
 					ImGui::SeparatorText("Device States");
-					for (auto it = _deviceStates.begin(); it != _deviceStates.end(); it++)
-					{
-						auto device = it->first;
-						auto state = it->second;
-						ImGui::Text("%s: %s", Autonav::deviceToString(device).c_str(), Autonav::deviceStateToString(state).c_str());
-					}
+					showNodeState(this, Autonav::Device::DISPLAY_NODE);
+					showNodeState(this, Autonav::Device::LOGGING);
+					showNodeState(this, Autonav::Device::MANUAL_CONTROL_STEAM);
+					showNodeState(this, Autonav::Device::MANUAL_CONTROL_XBOX);
+					showNodeState(this, Autonav::Device::SERIAL_CAN);
+					showNodeState(this, Autonav::Device::SERIAL_IMU);
+					showNodeState(this, Autonav::Device::STEAM_TRANSLATOR);
 
 					if (this->has_image)
 					{
@@ -227,54 +353,9 @@ public:
 						this->_config.requestAllRemoteRegisters();
 					}
 
-					for (auto it = this->_config.begin(); it != this->_config.end(); it++)
-					{
-						auto register_id = it->first;
-						ImGui::SeparatorText(Autonav::deviceToString((Autonav::Device)register_id).c_str());
-						for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
-						{
-							auto address = it2->first;
-							ImGui::Text("0x%02X:", address);
-							auto type = it2->second[0];
-							if (type == Autonav::Configuration::AddressType::INTEGER)
-							{
-								int value = _config.read<int32_t>((Autonav::Device)register_id, address);
-								if (ImGui::InputInt((std::to_string(address) + std::to_string(register_id)).c_str(), &value))
-								{
-									_config.writeTo((Autonav::Device)register_id, address, value);
-								}
-							}
-							else if (type == Autonav::Configuration::AddressType::FLOAT)
-							{
-								float value = _config.read<float>((Autonav::Device)register_id, address);
-								if (ImGui::InputFloat((std::to_string(address) + std::to_string(register_id)).c_str(), &value))
-								{
-									_config.writeTo((Autonav::Device)register_id, address, value);
-								}
-							}
-							else if (type == Autonav::Configuration::AddressType::BOOLEAN)
-							{
-								bool value = _config.read<bool>((Autonav::Device)register_id, address);
-								if (ImGui::Checkbox((std::to_string(address) + std::to_string(register_id)).c_str(), &value))
-								{
-									_config.writeTo((Autonav::Device)register_id, address, value);
-								}
-							}
-							if (this->show_conbus_raw)
-							{
-								// Print raw bytes on the same line
-								ImGui::SameLine();
-								ImGui::Text(" : ");
-								ImGui::SameLine();
-								for (int i = 0; i < it2->second.size(); i++)
-								{
-									ImGui::SameLine();
-									ImGui::Text("%02X", it2->second[i]);
-								}
-							}
-							ImGui::NewLine();
-						}
-					}
+					showSerialConfiguration(this);
+					showIMUConfiguration(this);
+					showManualSteamConfiguration(this);
 
 					ImGui::EndTabItem();
 				}

@@ -11,14 +11,13 @@ namespace Autonav
 {
     enum Device : uint8_t
     {
-        FIRST = 1,
         STEAM_TRANSLATOR = 100,
-        MANUAL_CONTROL = 101,
-        DISPLAY_NODE = 102,
-        SERIAL_IMU = 103,
-        SERIAL_CAN = 104,
-        LOGGING = 105,
-        LAST = 255
+        MANUAL_CONTROL_STEAM = 101,
+        MANUAL_CONTROL_XBOX = 102,
+        DISPLAY_NODE = 103,
+        SERIAL_IMU = 104,
+        SERIAL_CAN = 105,
+        LOGGING = 106
     };
 
     namespace State
@@ -39,14 +38,16 @@ namespace Autonav
         };
     }
 
-    static std::string deviceToString(Autonav::Device device)
+    static const char* deviceToString(Autonav::Device device)
     {
         switch (device)
         {
         case Device::STEAM_TRANSLATOR:
             return "STEAM_TRANSLATOR";
-        case Device::MANUAL_CONTROL:
-            return "MANUAL_CONTROL";
+        case Device::MANUAL_CONTROL_STEAM:
+            return "MANUAL_CONTROL_STEAM";
+        case Device::MANUAL_CONTROL_XBOX:
+            return "MANUAL_CONTROL_XBOX";
         case Device::DISPLAY_NODE:
             return "DISPLAY";
         case Device::SERIAL_IMU:
@@ -60,7 +61,7 @@ namespace Autonav
         }
     }
 
-    static std::string deviceStateToString(Autonav::State::DeviceState state)
+    static const char* deviceStateToString(Autonav::State::DeviceState state)
     {
         switch (state)
         {
@@ -93,7 +94,7 @@ namespace Autonav
 
     namespace Configuration
     {
-		const int FLOAT_PRECISION = 10000000;
+		const float FLOAT_PRECISION = 10000000.0f;
 		const int MAX_DEVICE_ID = 200;
 
         enum ConbusOpcode
@@ -103,13 +104,6 @@ namespace Autonav
             WRITE = 2,
             WRITE_ACK = 3,
             READ_ALL = 4
-        };
-
-        enum AddressType
-        {
-            INTEGER = 0,
-            FLOAT = 1,
-            BOOLEAN = 2
         };
 
         class Conbus
@@ -141,6 +135,8 @@ namespace Autonav
             // Create iterators to read through devices
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator begin();
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator end();
+
+            std::map<uint8_t, std::vector<uint8_t>> getRegistersForDevice(Device device);
         private:
             void publishWrite(Device device, uint8_t address, std::vector<uint8_t> data);
             void publishRead(Device device, uint8_t address);
@@ -166,13 +162,11 @@ namespace Autonav
             void setSystemState(State::SystemState state);
             void setDeviceState(State::DeviceState state);
 
-        protected:
+            Configuration::Conbus _config;
+            std::map<Autonav::Device, State::DeviceState> _deviceStates;
             Autonav::Device _device;
             State::SystemState _systemState;
             State::DeviceState _deviceState;
-            std::map<Autonav::Device, State::DeviceState> _deviceStates;
-
-            Configuration::Conbus _config;
 
         protected:
             void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
