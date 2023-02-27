@@ -1,6 +1,7 @@
 <launch>
+    <node pkg="autonav_state" exec="statemanager" name="autonav_state" />
     <node pkg="autonav_display" exec="primary_display" name="autonav_display" output="screen" />
-    <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" />
-    <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial" />
+    <!-- <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" /> -->
+    <!-- <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial" /> -->
     <node pkg="autonav_manual" exec="steamremote" name="autonav_steamcontroller" />
 </launch>

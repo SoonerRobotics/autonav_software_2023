@@ -1,2 +1,2 @@
-int16 device
-int16 state
+int32 device
+int32 state

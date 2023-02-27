@@ -39,6 +39,8 @@ static void glfw_error_callback(int error, const char *description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+std::map<Autonav::Device, Autonav::State::DeviceState> deviceStates;
+
 static ImVec4 deviceStateToColor(Autonav::State::DeviceState state)
 {
 	switch (state)
@@ -165,24 +167,14 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 
 void showNodeState(Autonav::ROS::AutoNode *node, Autonav::Device device)
 {
-	auto state = node->_deviceStates[device];
+	auto state = deviceStates[device];
 	ImGui::TextColored(deviceStateToColor(state), "%s: %s", Autonav::deviceToString(device), Autonav::deviceStateToString(state));
 }
 
 class DisplayNode : public Autonav::ROS::AutoNode
 {
 public:
-	DisplayNode() : Autonav::ROS::AutoNode(Autonav::Device::DISPLAY_NODE, "autonav_display")
-	{
-		setup_imgui();
-
-		gps_subscriber_ = this->create_subscription<autonav_msgs::msg::GPSData>("/autonav/gps", 20, std::bind(&DisplayNode::on_gps_data, this, std::placeholders::_1));
-		imu_subscriber_ = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::on_imu_data, this, std::placeholders::_1));
-		motor_subscriber_ = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::on_motor_data, this, std::placeholders::_1));
-		steam_subscriber_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::on_steam_data, this, std::placeholders::_1));
-		camera_subscriber_ = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::on_camera_data, this, std::placeholders::_1));
-		render_clock = this->create_wall_timer(std::chrono::milliseconds(1000 / 60), std::bind(&DisplayNode::render, this));
-	}
+	DisplayNode() : Autonav::ROS::AutoNode(Autonav::Device::DISPLAY_NODE, "autonav_display") {}
 
 	~DisplayNode()
 	{
@@ -193,6 +185,26 @@ public:
 
 		glfwDestroyWindow(window);
 		glfwTerminate();
+	}
+
+	void setup() override
+	{
+		RCLCPP_INFO(this->get_logger(), "Starting Display Node");
+
+		gps_subscriber_ = this->create_subscription<autonav_msgs::msg::GPSData>("/autonav/gps", 20, std::bind(&DisplayNode::on_gps_data, this, std::placeholders::_1));
+		imu_subscriber_ = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::on_imu_data, this, std::placeholders::_1));
+		motor_subscriber_ = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::on_motor_data, this, std::placeholders::_1));
+		steam_subscriber_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::on_steam_data, this, std::placeholders::_1));
+		camera_subscriber_ = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::on_camera_data, this, std::placeholders::_1));
+
+		setup_imgui();
+
+		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
+	}
+
+	void operate() override
+	{
+		render_clock = this->create_wall_timer(std::chrono::milliseconds(1000 / 60), std::bind(&DisplayNode::render, this));
 	}
 
 	void setup_imgui()
@@ -236,22 +248,13 @@ public:
 
 		// Custom Font
 		std::string path = ament_index_cpp::get_package_share_directory(this->get_name());
-		auto font = io.Fonts->AddFontFromFileTTF((path + "/fonts/RobotoMono-VariableFont_wght.ttf").c_str(), 24.0f);
+		auto font = io.Fonts->AddFontFromFileTTF((path + "/fonts/RobotoMono-VariableFont_wght.ttf").c_str(), 20.0f);
 		io.FontDefault = font;
 		ImGui_ImplOpenGL3_DestroyFontsTexture();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 
-		// Screen Size Adapations
-		io.DisplaySize = ImVec2(mode->width, mode->height);
-		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-
 		// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
 		ImGui::SetNextWindowSize(ImVec2(mode->width * 0.5, mode->height * 0.5), ImGuiCond_Once);
-
-		// Send out our device state
-		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
-
-		this->_config.requestAllRemoteRegisters();
 	}
 
 	void render()
@@ -344,10 +347,6 @@ public:
 
 				if (ImGui::BeginTabItem("Configuration"))
 				{
-					if (ImGui::Checkbox("Show Raw", &this->show_conbus_raw))
-					{
-					}
-
 					if (ImGui::Button("Request All"))
 					{
 						this->_config.requestAllRemoteRegisters();
@@ -362,6 +361,44 @@ public:
 
 				if (ImGui::BeginTabItem("Preferences"))
 				{
+					if (ImGui::SliderFloat("Font Size", &font_size, 10.0f, 40.0f))
+					{
+						ImGuiIO &io = ImGui::GetIO();
+						auto font = io.Fonts->Fonts[0];
+						font->Scale = font_size / 20.0f;
+					}
+
+					static const char *themes[] = {"Dark", "Light", "Classic"};
+					static const char *current_theme = "Dark";
+					if (ImGui::BeginCombo("Theme", current_theme))
+					{
+						for (int i = 0; i < IM_ARRAYSIZE(themes); i++)
+						{
+							bool is_selected = (current_theme == themes[i]);
+							if (ImGui::Selectable(themes[i], is_selected))
+							{
+								current_theme = themes[i];
+								if (current_theme == "Dark")
+								{
+									ImGui::StyleColorsDark();
+								}
+								else if (current_theme == "Light")
+								{
+									ImGui::StyleColorsLight();
+								}
+								else if (current_theme == "Classic")
+								{
+									ImGui::StyleColorsClassic();
+								}
+							}
+							if (is_selected)
+							{
+								ImGui::SetItemDefaultFocus();
+							}
+						}
+						ImGui::EndCombo();
+					}
+
 					ImGui::EndTabItem();
 				}
 
@@ -461,8 +498,30 @@ public:
 		this->image = cv_ptr->image;
 	}
 
+	void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg) override
+	{
+		if (msg->device == _device)
+		{
+			_deviceState = (Autonav::State::DeviceState)msg->state;
+
+			if (_deviceState == Autonav::State::DeviceState::STANDBY)
+			{
+				RCLCPP_INFO(this->get_logger(), "Device %d is in standby", _device);
+				this->setup();
+			}
+
+			if (_deviceState == Autonav::State::DeviceState::OPERATING)
+			{
+				RCLCPP_INFO(this->get_logger(), "Device %d is operating", _device);
+				this->operate();
+			}
+		}
+
+		deviceStates[(Autonav::Device)msg->device] = (Autonav::State::DeviceState)msg->state;
+	}
+
 private:
-	bool show_conbus_raw = false;
+	float font_size = 20.0f;
 
 private:
 	rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr conbus_subscriber_;

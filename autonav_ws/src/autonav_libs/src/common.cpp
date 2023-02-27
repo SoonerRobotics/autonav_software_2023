@@ -12,46 +12,56 @@ namespace Autonav
 			_systemState = State::SystemState::DISABLED;
 			_deviceState = State::DeviceState::OFF;
 
-			_systemStatePublisher = this->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
-			_deviceStatePublisher = this->create_publisher<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10);
 			_systemStateSubscriber = this->create_subscription<autonav_msgs::msg::SystemState>("/autonav/state/system", 10, std::bind(&AutoNode::onSystemState, this, std::placeholders::_1));
 			_deviceStateSubscriber = this->create_subscription<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10, std::bind(&AutoNode::onDeviceState, this, std::placeholders::_1));
 
-			sleep(1);
-
-			// Set default device states for all
-			_deviceStates[Autonav::Device::DISPLAY_NODE] = State::DeviceState::OFF;
-			_deviceStates[Autonav::Device::LOGGING] = State::DeviceState::OFF;
-			_deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] = State::DeviceState::OFF;
-			_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] = State::DeviceState::OFF;
-			_deviceStates[Autonav::Device::SERIAL_CAN] = State::DeviceState::OFF;
-			_deviceStates[Autonav::Device::SERIAL_IMU] = State::DeviceState::OFF;
-			_deviceStates[Autonav::Device::STEAM_TRANSLATOR] = State::DeviceState::OFF;
-			// _deviceStates[Autonav::Device::DISPLAY_NODE] = State::DeviceState::OFF;
-
-			setDeviceState(State::DeviceState::OFF);
+			_deviceStateClient = this->create_client<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state");
+			_systemStateClient = this->create_client<autonav_msgs::srv::SetSystemState>("/autonav/state/set_system_state");
 		}
 
 		AutoNode::~AutoNode()
 		{
 		}
 
-		void AutoNode::setSystemState(State::SystemState state)
+		bool AutoNode::setSystemState(State::SystemState state)
 		{
-			_systemState = state;
-			auto msg = autonav_msgs::msg::SystemState();
-			msg.state = static_cast<uint8_t>(_systemState);
-			_systemStatePublisher->publish(msg);
+			auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
+			request->state = static_cast<uint8_t>(state);
+
+			while (!_systemStateClient->wait_for_service(std::chrono::seconds(1)))
+			{
+				if (!rclcpp::ok())
+				{
+					RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
+					return false;
+				}
+				
+				RCLCPP_INFO(this->get_logger(), "service not available, waiting again...");
+			}
+			
+			auto result = _systemStateClient->async_send_request(request);
+			return false;
 		}
 
-		void AutoNode::setDeviceState(State::DeviceState state)
+		bool AutoNode::setDeviceState(State::DeviceState state)
 		{
-			_deviceState = state;
-			auto msg = autonav_msgs::msg::DeviceState();
-			msg.device = static_cast<uint8_t>(_device);
-			msg.state = static_cast<uint8_t>(_deviceState);
-			_deviceStatePublisher->publish(msg);
-			_deviceStates[_device] = _deviceState;
+			auto request = std::make_shared<autonav_msgs::srv::SetDeviceState::Request>();
+			request->device = static_cast<uint8_t>(_device);
+			request->state = static_cast<uint8_t>(state);
+
+			while (!_deviceStateClient->wait_for_service(std::chrono::seconds(1)))
+			{
+				if (!rclcpp::ok())
+				{
+					RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
+					return false;
+				}
+				
+				RCLCPP_INFO(this->get_logger(), "service not available, waiting again...");
+			}
+			
+			auto result = _deviceStateClient->async_send_request(request);
+			return false;	
 		}
 
 		void AutoNode::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
@@ -61,13 +71,22 @@ namespace Autonav
 
 		void AutoNode::onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg)
 		{
-			if (msg->device == static_cast<uint8_t>(_device))
+			if (static_cast<Autonav::Device>(msg->device) != _device)
 			{
-				// Do we want this to possible? Is there any reason for this to happen?
-				_deviceState = static_cast<State::DeviceState>(msg->state);
+				return;
 			}
 
-			_deviceStates[static_cast<Autonav::Device>(msg->device)] = static_cast<State::DeviceState>(msg->state);
+			_deviceState = static_cast<State::DeviceState>(msg->state);
+
+			if (_deviceState == State::DeviceState::STANDBY)
+			{
+				this->setup();
+			}
+
+			if (_deviceState == State::DeviceState::OPERATING)
+			{
+				this->operate();
+			}
 		}
 	}
 

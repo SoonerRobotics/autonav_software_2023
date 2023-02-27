@@ -1,4 +1,6 @@
 #include "autonav_msgs/msg/con_bus_instruction.hpp"
+#include "autonav_msgs/srv/set_system_state.hpp"
+#include "autonav_msgs/srv/set_device_state.hpp"
 #include "autonav_msgs/msg/device_state.hpp"
 #include "autonav_msgs/msg/system_state.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -24,17 +26,17 @@ namespace Autonav
     {
         enum DeviceState
         {
-            OFF = 1,
-            STANDBY = 2,
-            READY = 3,
-            OPERATING = 4
+            OFF = 0,
+            STANDBY = 1,
+            READY = 2,
+            OPERATING = 3
         };
 
         enum SystemState
         {
-            DISABLED = 1,
-            AUTONOMOUS = 2,
-            MANUAL = 3
+            DISABLED = 0,
+            AUTONOMOUS = 1,
+            MANUAL = 2
         };
     }
 
@@ -159,24 +161,27 @@ namespace Autonav
             AutoNode(Autonav::Device device, std::string node_name);
             ~AutoNode();
 
-            void setSystemState(State::SystemState state);
-            void setDeviceState(State::DeviceState state);
+            bool setSystemState(State::SystemState state);
+            bool setDeviceState(State::DeviceState state);
 
             Configuration::Conbus _config;
-            std::map<Autonav::Device, State::DeviceState> _deviceStates;
             Autonav::Device _device;
             State::SystemState _systemState;
             State::DeviceState _deviceState;
 
+            virtual void setup() {}
+            virtual void operate() {}
+
         protected:
-            void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
-            void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg);
+            virtual void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
+            virtual void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg);
 
         private:
-            rclcpp::Publisher<autonav_msgs::msg::SystemState>::SharedPtr _systemStatePublisher;
-            rclcpp::Publisher<autonav_msgs::msg::DeviceState>::SharedPtr _deviceStatePublisher;
             rclcpp::Subscription<autonav_msgs::msg::SystemState>::SharedPtr _systemStateSubscriber;
             rclcpp::Subscription<autonav_msgs::msg::DeviceState>::SharedPtr _deviceStateSubscriber;
+
+            rclcpp::Client<autonav_msgs::srv::SetDeviceState>::SharedPtr _deviceStateClient;
+            rclcpp::Client<autonav_msgs::srv::SetSystemState>::SharedPtr _systemStateClient;
         };
     }
 }

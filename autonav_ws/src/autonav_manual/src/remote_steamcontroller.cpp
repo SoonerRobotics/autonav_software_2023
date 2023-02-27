@@ -30,22 +30,27 @@ enum Registers
 class JoyNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoyNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_STEAM, "remote_steamcontroller")
+	JoyNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_STEAM, "remote_steamcontroller") {}
+
+	void setup() override
 	{
 		subscription_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&JoyNode::on_steam_received, this, _1));
 		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
-		timer_ = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
 
 		this->_config.write(Registers::TIMEOUT_DELAY, 500);
 		this->_config.write(Registers::STEERING_DEADZONE, 0.35f);
 		this->_config.write(Registers::THROTTLE_DEADZONE, 0.1f);
 		this->_config.write(Registers::MAX_SPEED, 2.0f);
 		this->_config.write(Registers::SPEED_OFFSET, 0.6f);
-		
-		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
+
+		this->setDeviceState(Autonav::State::DeviceState::READY);
 	}
 
-private:
+	void operate() override
+	{
+		timer_ = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
+	}
+
 	void on_timer_elapsed()
 	{
 		long currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -82,10 +87,10 @@ private:
 			throttle = throttle - (1 - -msg.ltrig) * maxSpeed * 0.8;
 		}
 
-		if(abs(msg.rpad_x) > steeringVoid)
+		if (abs(msg.rpad_x) > steeringVoid)
 		{
 			float real = abs(msg.rpad_x) - steeringVoid;
-			if(msg.rpad_x < 0)
+			if (msg.rpad_x < 0)
 			{
 				real = -real;
 			}
