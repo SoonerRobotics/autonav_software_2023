@@ -23,16 +23,18 @@ class Registers(Enum):
 
 class SerialMotors(AutoNode):
     def __init__(self):
-        super().__init__(Device.SERIAL_IMU, "autonav_serial_motors")
+        super().__init__(Device.SERIAL_CAN, "autonav_serial_can")
 
-        self.motor_subscriber = self.create_subscription(
-            MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
+    def setup(self):
+        self.motor_subscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
         self.canbus = None
         self.config.writeFloat(Registers.MOTOR_OFFSET.value, 35.0)
-        
-        self.set_state(DeviceState.STANDBY)
+        self.set_device_state(DeviceState.READY)
 
     def on_motor_input(self, input: MotorInput):
+        if self.device_state != DeviceState.OPERATING:
+            return
+
         if self.canbus is None:
             self.canbus = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
         

@@ -3,7 +3,7 @@ import time
 from rclpy.node import Node
 from enum import Enum
 from autonav_msgs.msg import ConBusInstruction, Log, DeviceState, SystemState
-
+from autonav_msgs.srv import SetDeviceState, SetSystemState
 
 class Device(Enum):
     STEAM_TRANSLATOR = 100
@@ -16,17 +16,18 @@ class Device(Enum):
 
 
 class DeviceStateEnum(Enum):
-    OFF = 1
+    OFF = 0
+    ALIVE = 1 
     STANDBY = 2
-    READY = 3
-    OPERATING = 4
-    UNKNOWN = 5
+    READY = 2
+    OPERATING = 3
+    UNKNOWN = 4
 
 
 class SystemStateEnum(Enum):
-    DISABLED = 1
-    AUTONOMOUS = 2
-    MANUAL = 3
+    DISABLED = 0
+    AUTONOMOUS = 1
+    MANUAL = 2
 
 
 class ConbusOpcode(Enum):
@@ -180,51 +181,60 @@ class AutoNode(Node):
         self.config = Conbus(device, self)
         self.device = device
         self.log_publisher = self.create_publisher(Log, "/autonav/logging", 10)
-        self.device_state_publisher = self.create_publisher(DeviceState, "/autonav/state/device", 10)
         self.device_state_subscriber = self.create_subscription(DeviceState, "/autonav/state/device", self.on_device_state, 10)
-        self.system_state_publisher = self.create_publisher(SystemState, "/autonav/state/system", 10)
         self.system_state_subscriber = self.create_subscription(SystemState, "/autonav/state/system", self.on_system_state, 10)
-        self.deviceStates = {}
-        self.system_state = SystemState()
-        self.system_state.estop = False
-        self.system_state.state = SystemStateEnum.DISABLED.value
-        
-        # Set all device states to OFF
-        self.deviceStates[Device.DISPLAY_NODE] = DeviceStateEnum.OFF
-        self.deviceStates[Device.LOGGING] = DeviceStateEnum.OFF
-        self.deviceStates[Device.MANUAL_CONTROL_STEAM] = DeviceStateEnum.OFF
-        self.deviceStates[Device.MANUAL_CONTROL_XBOX] = DeviceStateEnum.OFF
-        self.deviceStates[Device.SERIAL_CAN] = DeviceStateEnum.OFF
-        self.deviceStates[Device.SERIAL_IMU] = DeviceStateEnum.OFF
-        
-        
+        self.device_state_client = self.create_client(SetDeviceState, "/autonav/state/set_device_state")
+        self.system_state_client = self.create_client(SetSystemState, "/autonav/state/set_system_state")
+        self.system_state = SystemStateEnum.DISABLED
+        self.device_state = DeviceStateEnum.ALIVE
+
         time.sleep(1)
-        
-        self.set_state(DeviceStateEnum.STANDBY)
-        
+        self.set_device_state(DeviceStateEnum.ALIVE)
+
+    def setup(self):
+        pass
+
+    def operate(self):
+        pass
+
     def on_system_state(self, state: SystemState):
-        self.state = state
-        
-    def set_state(self, state: DeviceStateEnum):
-        self.state = state
-        msg = DeviceState()
-        msg.device = self.device.value
-        msg.state = state.value
-        self.deviceStates[msg.device] = msg.state
-        self.device_state_publisher.publish(msg)
-        
+        self.system_state = SystemStateEnum(state.state)
+
+        if self.system_state != SystemStateEnum.DISABLED and self.device_state == DeviceStateEnum.READY:
+            self.set_device_state(DeviceStateEnum.OPERATING)
+
     def on_device_state(self, state: DeviceState):
-        self.deviceStates[state.device] = state.state
-        
-    def set_system_state(self, state: SystemStateEnum, estop = None):
-        msg = SystemState()
-        msg.state = state.value
-        if estop or self.system_state.estop:
-            msg.estop = True
-        else:
-            msg.estop = False
-        self.system_state = msg
-        self.system_state_publisher.publish(msg)
+        if state.device != self.device.value:
+            return
+
+        newState = DeviceStateEnum(state.state)
+        if newState == DeviceStateEnum.STANDBY and self.device_state == DeviceStateEnum.ALIVE:
+            self.device_state = newState
+            self.setup()
+            return
+
+        if newState == DeviceStateEnum.OPERATING and self.device_state != DeviceStateEnum.OPERATING:
+            self.device_state = newState
+            self.operate()
+            return
+
+        self.device_state = newState
+
+    def set_device_state(self, state: DeviceStateEnum):
+        request = SetDeviceState.Request()
+        request.device = self.device.value
+        request.state = state.value
+        self.device_state_client.call_async(request)
+        return False
+
+
+    def set_system_state(self, state: SystemStateEnum):
+        if self.system_state == state:
+            return True
+        request = SetSystemState.Request()
+        request.state = state.value
+        self.system_state_client.call_async(request)
+        return False
 
     def log(self, message: str, level: LogLevel = LogLevel.INFO, file: str = None, skipFile=False, skipConsole=False):
         if not skipFile:

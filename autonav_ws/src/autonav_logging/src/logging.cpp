@@ -8,6 +8,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "autonav_msgs/msg/log.hpp"
+#include "autonav_libs/common.h"
 
 using std::placeholders::_1;
 
@@ -49,12 +50,15 @@ void append_to_file(const std::string &name, const std::string &contents)
 	out.close();
 }
 
-class JoyNode : public rclcpp::Node
+class JoyNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoyNode() : Node("autonav_logging")
+	JoyNode() : AutoNode(Autonav::Device::LOGGING, "autonav_logging") {}
+
+	void setup() override
 	{
 		subscription_ = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&JoyNode::on_log_received, this, _1));
+		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
 	}
 
 private:

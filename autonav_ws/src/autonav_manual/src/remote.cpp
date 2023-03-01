@@ -2,6 +2,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
+#include "autonav_libs/common.h"
 
 #define MAX_SPEED 1.4
 
@@ -16,10 +17,12 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-class JoyNode : public rclcpp::Node
+class JoyNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoyNode() : Node("autonav_manual_remote")
+	JoyNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_XBOX, "autonav_remote_xbox") {}
+
+	void setup() override
 	{
 		subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
 			"/joy", 10, std::bind(&JoyNode::on_joy_received, this, _1));

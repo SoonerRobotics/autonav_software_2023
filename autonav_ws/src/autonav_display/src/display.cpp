@@ -41,6 +41,21 @@ static void glfw_error_callback(int error, const char *description)
 
 std::map<Autonav::Device, Autonav::State::DeviceState> deviceStates;
 
+static const char* systemStateToString(Autonav::State::SystemState state)
+{
+	switch(state)
+	{
+		case Autonav::State::SystemState::DISABLED:
+			return "DISABLED";
+		case Autonav::State::SystemState::AUTONOMOUS:
+			return "AUTONOMOUS";
+		case Autonav::State::SystemState::MANUAL:
+			return "MANUAL";
+		default:
+			return "UNKNOWN";
+	}
+}
+
 static ImVec4 deviceStateToColor(Autonav::State::DeviceState state)
 {
 	switch (state)
@@ -287,7 +302,7 @@ public:
 			{
 				if (ImGui::BeginTabItem("General Data"))
 				{
-					ImGui::Text("System State: %d", _systemState);
+					ImGui::Text("System State: %s", systemStateToString(_systemState));
 
 					ImGui::SeparatorText("GPS Data");
 					ImGui::Text("Latitude: %f", gps_data.latitude);
@@ -305,16 +320,6 @@ public:
 					ImGui::SeparatorText("Motor Data");
 					ImGui::Text("Left Motor: %.1f", motor_data.left_motor);
 					ImGui::Text("Right Motor: %.1f", motor_data.right_motor);
-
-					ImGui::SeparatorText("Controller");
-					ImGui::Text("Left Joystick: (%.1f, %.1f)", steam_data.lpad_x, steam_data.lpad_y);
-					ImGui::Text("Right Joystick: (%.1f, %.1f)", steam_data.rpad_x, steam_data.rpad_y);
-					ImGui::Text("Left Trigger: %.1f", steam_data.ltrig);
-					ImGui::Text("Right Trigger: %.1f", steam_data.rtrig);
-					for (int i = 0; i < steam_data.buttons.size(); i++)
-					{
-						ImGui::Text("Button %d: %s", i, steam_data.buttons[i] ? "Pressed" : "Released");
-					}
 
 					ImGui::SeparatorText("Device States");
 					showNodeState(this, Autonav::Device::DISPLAY_NODE);
@@ -337,6 +342,21 @@ public:
 						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
 						ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(texture)), ImVec2(image.cols, image.rows));
 					}
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem("Controller"))
+				{
+					ImGui::SeparatorText("Controller");
+					ImGui::Text("Left Joystick: (%.1f, %.1f)", steam_data.lpad_x, steam_data.lpad_y);
+					ImGui::Text("Right Joystick: (%.1f, %.1f)", steam_data.rpad_x, steam_data.rpad_y);
+					ImGui::Text("Left Trigger: %.1f", steam_data.ltrig);
+					ImGui::Text("Right Trigger: %.1f", steam_data.rtrig);
+					for (int i = 0; i < steam_data.buttons.size(); i++)
+					{
+						ImGui::Text("Button %d: %s", i, steam_data.buttons[i] ? "Pressed" : "Released");
+					}
+
 					ImGui::EndTabItem();
 				}
 
@@ -502,18 +522,22 @@ public:
 	{
 		if (msg->device == _device)
 		{
-			_deviceState = (Autonav::State::DeviceState)msg->state;
-
-			if (_deviceState == Autonav::State::DeviceState::STANDBY)
+			auto newState = static_cast<Autonav::State::DeviceState>(msg->state);
+			if (newState == Autonav::State::DeviceState::STANDBY && _deviceState == Autonav::State::DeviceState::ALIVE)
 			{
-				RCLCPP_INFO(this->get_logger(), "Device %d is in standby", _device);
+				_deviceState = newState;
 				this->setup();
 			}
 
-			if (_deviceState == Autonav::State::DeviceState::OPERATING)
+			if (newState == Autonav::State::DeviceState::OPERATING && _deviceState != Autonav::State::DeviceState::OPERATING)
 			{
-				RCLCPP_INFO(this->get_logger(), "Device %d is operating", _device);
+				_deviceState = newState;
 				this->operate();
+			}
+
+			if (newState != Autonav::State::DeviceState::STANDBY && newState != Autonav::State::DeviceState::OPERATING && newState != Autonav::State::DeviceState::ALIVE)
+			{
+				_deviceState = newState;
 			}
 		}
 

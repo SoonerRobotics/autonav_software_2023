@@ -10,9 +10,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(autonav_msgs REQUIRED)
+find_package(autonav_libs REQUIRED)
 
 add_executable(logging src/logging.cpp)
-ament_target_dependencies(logging rclcpp std_msgs autonav_msgs)
+ament_target_dependencies(logging rclcpp std_msgs autonav_msgs autonav_libs)
 
 install(TARGETS
   logging

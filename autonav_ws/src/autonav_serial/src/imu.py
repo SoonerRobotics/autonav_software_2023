@@ -9,14 +9,8 @@ from enum import Enum
 from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import Log
 from autonav_msgs.msg import GPSData
-from rclpy.publisher import Publisher
 
 from autonav_libs import Device, AutoNode, LogLevel, DeviceStateEnum as DeviceState
-
-imu_publisher: Publisher = None
-log_publisher: Publisher = None
-gps_publisher: Publisher = None
-
 
 class Registers(Enum):
     IMU_READ_RATE = 0
@@ -27,7 +21,8 @@ class Registers(Enum):
 class SerialIMU(AutoNode):
     def __init__(self):
         super().__init__(Device.SERIAL_IMU, "autonav_serial_imu")
-
+        
+    def setup(self):
         self.sensor = VnSensor()
         self.has_published_headers = False
 
@@ -41,8 +36,6 @@ class SerialIMU(AutoNode):
 
         self.imu_thread = threading.Thread(target=self.imu_read)
         self.imu_thread.start()
-        
-        self.set_state(DeviceState.STANDBY)
 
     def imu_read(self):
         while rclpy.ok():
@@ -56,14 +49,12 @@ class SerialIMU(AutoNode):
                     with open("/dev/autonav-imu-200", "r") as f:
                         pass
                     
-                    self.set_state(DeviceState.STANDBY)
+                    self.set_device_state(DeviceState.STANDBY)
                     self.sensor.connect("/dev/autonav-imu-200", 115200)
-                    self.set_state(DeviceState.OPERATING)
+                    self.set_device_state(DeviceState.READY)
                 except:
-                    self.log(
-                        f"No IMU found, retrying in {self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value)} second(s)", LogLevel.WARNING)
+                    self.log(f"No IMU found, retrying in {self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value)} second(s)", LogLevel.WARNING)
                     time.sleep(self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value))
-                    self.imu_read()
                     continue
 
             if (not self.sensor.is_connected):
@@ -71,8 +62,10 @@ class SerialIMU(AutoNode):
                         LogLevel.WARNING, skipFile=True)
                 time.sleep(self.config.readFloat(
                     Registers.IMU_BADCONNECT_RETRY.value))
-                self.set_state(DeviceState.STANDBY)
-                self.imu_read()
+                self.set_device_state(DeviceState.STANDBY)
+                continue
+
+            if self.device_state != DeviceState.OPERATING:
                 continue
 
             acceleration = self.sensor.read_acceleration_measurements()
@@ -105,12 +98,9 @@ class SerialIMU(AutoNode):
 
 
 def main():
-    global node, imu_publisher, log_publisher, gps_publisher
-
     rclpy.init()
     rclpy.spin(SerialIMU())
     rclpy.shutdown()
-
 
 if __name__ == "__main__":
     main()

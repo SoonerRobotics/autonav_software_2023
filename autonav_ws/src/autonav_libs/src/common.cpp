@@ -10,13 +10,17 @@ namespace Autonav
 		{
 			_device = device;
 			_systemState = State::SystemState::DISABLED;
-			_deviceState = State::DeviceState::OFF;
+			_deviceState = State::DeviceState::ALIVE;
 
 			_systemStateSubscriber = this->create_subscription<autonav_msgs::msg::SystemState>("/autonav/state/system", 10, std::bind(&AutoNode::onSystemState, this, std::placeholders::_1));
 			_deviceStateSubscriber = this->create_subscription<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10, std::bind(&AutoNode::onDeviceState, this, std::placeholders::_1));
 
 			_deviceStateClient = this->create_client<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state");
 			_systemStateClient = this->create_client<autonav_msgs::srv::SetSystemState>("/autonav/state/set_system_state");
+
+			rclcpp::sleep_for(std::chrono::seconds(1));
+
+			this->setDeviceState(State::DeviceState::ALIVE);
 		}
 
 		AutoNode::~AutoNode()
@@ -67,6 +71,11 @@ namespace Autonav
 		void AutoNode::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
 		{
 			_systemState = static_cast<State::SystemState>(msg->state);
+
+			if(_systemState != State::SystemState::DISABLED && _deviceState == State::DeviceState::READY)
+			{
+				this->setDeviceState(State::DeviceState::OPERATING);
+			}
 		}
 
 		void AutoNode::onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg)
@@ -76,16 +85,22 @@ namespace Autonav
 				return;
 			}
 
-			_deviceState = static_cast<State::DeviceState>(msg->state);
-
-			if (_deviceState == State::DeviceState::STANDBY)
+			auto newState = static_cast<State::DeviceState>(msg->state);
+			if (newState == State::DeviceState::STANDBY && _deviceState == State::DeviceState::ALIVE)
 			{
+				_deviceState = newState;
 				this->setup();
 			}
 
-			if (_deviceState == State::DeviceState::OPERATING)
+			if (newState == State::DeviceState::OPERATING && _deviceState != State::DeviceState::OPERATING)
 			{
+				_deviceState = newState;
 				this->operate();
+			}
+
+			if (newState != State::DeviceState::STANDBY && newState != State::DeviceState::OPERATING && newState != State::DeviceState::ALIVE)
+			{
+				_deviceState = newState;
 			}
 		}
 	}

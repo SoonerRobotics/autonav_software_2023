@@ -27,9 +27,10 @@ namespace Autonav
         enum DeviceState
         {
             OFF = 0,
-            STANDBY = 1,
-            READY = 2,
-            OPERATING = 3
+            ALIVE = 1,
+            STANDBY = 2,
+            READY = 3,
+            OPERATING = 4
         };
 
         enum SystemState
@@ -67,16 +68,17 @@ namespace Autonav
     {
         switch (state)
         {
-        case State::DeviceState::OFF:
-            return "Off";
         case State::DeviceState::STANDBY:
             return "Standby";
         case State::DeviceState::READY:
             return "Ready";
         case State::DeviceState::OPERATING:
             return "Operating";
+        case State::DeviceState::ALIVE:
+            return "Alive";
+        case State::DeviceState::OFF:
         default:
-            return "Unknown";
+            return "OFF";
         }
     }
 
