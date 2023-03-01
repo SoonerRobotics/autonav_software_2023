@@ -14,12 +14,31 @@ using std::placeholders::_1;
 
 namespace AutonavConstants
 {
-	std::string LOG_PATH = "/home/autonav/logs/";
+	std::string LOG_PATH = "/home/{user}/logs/";
 	std::string LOG_FILE_EXT = ".log";
 	std::string TOPIC = "/autonav/logging";
 }
 
 long startup_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+std::string savedPath = "";
+
+std::string get_log_path()
+{
+	if(savedPath != "")
+	{
+		return savedPath;
+	}
+
+	std::string path = AutonavConstants::LOG_PATH;
+	std::string::size_type i = path.find("{user}");
+	if (i != std::string::npos)
+	{
+		path.replace(i, 6, getenv("USER"));
+	}
+
+	savedPath = path;
+	return path;
+}
 
 void ensure_directory_exists(const std::string &path)
 {
@@ -35,8 +54,7 @@ void ensure_file_exists(const std::string &file)
 
 const std::string generateFilePath(const std::string &name)
 {
-	// Create a file path that follows the format: /tmp/autonav/logs/<date>/<name>.log
-	std::string path = AutonavConstants::LOG_PATH + std::to_string(startup_time);
+	std::string path = get_log_path() + std::to_string(startup_time);
 	ensure_directory_exists(path);
 	std::string file = path + "/" + name + AutonavConstants::LOG_FILE_EXT;
 	ensure_file_exists(file);
