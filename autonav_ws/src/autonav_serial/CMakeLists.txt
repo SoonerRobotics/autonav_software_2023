@@ -17,8 +17,9 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
 	src/serial_node.py
 	src/imu.py
+	src/camera.py
 	DESTINATION lib/${PROJECT_NAME}
-	)
+)
 
 # Copy launch files
 # install(DIRECTORY

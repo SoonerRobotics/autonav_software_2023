@@ -18,13 +18,22 @@ namespace Autonav
 			_deviceStateClient = this->create_client<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state");
 			_systemStateClient = this->create_client<autonav_msgs::srv::SetSystemState>("/autonav/state/set_system_state");
 
-			rclcpp::sleep_for(std::chrono::seconds(1));
-
-			this->setDeviceState(State::DeviceState::ALIVE);
+			_aliveTimer = this->create_wall_timer(std::chrono::milliseconds(300), std::bind(&AutoNode::onAliveTimer, this));
 		}
 
 		AutoNode::~AutoNode()
 		{
+		}
+
+		void AutoNode::onAliveTimer()
+		{
+			if (_deviceState != State::DeviceState::ALIVE)
+			{
+				_aliveTimer->cancel();
+				return;
+			}
+
+			this->setDeviceState(State::DeviceState::ALIVE);
 		}
 
 		bool AutoNode::setSystemState(State::SystemState state)

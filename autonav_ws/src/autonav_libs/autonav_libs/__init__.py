@@ -13,6 +13,7 @@ class Device(Enum):
     SERIAL_IMU = 104
     SERIAL_CAN = 105
     LOGGING = 106
+    CAMERA_TRANSLATOR = 107
 
 
 class DeviceStateEnum(Enum):
@@ -187,15 +188,20 @@ class AutoNode(Node):
         self.system_state_client = self.create_client(SetSystemState, "/autonav/state/set_system_state")
         self.system_state = SystemStateEnum.DISABLED
         self.device_state = DeviceStateEnum.ALIVE
-
-        time.sleep(1)
-        self.set_device_state(DeviceStateEnum.ALIVE)
+        self.alive_timer = self.create_timer(0.3, self.onAliveTimer)
 
     def setup(self):
         pass
 
     def operate(self):
         pass
+    
+    def onAliveTimer(self):
+        if self.device_state != DeviceStateEnum.ALIVE:
+            self.alive_timer.cancel()
+            return
+        
+        self.set_device_state(DeviceStateEnum.ALIVE)
 
     def on_system_state(self, state: SystemState):
         self.system_state = SystemStateEnum(state.state)

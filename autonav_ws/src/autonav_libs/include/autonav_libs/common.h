@@ -19,7 +19,8 @@ namespace Autonav
         DISPLAY_NODE = 103,
         SERIAL_IMU = 104,
         SERIAL_CAN = 105,
-        LOGGING = 106
+        LOGGING = 106,
+        CAMERA_TRANSLATOR = 107
     };
 
     namespace State
@@ -59,6 +60,8 @@ namespace Autonav
             return "CAN_TRANSLATOR";
         case Device::LOGGING:
             return "LOGGER";
+        case Device::CAMERA_TRANSLATOR:
+            return "CAMERA_TRANSLATOR";
         default:
             return "UNKNOWN";
         }
@@ -179,11 +182,16 @@ namespace Autonav
             virtual void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg);
 
         private:
+            void onAliveTimer();
+
+        private:
             rclcpp::Subscription<autonav_msgs::msg::SystemState>::SharedPtr _systemStateSubscriber;
             rclcpp::Subscription<autonav_msgs::msg::DeviceState>::SharedPtr _deviceStateSubscriber;
 
             rclcpp::Client<autonav_msgs::srv::SetDeviceState>::SharedPtr _deviceStateClient;
             rclcpp::Client<autonav_msgs::srv::SetSystemState>::SharedPtr _systemStateClient;
+
+            rclcpp::TimerBase::SharedPtr _aliveTimer;
         };
     }
 }

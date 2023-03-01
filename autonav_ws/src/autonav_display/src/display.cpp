@@ -180,6 +180,35 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 	}
 }
 
+void showCameraConfiguration(Autonav::ROS::AutoNode *node)
+{
+	auto camera_reg = node->_config.getRegistersForDevice(Autonav::Device::CAMERA_TRANSLATOR);
+	if (camera_reg.size() == 0)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("Camera Configuration");
+	for (auto it = camera_reg.begin(); it != camera_reg.end(); it++)
+	{
+		auto address = it->first;
+		auto data = it->second;
+
+		switch (address)
+		{
+			case 0: // Refresh Rate
+			{
+				auto data = node->_config.read<int32_t>(Autonav::Device::CAMERA_TRANSLATOR, address);
+				if (ImGui::InputInt("Refresh Rate", &data))
+				{
+					node->_config.writeTo(Autonav::Device::CAMERA_TRANSLATOR, address, data);
+				}
+				break;
+			}
+		}
+	}
+}
+
 void showNodeState(Autonav::ROS::AutoNode *node, Autonav::Device device)
 {
 	auto state = deviceStates[device];
@@ -199,7 +228,7 @@ public:
 		ImGui::DestroyContext();
 
 		glfwDestroyWindow(window);
-		glfwTerminate();
+		glfwTerminate();	
 	}
 
 	void setup() override
@@ -329,19 +358,8 @@ public:
 					showNodeState(this, Autonav::Device::SERIAL_CAN);
 					showNodeState(this, Autonav::Device::SERIAL_IMU);
 					showNodeState(this, Autonav::Device::STEAM_TRANSLATOR);
+					showNodeState(this, Autonav::Device::CAMERA_TRANSLATOR);
 
-					if (this->has_image)
-					{
-						GLuint texture;
-						cv::cvtColor(image, image, cv::COLOR_BGR2RGBA);
-						glGenTextures(1, &texture);
-						glBindTexture(GL_TEXTURE_2D, texture);
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-						glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
-						ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(texture)), ImVec2(image.cols, image.rows));
-					}
 					ImGui::EndTabItem();
 				}
 
@@ -375,6 +393,7 @@ public:
 					showSerialConfiguration(this);
 					showIMUConfiguration(this);
 					showManualSteamConfiguration(this);
+					showCameraConfiguration(this);
 
 					ImGui::EndTabItem();
 				}
@@ -398,15 +417,15 @@ public:
 							if (ImGui::Selectable(themes[i], is_selected))
 							{
 								current_theme = themes[i];
-								if (current_theme == "Dark")
+								if (strcmp(current_theme, "Dark") == 0)
 								{
 									ImGui::StyleColorsDark();
 								}
-								else if (current_theme == "Light")
+								else if (strcmp(current_theme, "Light") == 0)
 								{
 									ImGui::StyleColorsLight();
 								}
-								else if (current_theme == "Classic")
+								else
 								{
 									ImGui::StyleColorsClassic();
 								}

@@ -107,9 +107,6 @@ int main(int argc, char **argv)
 	auto sdsService = node->create_service<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state", &set_device_state);
 	deviceStatePublisher = node->create_publisher<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10);
 	systemStatePublisher = node->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
-
-	rclcpp::sleep_for(std::chrono::seconds(3));
-
 	rclcpp::spin(node);
 	rclcpp::shutdown();
 }
