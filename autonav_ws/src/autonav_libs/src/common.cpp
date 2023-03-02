@@ -109,6 +109,13 @@ namespace Autonav
 				return;
 			}
 
+			if(newState == State::DeviceState::ALIVE)
+			{
+				_aliveTimer->reset();
+				_deviceState = newState;
+				return;
+			}
+
 			_deviceState = newState;
 		}
 	}
