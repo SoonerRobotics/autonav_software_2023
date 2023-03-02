@@ -99,18 +99,17 @@ namespace Autonav
 			{
 				_deviceState = newState;
 				this->setup();
+				return;
 			}
 
 			if (newState == State::DeviceState::OPERATING && _deviceState != State::DeviceState::OPERATING)
 			{
 				_deviceState = newState;
 				this->operate();
+				return;
 			}
 
-			if (newState != State::DeviceState::STANDBY && newState != State::DeviceState::OPERATING && newState != State::DeviceState::ALIVE)
-			{
-				_deviceState = newState;
-			}
+			_deviceState = newState;
 		}
 	}
 
