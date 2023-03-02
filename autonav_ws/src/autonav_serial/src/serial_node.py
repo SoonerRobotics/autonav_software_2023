@@ -38,6 +38,7 @@ class SerialMotors(AutoNode):
                     pass
 
                 self.canbus = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
+                self.log("CAN found, starting CAN bus", LogLevel.INFO)
             except:
                 if self.device_state != DeviceState.STANDBY:
                     self.log("No CAN found, retrying in 0.5 second(s)", LogLevel.WARNING)
@@ -46,7 +47,7 @@ class SerialMotors(AutoNode):
 
         if self.canbus is not None and (self.device_state != DeviceState.READY and self.device_state != DeviceState.OPERATING):
             self.set_device_state(DeviceState.READY)
-
+            self.log("CAN bus ready", LogLevel.INFO)
 
     def on_motor_input(self, input: MotorInput):
         if self.device_state != DeviceState.OPERATING:
