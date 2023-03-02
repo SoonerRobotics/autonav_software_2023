@@ -64,8 +64,8 @@ class SerialIMU(AutoNode):
                 continue
 
             if (self.device_state != DeviceState.READY):
-                self.set_device_state(DeviceState.READY)
                 time.sleep(0.5)
+                self.set_device_state(DeviceState.READY)
 
             if self.device_state != DeviceState.OPERATING:
                 continue
