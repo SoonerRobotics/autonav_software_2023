@@ -78,6 +78,13 @@ void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::R
 	auto state = (Autonav::State::DeviceState)request->state;
 	auto device = (Autonav::Device)request->device;
 
+	// If the display is not operating, ignore everyone else
+	if (device != Autonav::Device::DISPLAY_NODE && deviceStates[Autonav::Device::DISPLAY_NODE] != Autonav::State::DeviceState::OPERATING)
+	{
+		response->ok = false;
+		return;
+	}
+
 	if (state == Autonav::State::DeviceState::ALIVE)
 	{
 		auto msg = autonav_msgs::msg::DeviceState();
