@@ -47,7 +47,7 @@ class SerialMotors(AutoNode):
                 return
             
         self.log(f"Switchy -> {self.device_state}", LogLevel.INFO)
-        if self.canbus is not None and self.device_state != DeviceState.READY:
+        if self.canbus is not None and self.device_state.value != DeviceState.READY.value:
             self.log("Attempting to switch to ready state", LogLevel.INFO)
             self.set_device_state(DeviceState.READY)
 
