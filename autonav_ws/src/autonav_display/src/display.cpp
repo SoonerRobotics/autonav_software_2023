@@ -21,6 +21,7 @@
 #include "autonav_msgs/msg/gps_data.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/steam_input.hpp"
+#include "autonav_msgs/msg/log.hpp"
 #include "std_msgs/msg/header.h"
 #include "sensor_msgs/msg/image.hpp"
 
@@ -61,15 +62,15 @@ static ImVec4 deviceStateToColor(Autonav::State::DeviceState state)
 	switch (state)
 	{
 	case Autonav::State::DeviceState::OFF:
-		return ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+		return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	case Autonav::State::DeviceState::STANDBY:
-		return ImVec4(0.5f, 0.5f, 0.0f, 1.0f);
+		return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
 	case Autonav::State::DeviceState::READY:
-		return ImVec4(0.0f, 0.5f, 0.0f, 1.0f);
+		return ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 	case Autonav::State::DeviceState::OPERATING:
-		return ImVec4(0.0f, 0.5f, 0.5f, 1.0f);
+		return ImVec4(0.0f, 1.0f, 1.0f, 1.0f);
 	default:
-		return ImVec4(0.5f, 0.0f, 0.0f, 1.0f);
+		return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
 	}
 }
 
@@ -240,6 +241,7 @@ public:
 		motor_subscriber_ = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::on_motor_data, this, std::placeholders::_1));
 		steam_subscriber_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::on_steam_data, this, std::placeholders::_1));
 		camera_subscriber_ = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::on_camera_data, this, std::placeholders::_1));
+		log_subscriber_ = this->create_subscription<autonav_msgs::msg::Log>("/autonav/logging", 20, std::bind(&DisplayNode::on_log, this, std::placeholders::_1));
 
 		setup_imgui();
 
@@ -380,6 +382,22 @@ public:
 
 				if (ImGui::BeginTabItem("Maps & Path Planning"))
 				{
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem("Logs"))
+				{
+					// Display logs in a scrollable list
+					ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
+					ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+					for (int i = 0; i < this->logs.size(); i++)
+					{
+						const char *item = this->logs[i].c_str();
+						ImGui::TextUnformatted(item);
+					}
+					ImGui::PopStyleVar();
+					ImGui::EndChild();
+
 					ImGui::EndTabItem();
 				}
 
@@ -563,8 +581,18 @@ public:
 		deviceStates[(Autonav::Device)msg->device] = (Autonav::State::DeviceState)msg->state;
 	}
 
+	void on_log(const autonav_msgs::msg::Log::SharedPtr msg)
+	{
+		logs.insert(logs.begin(), msg->data);
+		if (logs.size() > 100)
+		{
+			logs.erase(logs.begin() + 100, logs.end());
+		}
+	}
+
 private:
 	float font_size = 20.0f;
+	std::vector<std::string> logs;
 
 private:
 	rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr conbus_subscriber_;
@@ -573,6 +601,7 @@ private:
 	rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr motor_subscriber_;
 	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr steam_subscriber_;
 	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_subscriber_;
+	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr log_subscriber_;
 
 	rclcpp::TimerBase::SharedPtr render_clock;
 

@@ -38,6 +38,7 @@ class SerialIMU(AutoNode):
         self.imu_thread.start()
 
     def imu_read(self):
+        time.sleep(1.5)
         while rclpy.ok():
             if (not self.has_published_headers):
                 self.log("time,accel_x,accel_y,accel_z,yaw,pitch,roll,angular_x,angular_y,angular_z,gps_fix,latitude,longitude,altitude", file="imu_data", skipConsole=True)
