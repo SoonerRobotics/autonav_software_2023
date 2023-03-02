@@ -122,17 +122,17 @@ void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::R
 void on_timer_tick()
 {
 	// Publish all device states and system state
-	for (auto deviceState : deviceStates)
-	{
-		auto msg = autonav_msgs::msg::DeviceState();
-		msg.device = (uint8_t)deviceState.first;
-		msg.state = deviceState.second;
-		deviceStatePublisher->publish(msg);
-	}
+	// for (auto deviceState : deviceStates)
+	// {
+	// 	auto msg = autonav_msgs::msg::DeviceState();
+	// 	msg.device = (uint8_t)deviceState.first;
+	// 	msg.state = deviceState.second;
+	// 	deviceStatePublisher->publish(msg);
+	// }
 
-	auto msg = autonav_msgs::msg::SystemState();
-	msg.state = systemState;
-	systemStatePublisher->publish(msg);
+	// auto msg = autonav_msgs::msg::SystemState();
+	// msg.state = systemState;
+	// systemStatePublisher->publish(msg);
 }
 
 int main(int argc, char **argv)
