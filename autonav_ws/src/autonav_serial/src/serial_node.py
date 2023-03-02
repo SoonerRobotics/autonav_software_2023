@@ -46,7 +46,9 @@ class SerialMotors(AutoNode):
                     self.set_device_state(DeviceState.STANDBY)
                 return
             
+        self.log(f"Switchy -> {self.device_state}", LogLevel.INFO)
         if self.canbus is not None and self.device_state != DeviceState.READY:
+            self.log("Attempting to switch to ready state", LogLevel.INFO)
             self.set_device_state(DeviceState.READY)
 
     def on_motor_input(self, input: MotorInput):
@@ -68,8 +70,6 @@ class SerialMotors(AutoNode):
 
 
 def main():
-    global node, canbus
-
     rclpy.init()
     rclpy.spin(SerialMotors())
     rclpy.shutdown()
