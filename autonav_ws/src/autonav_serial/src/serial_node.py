@@ -45,6 +45,9 @@ class SerialMotors(AutoNode):
                     self.log("No CAN found, retrying in 0.5 second(s)", LogLevel.WARNING)
                     self.set_device_state(DeviceState.STANDBY)
                 return
+            
+        if self.canbus is not None and self.device_state != DeviceState.READY:
+            self.set_device_state(DeviceState.READY)
 
     def on_motor_input(self, input: MotorInput):
         if self.device_state != DeviceState.OPERATING:
