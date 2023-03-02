@@ -86,9 +86,11 @@ void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::R
 		deviceStatePublisher->publish(msg);
 		deviceStates[device] = Autonav::State::DeviceState::STANDBY;
 		response->ok = true;
+		RCLCPP_INFO(rclcpp::get_logger("autonav_state_system"), "[ALIVE] Setting device state for %d to %d", device, state);
 		return;
 	}
 
+	RCLCPP_INFO(rclcpp::get_logger("autonav_state_system"), "Setting device state for %d to %d", device, state);
 	deviceStates[device] = state;
 	auto msg = autonav_msgs::msg::DeviceState();
 	msg.device = (uint8_t)device;
