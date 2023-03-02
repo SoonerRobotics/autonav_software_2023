@@ -46,9 +46,9 @@ class SerialMotors(AutoNode):
                 return
 
         self.log(f"Current Device State [CAN] : {self.device_state} | {self.canbus is None} | {self.canbus is not None}")
-        if self.canbus is not None and (self.device_state != DeviceState.READY and self.device_state != DeviceState.OPERATING):
-            self.set_device_state(DeviceState.READY)
+        if self.canbus is not None and self.device_state != DeviceState.READY and self.device_state != DeviceState.OPERATING:
             self.log("CAN bus ready", LogLevel.INFO)
+            self.set_device_state(DeviceState.READY)
 
     def on_motor_input(self, input: MotorInput):
         if self.device_state != DeviceState.OPERATING:
