@@ -98,6 +98,22 @@ void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::R
 	response->ok = true;
 }
 
+void on_timer_tick()
+{
+	// Publish all device states and system state
+	for (auto deviceState : deviceStates)
+	{
+		auto msg = autonav_msgs::msg::DeviceState();
+		msg.device = (uint8_t)deviceState.first;
+		msg.state = deviceState.second;
+		deviceStatePublisher->publish(msg);
+	}
+
+	auto msg = autonav_msgs::msg::SystemState();
+	msg.state = systemState;
+	systemStatePublisher->publish(msg);
+}
+
 int main(int argc, char **argv)
 {
 	rclcpp::init(argc, argv);
@@ -107,6 +123,7 @@ int main(int argc, char **argv)
 	auto sdsService = node->create_service<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state", &set_device_state);
 	deviceStatePublisher = node->create_publisher<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10);
 	systemStatePublisher = node->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
+	auto timer = node->create_wall_timer(std::chrono::milliseconds(1000), &on_timer_tick);
 	rclcpp::spin(node);
 	rclcpp::shutdown();
 }
