@@ -30,7 +30,6 @@ class SerialIMU(AutoNode):
         self.config.writeFloat(Registers.IMU_NOTFOUND_RETRY.value, 5.0)
         self.config.writeFloat(Registers.IMU_BADCONNECT_RETRY.value, 5.0)
 
-        self.log_publisher = self.create_publisher(Log, "/autonav/logging", 20)
         self.imu_publisher = self.create_publisher(IMUData, "/autonav/imu", 20)
         self.gps_publisher = self.create_publisher(GPSData, "/autonav/gps", 20)
 

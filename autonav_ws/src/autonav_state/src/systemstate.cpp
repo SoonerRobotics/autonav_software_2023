@@ -3,6 +3,7 @@
 #include "autonav_msgs/srv/set_device_state.hpp"
 #include "autonav_msgs/msg/device_state.hpp"
 #include "autonav_libs/common.h"
+#include <chrono>
 
 std::map<Autonav::Device, Autonav::State::DeviceState> deviceStates = {{
 	{Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OFF},
@@ -17,6 +18,7 @@ std::map<Autonav::Device, Autonav::State::DeviceState> deviceStates = {{
 Autonav::State::SystemState systemState = Autonav::State::SystemState::DISABLED;
 std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::DeviceState>> deviceStatePublisher;
 std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::SystemState>> systemStatePublisher;
+std::chrono::_V2::system_clock::time_point displayReadyAt = std::chrono::system_clock::now();
 
 bool canSwitchToManual()
 {
@@ -85,8 +87,18 @@ void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::R
 		return;
 	}
 
+	if (device != Autonav::Device::DISPLAY_NODE && std::chrono::system_clock::now() - displayReadyAt < std::chrono::seconds(2))
+	{
+		response->ok = false;
+		return;
+	}
+
 	if (state == Autonav::State::DeviceState::ALIVE)
 	{
+		if(device == Autonav::Device::DISPLAY_NODE)
+		{
+			displayReadyAt = std::chrono::system_clock::now();
+		}
 		auto msg = autonav_msgs::msg::DeviceState();
 		msg.device = (uint8_t)device;
 		msg.state = Autonav::State::DeviceState::STANDBY;
