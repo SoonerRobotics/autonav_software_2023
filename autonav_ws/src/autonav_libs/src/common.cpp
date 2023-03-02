@@ -240,6 +240,7 @@ namespace Autonav
 			requestAllRemoteRegistersFrom(Autonav::Device::SERIAL_CAN);
 			requestAllRemoteRegistersFrom(Autonav::Device::SERIAL_IMU);
 			requestAllRemoteRegistersFrom(Autonav::Device::STEAM_TRANSLATOR);
+			requestAllRemoteRegistersFrom(Autonav::Device::CAMERA_TRANSLATOR);
 		}
 
 		template <>

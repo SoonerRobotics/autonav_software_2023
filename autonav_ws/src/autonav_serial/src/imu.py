@@ -51,7 +51,6 @@ class SerialIMU(AutoNode):
                         pass
                     
                     self.sensor.connect("/dev/autonav-imu-200", 115200)
-                    self.set_device_state(DeviceState.READY)
                 except:
                     self.log(f"No IMU found, retrying in {self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value)} second(s)", LogLevel.WARNING)
                     time.sleep(self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value))
@@ -64,6 +63,10 @@ class SerialIMU(AutoNode):
                 time.sleep(self.config.readFloat(Registers.IMU_BADCONNECT_RETRY.value))
                 self.set_device_state(DeviceState.STANDBY)
                 continue
+
+            if (not self.device_state != DeviceState.READY):
+                self.set_device_state(DeviceState.READY)
+                time.sleep(0.5)
 
             if self.device_state != DeviceState.OPERATING:
                 continue

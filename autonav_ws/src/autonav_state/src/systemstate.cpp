@@ -20,18 +20,18 @@ std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::SystemState>> systemStatePu
 
 bool canSwitchToManual()
 {
-	return true;
-	// return (
-	// 	deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
-	// 	(
-	// 		deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY ||
-	// 		(
-	// 			deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] >= Autonav::State::DeviceState::READY &&
-	// 			deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY
-	// 		)
-	// 	)
-	// 	// deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY
-	// );
+	// return true;
+	return (
+		deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
+		(
+			deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY ||
+			(
+				deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] >= Autonav::State::DeviceState::READY &&
+				deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY
+			)
+		) &&
+		deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY
+	);
 }
 
 bool canSwitchToAutonomous()
