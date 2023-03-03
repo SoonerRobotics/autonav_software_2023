@@ -40,20 +40,18 @@ static void glfw_error_callback(int error, const char *description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-std::map<Autonav::Device, Autonav::State::DeviceState> deviceStates;
-
-static const char* systemStateToString(Autonav::State::SystemState state)
+static const char *systemStateToString(Autonav::State::SystemState state)
 {
-	switch(state)
+	switch (state)
 	{
-		case Autonav::State::SystemState::DISABLED:
-			return "DISABLED";
-		case Autonav::State::SystemState::AUTONOMOUS:
-			return "AUTONOMOUS";
-		case Autonav::State::SystemState::MANUAL:
-			return "MANUAL";
-		default:
-			return "UNKNOWN";
+	case Autonav::State::SystemState::DISABLED:
+		return "DISABLED";
+	case Autonav::State::SystemState::AUTONOMOUS:
+		return "AUTONOMOUS";
+	case Autonav::State::SystemState::MANUAL:
+		return "MANUAL";
+	default:
+		return "UNKNOWN";
 	}
 }
 
@@ -74,9 +72,50 @@ static ImVec4 deviceStateToColor(Autonav::State::DeviceState state)
 	}
 }
 
+const char *deviceToString(Autonav::Device device)
+{
+	switch (device)
+	{
+	case Autonav::Device::STEAM_TRANSLATOR:
+		return "STEAM_TRANSLATOR";
+	case Autonav::Device::MANUAL_CONTROL_STEAM:
+		return "MANUAL_CONTROL_STEAM";
+	case Autonav::Device::MANUAL_CONTROL_XBOX:
+		return "MANUAL_CONTROL_XBOX";
+	case Autonav::Device::DISPLAY_NODE:
+		return "DISPLAY";
+	case Autonav::Device::SERIAL_IMU:
+		return "IMU_TRANSLATOR";
+	case Autonav::Device::SERIAL_CAN:
+		return "CAN_TRANSLATOR";
+	case Autonav::Device::LOGGING:
+		return "LOGGER";
+	case Autonav::Device::CAMERA_TRANSLATOR:
+		return "CAMERA_TRANSLATOR";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+const char *deviceStateToString(Autonav::State::DeviceState state)
+{
+	switch (state)
+	{
+	case Autonav::State::DeviceState::STANDBY:
+		return "Standby";
+	case Autonav::State::DeviceState::READY:
+		return "Ready";
+	case Autonav::State::DeviceState::OPERATING:
+		return "Operating";
+	case Autonav::State::DeviceState::OFF:
+	default:
+		return "OFF";
+	}
+}
+
 void showSerialConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto can_reg = node->_config.getRegistersForDevice(Autonav::Device::SERIAL_CAN);
+	auto can_reg = node->config.getRegistersForDevice(Autonav::Device::SERIAL_CAN);
 	if (can_reg.size() == 0)
 	{
 		return;
@@ -92,10 +131,10 @@ void showSerialConfiguration(Autonav::ROS::AutoNode *node)
 		{
 		case 0: // Motor Offset
 		{
-			auto data = node->_config.read<float>(Autonav::Device::SERIAL_CAN, address);
+			auto data = node->config.read<float>(Autonav::Device::SERIAL_CAN, address);
 			if (ImGui::InputFloat("Motor Offset", &data))
 			{
-				node->_config.writeTo(Autonav::Device::SERIAL_CAN, address, data);
+				node->config.writeTo(Autonav::Device::SERIAL_CAN, address, data);
 			}
 			break;
 		}
@@ -105,7 +144,7 @@ void showSerialConfiguration(Autonav::ROS::AutoNode *node)
 
 void showIMUConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto imu_reg = node->_config.getRegistersForDevice(Autonav::Device::SERIAL_IMU);
+	auto imu_reg = node->config.getRegistersForDevice(Autonav::Device::SERIAL_IMU);
 	if (imu_reg.size() == 0)
 	{
 		return;
@@ -123,12 +162,12 @@ void showIMUConfiguration(Autonav::ROS::AutoNode *node)
 		case 1: // Not Found Retry Time
 		case 2: // Bad Connection Retry
 		{
-			auto data = node->_config.read<float>(Autonav::Device::SERIAL_IMU, address);
+			auto data = node->config.read<float>(Autonav::Device::SERIAL_IMU, address);
 			auto title = address == 0 ? "Read Rate (s)" : address == 1 ? "Not Found Retry (s)"
 																	   : "Bad Connection Retry (s)";
 			if (ImGui::InputFloat(title, &data))
 			{
-				node->_config.writeTo(Autonav::Device::SERIAL_IMU, address, data);
+				node->config.writeTo(Autonav::Device::SERIAL_IMU, address, data);
 			}
 			break;
 		}
@@ -138,7 +177,7 @@ void showIMUConfiguration(Autonav::ROS::AutoNode *node)
 
 void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto steam_reg = node->_config.getRegistersForDevice(Autonav::Device::MANUAL_CONTROL_STEAM);
+	auto steam_reg = node->config.getRegistersForDevice(Autonav::Device::MANUAL_CONTROL_STEAM);
 	if (steam_reg.size() == 0)
 	{
 		return;
@@ -154,10 +193,10 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 		{
 		case 0: // Timeout Delay
 		{
-			auto data = node->_config.read<int32_t>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
+			auto data = node->config.read<int32_t>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
 			if (ImGui::InputInt("Timeout Delay", &data))
 			{
-				node->_config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
+				node->config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
 			}
 			break;
 		}
@@ -167,13 +206,13 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 		case 3: // Max Speed
 		case 4: // Speed Offset
 		{
-			auto data = node->_config.read<float>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
+			auto data = node->config.read<float>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
 			auto title = address == 1 ? "Steering Deadzone" : address == 2 ? "Throttle Deadzone"
 														  : address == 3   ? "Max Speed"
 																		   : "Speed Offset";
 			if (ImGui::InputFloat(title, &data))
 			{
-				node->_config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
+				node->config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
 			}
 			break;
 		}
@@ -183,7 +222,7 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 
 void showCameraConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto camera_reg = node->_config.getRegistersForDevice(Autonav::Device::CAMERA_TRANSLATOR);
+	auto camera_reg = node->config.getRegistersForDevice(Autonav::Device::CAMERA_TRANSLATOR);
 	if (camera_reg.size() == 0)
 	{
 		return;
@@ -197,23 +236,17 @@ void showCameraConfiguration(Autonav::ROS::AutoNode *node)
 
 		switch (address)
 		{
-			case 0: // Refresh Rate
+		case 0: // Refresh Rate
+		{
+			auto data = node->config.read<int32_t>(Autonav::Device::CAMERA_TRANSLATOR, address);
+			if (ImGui::InputInt("Refresh Rate", &data))
 			{
-				auto data = node->_config.read<int32_t>(Autonav::Device::CAMERA_TRANSLATOR, address);
-				if (ImGui::InputInt("Refresh Rate", &data))
-				{
-					node->_config.writeTo(Autonav::Device::CAMERA_TRANSLATOR, address, data);
-				}
-				break;
+				node->config.writeTo(Autonav::Device::CAMERA_TRANSLATOR, address, data);
 			}
+			break;
+		}
 		}
 	}
-}
-
-void showNodeState(Autonav::ROS::AutoNode *node, Autonav::Device device)
-{
-	auto state = deviceStates[device];
-	ImGui::TextColored(deviceStateToColor(state), "%s: %s", Autonav::deviceToString(device), Autonav::deviceStateToString(state));
 }
 
 class DisplayNode : public Autonav::ROS::AutoNode
@@ -229,36 +262,42 @@ public:
 		ImGui::DestroyContext();
 
 		glfwDestroyWindow(window);
-		glfwTerminate();	
+		glfwTerminate();
 	}
 
 	void setup() override
 	{
 		RCLCPP_INFO(this->get_logger(), "Starting Display Node");
 
-		gps_subscriber_ = this->create_subscription<autonav_msgs::msg::GPSData>("/autonav/gps", 20, std::bind(&DisplayNode::on_gps_data, this, std::placeholders::_1));
-		imu_subscriber_ = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::on_imu_data, this, std::placeholders::_1));
-		motor_subscriber_ = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::on_motor_data, this, std::placeholders::_1));
-		steam_subscriber_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::on_steam_data, this, std::placeholders::_1));
-		camera_subscriber_ = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::on_camera_data, this, std::placeholders::_1));
-		log_subscriber_ = this->create_subscription<autonav_msgs::msg::Log>("/autonav/logging", 20, std::bind(&DisplayNode::on_log, this, std::placeholders::_1));
+		m_gpsSubscriber = this->create_subscription<autonav_msgs::msg::GPSData>("/autonav/gps", 20, std::bind(&DisplayNode::onGpsDataReceived, this, std::placeholders::_1));
+		m_imuSubscriber = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::onImuDataReceived, this, std::placeholders::_1));
+		m_motorSubscriber = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::onMotorDataReceived, this, std::placeholders::_1));
+		m_steamSubscriber = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::onSteamDataReceived, this, std::placeholders::_1));
+		m_cameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::onCameraDataReceived, this, std::placeholders::_1));
+		m_logSubscriber = this->create_subscription<autonav_msgs::msg::Log>("/autonav/logging", 20, std::bind(&DisplayNode::onLogReceived, this, std::placeholders::_1));
 
-		setup_imgui();
+		if (!setup_imgui())
+		{
+			RCLCPP_ERROR(this->get_logger(), "Failed to setup ImGUI");
+			return;
+		}
 
+		this->setDeviceState(Autonav::State::DeviceState::READY);
 		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
 	}
 
 	void operate() override
 	{
-		render_clock = this->create_wall_timer(std::chrono::milliseconds(1000 / 60), std::bind(&DisplayNode::render, this));
+		RCLCPP_INFO(this->get_logger(), "Operating Display Node");
+		m_renderClock = this->create_wall_timer(std::chrono::milliseconds(1000 / 60), std::bind(&DisplayNode::render, this));
 	}
 
-	void setup_imgui()
+	bool setup_imgui()
 	{
 		glfwSetErrorCallback(glfw_error_callback);
 		if (!glfwInit())
 		{
-			return;
+			return false;
 		}
 
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -268,16 +307,16 @@ public:
 		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | Weeb Wagon", NULL, NULL);
 		if (window == NULL)
 		{
-			return;
+			return false;
 		}
+
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
-
 		bool err = glewInit() != GLEW_OK;
 		if (err)
 		{
 			fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-			return;
+			return false;
 		}
 
 		IMGUI_CHECKVERSION();
@@ -301,6 +340,14 @@ public:
 
 		// glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
 		ImGui::SetNextWindowSize(ImVec2(mode->width * 0.5, mode->height * 0.5), ImGuiCond_Once);
+
+		return true;
+	}
+
+	void showNodeState(Autonav::ROS::AutoNode *node, Autonav::Device device)
+	{
+		auto state = getDeviceState(device);
+		ImGui::TextColored(deviceStateToColor(state), "%s: %s", deviceToString(device), deviceStateToString(state));
 	}
 
 	void render()
@@ -313,6 +360,7 @@ public:
 			}
 
 			rclcpp::shutdown();
+			return;
 		}
 
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -321,36 +369,33 @@ public:
 		ImGui_ImplGlfw_NewFrame();
 
 		ImGui::NewFrame();
-
 		{
 			ImGui::Begin("Autonav 2023 | The Weeb Wagon", nullptr);
-
 			ImGui::SetWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Once);
 			ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Once);
-			// ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
 			if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None))
 			{
 				if (ImGui::BeginTabItem("General Data"))
 				{
-					ImGui::Text("System State: %s", systemStateToString(_systemState));
+					ImGui::Text("System State: %s", systemStateToString(getSystemState()));
 
 					ImGui::SeparatorText("GPS Data");
-					ImGui::Text("Latitude: %f", gps_data.latitude);
-					ImGui::Text("Longitude: %f", gps_data.longitude);
-					ImGui::Text("Altitude: %f", gps_data.altitude);
-					ImGui::Text("Current Fix: %d", gps_data.gps_fix);
+					ImGui::Text("Latitude: %f", m_lastGpsMessage.latitude);
+					ImGui::Text("Longitude: %f", m_lastGpsMessage.longitude);
+					ImGui::Text("Altitude: %f", m_lastGpsMessage.altitude);
+					ImGui::Text("Current Fix: %d", m_lastGpsMessage.gps_fix);
 
 					ImGui::SeparatorText("IMU Data");
-					ImGui::Text("Pitch: %f", imu_data.pitch);
-					ImGui::Text("Roll: %f", imu_data.roll);
-					ImGui::Text("Yaw: %f", imu_data.yaw);
-					ImGui::Text("Acceleration: (%f, %f, %f)", imu_data.accel_x, imu_data.accel_y, imu_data.accel_z);
-					ImGui::Text("Angular Velocity: (%f, %f, %f)", imu_data.angular_x, imu_data.angular_y, imu_data.angular_z);
+					ImGui::Text("Pitch: %f", m_lastImuMessage.pitch);
+					ImGui::Text("Roll: %f", m_lastImuMessage.roll);
+					ImGui::Text("Yaw: %f", m_lastImuMessage.yaw);
+					ImGui::Text("Acceleration: (%f, %f, %f)", m_lastImuMessage.accel_x, m_lastImuMessage.accel_y, m_lastImuMessage.accel_z);
+					ImGui::Text("Angular Velocity: (%f, %f, %f)", m_lastImuMessage.angular_x, m_lastImuMessage.angular_y, m_lastImuMessage.angular_z);
 
 					ImGui::SeparatorText("Motor Data");
-					ImGui::Text("Left Motor: %.1f", motor_data.left_motor);
-					ImGui::Text("Right Motor: %.1f", motor_data.right_motor);
+					ImGui::Text("Left Motor: %.1f", m_lastMotorMessage.left_motor);
+					ImGui::Text("Right Motor: %.1f", m_lastMotorMessage.right_motor);
 
 					ImGui::SeparatorText("Device States");
 					showNodeState(this, Autonav::Device::DISPLAY_NODE);
@@ -368,13 +413,13 @@ public:
 				if (ImGui::BeginTabItem("Controller"))
 				{
 					ImGui::SeparatorText("Controller");
-					ImGui::Text("Left Joystick: (%.1f, %.1f)", steam_data.lpad_x, steam_data.lpad_y);
-					ImGui::Text("Right Joystick: (%.1f, %.1f)", steam_data.rpad_x, steam_data.rpad_y);
-					ImGui::Text("Left Trigger: %.1f", steam_data.ltrig);
-					ImGui::Text("Right Trigger: %.1f", steam_data.rtrig);
-					for (int i = 0; i < steam_data.buttons.size(); i++)
+					ImGui::Text("Left Joystick: (%.1f, %.1f)", m_lastSteamMessage.lpad_x, m_lastSteamMessage.lpad_y);
+					ImGui::Text("Right Joystick: (%.1f, %.1f)", m_lastSteamMessage.rpad_x, m_lastSteamMessage.rpad_y);
+					ImGui::Text("Left Trigger: %.1f", m_lastSteamMessage.ltrig);
+					ImGui::Text("Right Trigger: %.1f", m_lastSteamMessage.rtrig);
+					for (int i = 0; i < m_lastSteamMessage.buttons.size(); i++)
 					{
-						ImGui::Text("Button %d: %s", i, steam_data.buttons[i] ? "Pressed" : "Released");
+						ImGui::Text("Button %d: %s", i, m_lastSteamMessage.buttons[i] ? "Pressed" : "Released");
 					}
 
 					ImGui::EndTabItem();
@@ -387,12 +432,11 @@ public:
 
 				if (ImGui::BeginTabItem("Logs"))
 				{
-					// Display logs in a scrollable list
 					ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
-					ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
-					for (int i = 0; i < this->logs.size(); i++)
+					ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
+					for (int i = 0; i < this->m_latestLogs.size(); i++)
 					{
-						const char *item = this->logs[i].c_str();
+						const char *item = this->m_latestLogs[i].c_str();
 						ImGui::TextUnformatted(item);
 					}
 					ImGui::PopStyleVar();
@@ -405,7 +449,7 @@ public:
 				{
 					if (ImGui::Button("Request All"))
 					{
-						this->_config.requestAllRemoteRegisters();
+						this->config.requestAllRemoteRegisters();
 					}
 
 					showSerialConfiguration(this);
@@ -418,11 +462,11 @@ public:
 
 				if (ImGui::BeginTabItem("Preferences"))
 				{
-					if (ImGui::SliderFloat("Font Size", &font_size, 10.0f, 40.0f))
+					if (ImGui::SliderFloat("Font Size", &m_fontSize, 10.0f, 40.0f))
 					{
 						ImGuiIO &io = ImGui::GetIO();
 						auto font = io.Fonts->Fonts[0];
-						font->Scale = font_size / 20.0f;
+						font->Scale = m_fontSize / 20.0f;
 					}
 
 					static const char *themes[] = {"Dark", "Light", "Classic"};
@@ -475,7 +519,6 @@ public:
 					ImGui::Text("Package directory: %s", path.c_str());
 					ImGui::EndTabItem();
 
-					// Show a tree of all topics
 					if (ImGui::TreeNode("Topics"))
 					{
 						auto _topics = this->get_topic_names_and_types();
@@ -490,7 +533,6 @@ public:
 						ImGui::TreePop();
 					}
 
-					// Show a tree of all nodes
 					if (ImGui::TreeNode("Nodes"))
 					{
 						auto _nodes = this->get_node_names();
@@ -501,7 +543,6 @@ public:
 						ImGui::TreePop();
 					}
 				}
-
 				ImGui::EndTabBar();
 			}
 			ImGui::End();
@@ -518,27 +559,27 @@ public:
 	}
 
 	// Other Callbacks
-	void on_gps_data(const autonav_msgs::msg::GPSData::SharedPtr data)
+	void onGpsDataReceived(const autonav_msgs::msg::GPSData::SharedPtr data)
 	{
-		this->gps_data = *data;
+		this->m_lastGpsMessage = *data;
 	}
 
-	void on_imu_data(const autonav_msgs::msg::IMUData::SharedPtr data)
+	void onImuDataReceived(const autonav_msgs::msg::IMUData::SharedPtr data)
 	{
-		this->imu_data = *data;
+		this->m_lastImuMessage = *data;
 	}
 
-	void on_motor_data(const autonav_msgs::msg::MotorInput::SharedPtr data)
+	void onMotorDataReceived(const autonav_msgs::msg::MotorInput::SharedPtr data)
 	{
-		this->motor_data = *data;
+		this->m_lastMotorMessage = *data;
 	}
 
-	void on_steam_data(const autonav_msgs::msg::SteamInput::SharedPtr data)
+	void onSteamDataReceived(const autonav_msgs::msg::SteamInput::SharedPtr data)
 	{
-		this->steam_data = *data;
+		this->m_lastSteamMessage = *data;
 	}
 
-	void on_camera_data(const sensor_msgs::msg::CompressedImage::SharedPtr data)
+	void onCameraDataReceived(const sensor_msgs::msg::CompressedImage::SharedPtr data)
 	{
 		cv_bridge::CvImagePtr cv_ptr;
 		try
@@ -551,67 +592,38 @@ public:
 			return;
 		}
 
-		this->has_image = true;
-		this->image = cv_ptr->image;
+		this->m_hasAnyImage = true;
+		this->m_lastImage = cv_ptr->image;
 	}
 
-	void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg) override
+	void onLogReceived(const autonav_msgs::msg::Log::SharedPtr msg)
 	{
-		if (msg->device == _device)
+		m_latestLogs.insert(m_latestLogs.begin(), msg->data);
+		if (m_latestLogs.size() > 100)
 		{
-			auto newState = static_cast<Autonav::State::DeviceState>(msg->state);
-			if (newState == Autonav::State::DeviceState::STANDBY && _deviceState == Autonav::State::DeviceState::ALIVE)
-			{
-				_deviceState = newState;
-				this->setup();
-			}
-
-			if (newState == Autonav::State::DeviceState::OPERATING && _deviceState != Autonav::State::DeviceState::OPERATING)
-			{
-				_deviceState = newState;
-				this->operate();
-			}
-
-			if (newState != Autonav::State::DeviceState::STANDBY && newState != Autonav::State::DeviceState::OPERATING && newState != Autonav::State::DeviceState::ALIVE)
-			{
-				_deviceState = newState;
-			}
-		}
-
-		deviceStates[(Autonav::Device)msg->device] = (Autonav::State::DeviceState)msg->state;
-	}
-
-	void on_log(const autonav_msgs::msg::Log::SharedPtr msg)
-	{
-		logs.insert(logs.begin(), msg->data);
-		if (logs.size() > 100)
-		{
-			logs.erase(logs.begin() + 100, logs.end());
+			m_latestLogs.erase(m_latestLogs.begin() + 100, m_latestLogs.end());
 		}
 	}
-
-private:
-	float font_size = 20.0f;
-	std::vector<std::string> logs;
 
 private:
 	rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr conbus_subscriber_;
-	rclcpp::Subscription<autonav_msgs::msg::GPSData>::SharedPtr gps_subscriber_;
-	rclcpp::Subscription<autonav_msgs::msg::IMUData>::SharedPtr imu_subscriber_;
-	rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr motor_subscriber_;
-	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr steam_subscriber_;
-	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_subscriber_;
-	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr log_subscriber_;
+	rclcpp::Subscription<autonav_msgs::msg::GPSData>::SharedPtr m_gpsSubscriber;
+	rclcpp::Subscription<autonav_msgs::msg::IMUData>::SharedPtr m_imuSubscriber;
+	rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr m_motorSubscriber;
+	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr m_steamSubscriber;
+	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_cameraSubscriber;
+	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr m_logSubscriber;
 
-	rclcpp::TimerBase::SharedPtr render_clock;
+	rclcpp::TimerBase::SharedPtr m_renderClock;
 
-private:
-	autonav_msgs::msg::GPSData gps_data;
-	autonav_msgs::msg::IMUData imu_data;
-	autonav_msgs::msg::MotorInput motor_data;
-	autonav_msgs::msg::SteamInput steam_data;
-	cv::Mat image;
-	bool has_image = false;
+	autonav_msgs::msg::GPSData m_lastGpsMessage;
+	autonav_msgs::msg::IMUData m_lastImuMessage;
+	autonav_msgs::msg::MotorInput m_lastMotorMessage;
+	autonav_msgs::msg::SteamInput m_lastSteamMessage;
+	float m_fontSize = 20.0f;
+	std::vector<std::string> m_latestLogs;
+	cv::Mat m_lastImage;
+	bool m_hasAnyImage = false;
 };
 
 int main(int, char **)
@@ -621,5 +633,6 @@ int main(int, char **)
 	auto node = std::make_shared<DisplayNode>();
 	rclcpp::spin(node);
 	rclcpp::shutdown();
+
 	return 0;
 }

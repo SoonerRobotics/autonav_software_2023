@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>autonav_display</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="dylan.zemlin@gmail.com">dylan</maintainer>
-  <license>TODO: License declaration</license>
+  <version>1.0.0</version>
+  <description>The primay display node</description>
+  <maintainer email="dylan.zemlin@gmail.com">Dylan ZEmlin</maintainer>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -13,9 +13,6 @@
   <depend>autonav_libs</depend>
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>
-
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
 
   <depend>libglfw3-dev</depend>
   <depend>libglew-dev</depend>

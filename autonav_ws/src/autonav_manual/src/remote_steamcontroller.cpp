@@ -34,27 +34,27 @@ public:
 
 	void setup() override
 	{
-		subscription_ = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&JoyNode::on_steam_received, this, _1));
-		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
+		m_steamSubscription = create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&JoyNode::on_steam_received, this, _1));
+		m_motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 
-		this->_config.write(Registers::TIMEOUT_DELAY, 500);
-		this->_config.write(Registers::STEERING_DEADZONE, 0.35f);
-		this->_config.write(Registers::THROTTLE_DEADZONE, 0.1f);
-		this->_config.write(Registers::MAX_SPEED, 2.0f);
-		this->_config.write(Registers::SPEED_OFFSET, 0.6f);
+		config.write(Registers::TIMEOUT_DELAY, 500);
+		config.write(Registers::STEERING_DEADZONE, 0.35f);
+		config.write(Registers::THROTTLE_DEADZONE, 0.1f);
+		config.write(Registers::MAX_SPEED, 2.0f);
+		config.write(Registers::SPEED_OFFSET, 0.6f);
 
-		this->setDeviceState(Autonav::State::DeviceState::READY);
+		setDeviceState(Autonav::State::DeviceState::READY);
 	}
 
 	void operate() override
 	{
-		timer_ = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
+		m_timer = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
 	}
 
 	void on_timer_elapsed()
 	{
 		long currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-		if (currentTime - lastMessageTime < this->_config.read<int32_t>(Registers::TIMEOUT_DELAY) || this->_systemState != Autonav::State::SystemState::MANUAL)
+		if (currentTime - lastMessageTime < config.read<int32_t>(Registers::TIMEOUT_DELAY) || getSystemState() != Autonav::State::SystemState::MANUAL)
 		{
 			return;
 		}
@@ -62,24 +62,24 @@ public:
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
 		package.left_motor = 0;
 		package.right_motor = 0;
-		motor_publisher->publish(package);
+		m_motorPublisher->publish(package);
 	}
 
 	void on_steam_received(const autonav_msgs::msg::SteamInput &msg)
 	{
 		lastMessageTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-		if (this->_systemState != Autonav::State::SystemState::MANUAL)
+		if (getSystemState() != Autonav::State::SystemState::MANUAL)
 		{
 			return;
 		}
 
 		float throttle = 0;
 		float steering = 0;
-		const float deadzone = this->_config.read<float>(Registers::THROTTLE_DEADZONE);
-		const float maxSpeed = this->_config.read<float>(Registers::MAX_SPEED);
-		const float steeringVoid = this->_config.read<float>(Registers::STEERING_DEADZONE);
-		const float offset = this->_config.read<float>(Registers::SPEED_OFFSET);
+		const float deadzone = config.read<float>(Registers::THROTTLE_DEADZONE);
+		const float maxSpeed = config.read<float>(Registers::MAX_SPEED);
+		const float steeringVoid = config.read<float>(Registers::STEERING_DEADZONE);
+		const float offset = config.read<float>(Registers::SPEED_OFFSET);
 
 		if (abs(msg.ltrig) > deadzone || abs(msg.rtrig) > deadzone)
 		{
@@ -101,12 +101,12 @@ public:
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
 		package.left_motor = clamp(throttle - steering * offset, -maxSpeed, maxSpeed);
 		package.right_motor = clamp(throttle + steering * offset, -maxSpeed, maxSpeed);
-		motor_publisher->publish(package);
+		m_motorPublisher->publish(package);
 	}
 
-	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr motor_publisher;
-	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr subscription_;
-	rclcpp::TimerBase::SharedPtr timer_;
+	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr m_motorPublisher;
+	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr m_steamSubscription;
+	rclcpp::TimerBase::SharedPtr m_timer;
 };
 
 int main(int argc, char *argv[])

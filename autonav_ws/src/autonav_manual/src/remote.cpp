@@ -24,10 +24,8 @@ public:
 
 	void setup() override
 	{
-		subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
-			"/joy", 10, std::bind(&JoyNode::on_joy_received, this, _1));
-
-		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
+		m_steamSubscription = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 10, std::bind(&JoyNode::on_joy_received, this, _1));
+		m_motorPublisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
 	}
 
 private:
@@ -51,11 +49,11 @@ private:
 
 		package.left_motor = clamp(throttle - steering * 0.6, -MAX_SPEED, MAX_SPEED);
 		package.right_motor = clamp(throttle + steering * 0.6, -MAX_SPEED, MAX_SPEED);
-		motor_publisher->publish(package);
+		m_motorPublisher->publish(package);
 	}
 
-	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr motor_publisher;
-	rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
+	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr m_motorPublisher;
+	rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr m_steamSubscription;
 };
 
 int main(int argc, char *argv[])

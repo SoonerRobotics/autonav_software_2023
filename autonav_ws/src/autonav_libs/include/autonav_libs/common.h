@@ -28,10 +28,9 @@ namespace Autonav
         enum DeviceState
         {
             OFF = 0,
-            ALIVE = 1,
-            STANDBY = 2,
-            READY = 3,
-            OPERATING = 4
+            STANDBY = 1,
+            READY = 2,
+            OPERATING = 3
         };
 
         enum SystemState
@@ -40,49 +39,6 @@ namespace Autonav
             AUTONOMOUS = 1,
             MANUAL = 2
         };
-    }
-
-    static const char* deviceToString(Autonav::Device device)
-    {
-        switch (device)
-        {
-        case Device::STEAM_TRANSLATOR:
-            return "STEAM_TRANSLATOR";
-        case Device::MANUAL_CONTROL_STEAM:
-            return "MANUAL_CONTROL_STEAM";
-        case Device::MANUAL_CONTROL_XBOX:
-            return "MANUAL_CONTROL_XBOX";
-        case Device::DISPLAY_NODE:
-            return "DISPLAY";
-        case Device::SERIAL_IMU:
-            return "IMU_TRANSLATOR";
-        case Device::SERIAL_CAN:
-            return "CAN_TRANSLATOR";
-        case Device::LOGGING:
-            return "LOGGER";
-        case Device::CAMERA_TRANSLATOR:
-            return "CAMERA_TRANSLATOR";
-        default:
-            return "UNKNOWN";
-        }
-    }
-
-    static const char* deviceStateToString(Autonav::State::DeviceState state)
-    {
-        switch (state)
-        {
-        case State::DeviceState::STANDBY:
-            return "Standby";
-        case State::DeviceState::READY:
-            return "Ready";
-        case State::DeviceState::OPERATING:
-            return "Operating";
-        case State::DeviceState::ALIVE:
-            return "Alive";
-        case State::DeviceState::OFF:
-        default:
-            return "OFF";
-        }
     }
 
     namespace CanBus
@@ -150,11 +106,10 @@ namespace Autonav
             void onConbusInstruction(const autonav_msgs::msg::ConBusInstruction::SharedPtr msg);
 
         private:
-            Device _device;
-            std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>> _registers;
-
-            rclcpp::Publisher<autonav_msgs::msg::ConBusInstruction>::SharedPtr _conbusPublisher;
-            rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr _conbusSubscriber;
+            Device m_device;
+            std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>> m_registers;
+            rclcpp::Publisher<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusPublisher;
+            rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusSubscriber;
         };
     }
 
@@ -169,29 +124,35 @@ namespace Autonav
             bool setSystemState(State::SystemState state);
             bool setDeviceState(State::DeviceState state);
 
-            Configuration::Conbus _config;
-            Autonav::Device _device;
-            State::SystemState _systemState;
-            State::DeviceState _deviceState;
+            Configuration::Conbus config;
+            Autonav::Device device;
 
             virtual void setup() {}
             virtual void operate() {}
+            virtual void deoperate() {}
+
+            State::SystemState getSystemState();
+            State::DeviceState getDeviceState();
+            State::DeviceState getDeviceState(Autonav::Device device);
 
         protected:
             virtual void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
             virtual void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg);
 
         private:
-            void onAliveTimer();
+            void onInitializeTimer();
 
         private:
-            rclcpp::Subscription<autonav_msgs::msg::SystemState>::SharedPtr _systemStateSubscriber;
-            rclcpp::Subscription<autonav_msgs::msg::DeviceState>::SharedPtr _deviceStateSubscriber;
+            rclcpp::Subscription<autonav_msgs::msg::SystemState>::SharedPtr m_systemStateSubscriber;
+            rclcpp::Subscription<autonav_msgs::msg::DeviceState>::SharedPtr m_deviceStateSubscriber;
 
-            rclcpp::Client<autonav_msgs::srv::SetDeviceState>::SharedPtr _deviceStateClient;
-            rclcpp::Client<autonav_msgs::srv::SetSystemState>::SharedPtr _systemStateClient;
+            rclcpp::Client<autonav_msgs::srv::SetDeviceState>::SharedPtr m_deviceStateClient;
+            rclcpp::Client<autonav_msgs::srv::SetSystemState>::SharedPtr m_systemStateClient;
 
-            rclcpp::TimerBase::SharedPtr _aliveTimer;
+            State::SystemState m_systemState;
+            std::map<Autonav::Device, State::DeviceState> m_deviceStates;
+
+            rclcpp::TimerBase::SharedPtr _initializeTimer;
         };
     }
 }

@@ -19,7 +19,7 @@ class Register(IntEnum):
     REFRESH_RATE = 0
 
 
-class Cameranode(AutoNode):
+class CameraNode(AutoNode):
     def __init__(self):
         super().__init__(Device.CAMERA_TRANSLATOR, "autonav_serial_camera")
         self.config.writeInt(Register.REFRESH_RATE, 1)
@@ -28,26 +28,26 @@ class Cameranode(AutoNode):
         self.sensor = VnSensor()
         self.has_published_headers = False
 
-        self.camera_publisher = self.create_publisher(
+        self.m_cameraPublisher = self.create_publisher(
             Image, "/autonav/camera/raw", 20)
-        self.camera_thread = threading.Thread(target=self.camera_read)
-        self.camera_thread.start()
-        self.set_device_state(DeviceStateEnum.OPERATING)
+        self.m_cameraThread = threading.Thread(target=self.camera_read)
+        self.m_cameraThread.start()
+        self.setDeviceState(DeviceStateEnum.OPERATING)
 
     def camera_read(self):
-        cap = cv2.VideoCapture(0)
+        capture = cv2.VideoCapture(0)
         while rclpy.ok():
-            ret, frame = cap.read()
+            ret, frame = capture.read()
             if not ret or frame is None:
                 continue
 
-            self.camera_publisher.publish(bridge.cv2_to_imgmsg(frame))
+            self.m_cameraPublisher.publish(bridge.cv2_to_imgmsg(frame))
             time.sleep(1.0 / self.config.readInt(Register.REFRESH_RATE))
 
 
 def main():
     rclpy.init()
-    rclpy.spin(Cameranode())
+    rclpy.spin(CameraNode())
     rclpy.shutdown()
 
 

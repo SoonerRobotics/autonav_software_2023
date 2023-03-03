@@ -5,7 +5,7 @@
 #include "autonav_libs/common.h"
 #include <chrono>
 
-std::map<Autonav::Device, Autonav::State::DeviceState> deviceStates = {{
+std::map<Autonav::Device, Autonav::State::DeviceState> g_deviceStates = {{
 	{Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OFF},
 	{Autonav::Device::LOGGING, Autonav::State::DeviceState::OFF},
 	{Autonav::Device::MANUAL_CONTROL_STEAM, Autonav::State::DeviceState::OFF},
@@ -15,124 +15,122 @@ std::map<Autonav::Device, Autonav::State::DeviceState> deviceStates = {{
 	{Autonav::Device::STEAM_TRANSLATOR, Autonav::State::DeviceState::OFF}
 }};
 
-Autonav::State::SystemState systemState = Autonav::State::SystemState::DISABLED;
-std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::DeviceState>> deviceStatePublisher;
-std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::SystemState>> systemStatePublisher;
-std::chrono::_V2::system_clock::time_point displayReadyAt = std::chrono::system_clock::now();
+Autonav::State::SystemState g_systemState = Autonav::State::SystemState::DISABLED;
+std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::DeviceState>> g_deviceStatePublisher;
+std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::SystemState>> g_systemStatePublisher;
 
-bool canSwitchToManual()
+void setDeviceState(Autonav::Device device, Autonav::State::DeviceState state)
 {
-	// return true;
-	return (
-		deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
-		(
-			deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY ||
-			(
-				deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] >= Autonav::State::DeviceState::READY &&
-				deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY
-			)
-		) &&
-		deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY
-	);
+	g_deviceStates[device] = state;
+
+	auto msg = autonav_msgs::msg::DeviceState();
+	msg.device = (uint8_t)device;
+	msg.state = state;
+	g_deviceStatePublisher->publish(msg);
 }
 
-bool canSwitchToAutonomous()
+void setSystemState(Autonav::State::SystemState state)
 {
-	return (
-		deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
-		deviceStates[Autonav::Device::LOGGING] >= Autonav::State::DeviceState::READY &&
-		deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY &&
-		deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY
+	g_systemState = state;
+
+	auto msg = autonav_msgs::msg::SystemState();
+	msg.state = state;
+	g_systemStatePublisher->publish(msg);
+}
+
+bool trySwitchManual()
+{
+	auto canSwitch = (
+		g_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
+		(
+			g_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY ||
+			(
+				g_deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] >= Autonav::State::DeviceState::READY &&
+				g_deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY
+			)
+		) &&
+		g_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY
 	);
+
+	if (!canSwitch)
+	{
+		return false;
+	}
+
+	setSystemState(Autonav::State::SystemState::MANUAL);
+	setDeviceState(Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OPERATING);
+	setDeviceState(Autonav::Device::SERIAL_CAN, Autonav::State::DeviceState::OPERATING);
+	if (g_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY)
+	{
+		setDeviceState(Autonav::Device::MANUAL_CONTROL_XBOX, Autonav::State::DeviceState::OPERATING);
+		return true;
+	}
+
+	setDeviceState(Autonav::Device::MANUAL_CONTROL_STEAM, Autonav::State::DeviceState::OPERATING);
+	setDeviceState(Autonav::Device::STEAM_TRANSLATOR, Autonav::State::DeviceState::OPERATING);
+	return true;
+}
+
+bool trySwitchAutonomous()
+{
+	auto canSwitch = (
+		g_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
+		g_deviceStates[Autonav::Device::LOGGING] >= Autonav::State::DeviceState::READY &&
+		g_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY &&
+		g_deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY
+	);
+
+	if (!canSwitch)
+	{
+		return false;
+	}
+
+	setSystemState(Autonav::State::SystemState::AUTONOMOUS);
+	setDeviceState(Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OPERATING);
+	setDeviceState(Autonav::Device::LOGGING, Autonav::State::DeviceState::OPERATING);
+	setDeviceState(Autonav::Device::SERIAL_CAN, Autonav::State::DeviceState::OPERATING);
+	setDeviceState(Autonav::Device::SERIAL_IMU, Autonav::State::DeviceState::OPERATING);
+	return true;
 }
 
 void set_system_state(const std::shared_ptr<autonav_msgs::srv::SetSystemState::Request> request, std::shared_ptr<autonav_msgs::srv::SetSystemState::Response> response)
 {
-	auto state = (Autonav::State::SystemState)request->state;
-	
-	if(state == Autonav::State::SystemState::MANUAL && canSwitchToManual())
+	if (request->state == g_systemState)
 	{
-		systemState = state;
-		response->ok = true;
-
-		auto msg = autonav_msgs::msg::SystemState();
-		msg.state = Autonav::State::SystemState::MANUAL;
-		systemStatePublisher->publish(msg);
+		response->ok = false;
 		return;
 	}
 
-	if(state == Autonav::State::SystemState::AUTONOMOUS && canSwitchToAutonomous())
+	if (request->state == Autonav::State::SystemState::MANUAL)
 	{
-		systemState = state;
-		response->ok = true;
-
-		auto msg = autonav_msgs::msg::SystemState();
-		msg.state = Autonav::State::SystemState::AUTONOMOUS;
-		systemStatePublisher->publish(msg);
+		response->ok = trySwitchManual();
 		return;
 	}
 
-	response->ok = false;
+	if (request->state == Autonav::State::SystemState::AUTONOMOUS)
+	{
+		response->ok = trySwitchAutonomous();
+		return;
+	}
+
+	setSystemState(Autonav::State::SystemState::DISABLED);
+	response->ok = true;
 }
 
 void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::Request> request, std::shared_ptr<autonav_msgs::srv::SetDeviceState::Response> response)
 {
-	auto state = (Autonav::State::DeviceState)request->state;
 	auto device = (Autonav::Device)request->device;
+	auto state = (Autonav::State::DeviceState)request->state;
 
-	// If the display is not operating, ignore everyone else
-	if (device != Autonav::Device::DISPLAY_NODE && deviceStates[Autonav::Device::DISPLAY_NODE] != Autonav::State::DeviceState::OPERATING)
+	auto displayState = g_deviceStates[Autonav::Device::DISPLAY_NODE];
+	if (displayState != Autonav::State::DeviceState::OPERATING && device != Autonav::Device::DISPLAY_NODE)
 	{
 		response->ok = false;
 		return;
 	}
 
-	if (device != Autonav::Device::DISPLAY_NODE && std::chrono::system_clock::now() - displayReadyAt < std::chrono::seconds(2))
-	{
-		response->ok = false;
-		return;
-	}
-
-	if (state == Autonav::State::DeviceState::ALIVE)
-	{
-		if(device == Autonav::Device::DISPLAY_NODE)
-		{
-			displayReadyAt = std::chrono::system_clock::now();
-		}
-		auto msg = autonav_msgs::msg::DeviceState();
-		msg.device = (uint8_t)device;
-		msg.state = Autonav::State::DeviceState::STANDBY;
-		deviceStatePublisher->publish(msg);
-		deviceStates[device] = Autonav::State::DeviceState::STANDBY;
-		response->ok = true;
-		RCLCPP_INFO(rclcpp::get_logger("autonav_state_system"), "[ALIVE] Setting device state for %d to %d", device, state);
-		return;
-	}
-
-	RCLCPP_INFO(rclcpp::get_logger("autonav_state_system"), "Setting device state for %d to %d", device, state);
-	deviceStates[device] = state;
-	auto msg = autonav_msgs::msg::DeviceState();
-	msg.device = (uint8_t)device;
-	msg.state = state;
-	deviceStatePublisher->publish(msg);
-
+	setDeviceState(device, state);
 	response->ok = true;
-}
-
-void on_timer_tick()
-{
-	// Publish all device states and system state
-	// for (auto deviceState : deviceStates)
-	// {
-	// 	auto msg = autonav_msgs::msg::DeviceState();
-	// 	msg.device = (uint8_t)deviceState.first;
-	// 	msg.state = deviceState.second;
-	// 	deviceStatePublisher->publish(msg);
-	// }
-
-	// auto msg = autonav_msgs::msg::SystemState();
-	// msg.state = systemState;
-	// systemStatePublisher->publish(msg);
 }
 
 int main(int argc, char **argv)
@@ -142,9 +140,9 @@ int main(int argc, char **argv)
 	auto node = rclcpp::Node::make_shared("autonav_state_system");
 	auto sssService = node->create_service<autonav_msgs::srv::SetSystemState>("/autonav/state/set_system_state", &set_system_state);
 	auto sdsService = node->create_service<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state", &set_device_state);
-	deviceStatePublisher = node->create_publisher<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10);
-	systemStatePublisher = node->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
-	auto timer = node->create_wall_timer(std::chrono::milliseconds(1000), &on_timer_tick);
+	g_deviceStatePublisher = node->create_publisher<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10);
+	g_systemStatePublisher = node->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
+
 	rclcpp::spin(node);
 	rclcpp::shutdown();
 }
