@@ -4,7 +4,6 @@ import rclpy
 import time
 import threading
 import cv2
-from vnpy import *
 from enum import IntEnum
 
 from autonav_libs import Device, AutoNode, DeviceStateEnum
@@ -13,7 +12,6 @@ from sensor_msgs.msg._image import Image
 from cv_bridge import CvBridge
 
 bridge = CvBridge()
-
 
 class Register(IntEnum):
     REFRESH_RATE = 0
@@ -25,19 +23,43 @@ class CameraNode(AutoNode):
         self.config.writeInt(Register.REFRESH_RATE, 1)
 
     def setup(self):
-        self.sensor = VnSensor()
-        self.has_published_headers = False
-
         self.m_cameraPublisher = self.create_publisher(
             Image, "/autonav/camera/raw", 20)
         self.m_cameraThread = threading.Thread(target=self.camera_read)
         self.m_cameraThread.start()
-        self.setDeviceState(DeviceStateEnum.OPERATING)
 
     def camera_read(self):
-        capture = cv2.VideoCapture(0)
+        # Check if /dev/video0 exists
+        capture = None
+        try:
+            capture = cv2.VideoCapture(0)
+            if capture is None or not capture.isOpened():
+                raise Exception("Could not open video device")
+
+            self.setDeviceState(DeviceStateEnum.READY)
+        except:
+            self.setDeviceState(DeviceStateEnum.STANDBY)
+            time.sleep(3.0)
+            self.camera_read()
+            return
+            
+
         while rclpy.ok():
-            ret, frame = capture.read()
+            if self.getDeviceState() != DeviceStateEnum.OPERATING:
+                continue
+
+            try:
+                ret, frame = capture.read()
+            except:
+                if capture is not None:
+                    capture.release()
+                    capture = None
+
+                self.setDeviceState(DeviceStateEnum.STANDBY)
+                time.sleep(1.0)
+                self.camera_read()
+                return
+
             if not ret or frame is None:
                 continue
 

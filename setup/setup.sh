@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# Check if vectorsecrets.txt exists
+if [ ! -f vectorsecrets.txt ]; then
+    echo "vectorsecrets.txt does not exist. Please create it and try again."
+    exit 1
+fi
+
 sudo apt update
 sudo apt install wget unzip -y
-
-# Common dependencies
-bash common.sh
 
 # Vectornav Dependencies
 bash vnav.sh
