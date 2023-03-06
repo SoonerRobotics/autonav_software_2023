@@ -231,6 +231,11 @@ namespace Autonav
 			this->publishWrite(device, address, {0, static_cast<uint8_t>(data)});
 		}
 
+		void Conbus::writeTo(Device device, uint8_t address, std::vector<uint8_t> data)
+		{
+			this->publishWrite(device, address, data);
+		}
+
 		// Read From
 
 		void Conbus::publishRead(Device device, uint8_t address)

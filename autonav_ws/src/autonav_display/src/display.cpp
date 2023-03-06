@@ -3,6 +3,10 @@
 #include <thread>
 #include <memory>
 #include <string>
+#include <fstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 // ImGui Imports
 #include "imgui.h"
@@ -34,6 +38,8 @@
 
 const char *glsl_version = "#version 130";
 GLFWwindow *window;
+
+static std::string activePreset = "default";
 
 static void glfw_error_callback(int error, const char *description)
 {
@@ -249,6 +255,187 @@ void showCameraConfiguration(Autonav::ROS::AutoNode *node)
 	}
 }
 
+void savePreset(Autonav::ROS::AutoNode *node, std::string file_name)
+{
+	std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs/" + file_name + ".csv";
+	std::ofstream file_stream(path);
+	for (auto reg = node->config.begin(); reg != node->config.end(); reg++)
+	{
+		auto device = reg->first;
+		auto entries = reg->second;
+		for (auto entry = entries.begin(); entry != entries.end(); entry++)
+		{
+			auto address = entry->first;
+			auto data = entry->second;
+			std::string byteString = "";
+			for (int i = 0; i < data.size(); i++)
+			{
+				byteString += std::to_string(data[i]);
+				if (i != data.size() - 1)
+				{
+					byteString += ":";
+				}
+			}
+			file_stream << std::to_string(device) << "," << std::to_string(address) << "," << byteString << std::endl;
+		}
+	}
+
+	RCLCPP_INFO(node->get_logger(), "Saved configuration to %s", path.c_str());
+
+	file_stream.close();
+}
+
+void loadPreset(Autonav::ROS::AutoNode *node, std::string file_name)
+{
+	std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs/" + file_name + ".csv";
+	std::ifstream file_stream(path);
+	std::string line;
+	std::vector<std::string> lines;
+	while (std::getline(file_stream, line))
+	{
+		lines.push_back(line);
+	}
+
+	// Parse each line
+	for (auto line : lines)
+	{
+		std::vector<std::string> bits;
+		// Split on commas without boost
+		std::stringstream ss(line);
+		std::string bit;
+		while (std::getline(ss, bit, ','))
+		{
+			bits.push_back(bit);
+		}
+
+		uint8_t device = std::stoi(bits[0]);
+		uint8_t address = std::stoi(bits[1]);
+		std::vector<uint8_t> data;
+		// Split on colons without boost
+		std::stringstream ss2(bits[2]);
+		std::string bit2;
+		while (std::getline(ss2, bit2, ':'))
+		{
+			data.push_back(std::stoi(bit2));
+		}
+
+		auto casted_device = static_cast<Autonav::Device>(device);
+		node->config.writeTo(casted_device, address, data);
+		RCLCPP_INFO(node->get_logger(), "Writing %d bytes to device %d, address %d", data.size(), device, address);
+	}
+
+	RCLCPP_INFO(node->get_logger(), "Loaded configuration from %s", path.c_str());
+	activePreset = file_name;
+}
+
+std::string removeFileExtension(const std::string file)
+{
+	std::string::size_type idx;
+	idx = file.rfind('.');
+	if (idx != std::string::npos)
+	{
+		return file.substr(0, idx);
+	}
+	return file;
+}
+
+void showConfigPresetDropdown(Autonav::ROS::AutoNode *node)
+{
+	std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs";
+	if (!fs::exists(path))
+	{
+		fs::create_directories(path);
+	}
+
+	// Create a list of all the files in the directory
+	std::vector<std::string> files;
+	for (const auto &entry : fs::directory_iterator(path))
+	{
+		files.push_back(entry.path().filename().string());
+	}
+
+	if (files.size() == 0)
+	{
+		savePreset(node, "default");
+		files.push_back("default");
+		loadPreset(node, "default");
+	}
+
+	// // Create a dropdown menu with the list of files
+	static int current_item = 0;
+	if (ImGui::BeginCombo("Presets", files[current_item].c_str()))
+	{
+		for (int n = 0; n < files.size(); n++)
+		{
+			bool is_selected = (current_item == n);
+			if (ImGui::Selectable(removeFileExtension(files[n]).c_str(), is_selected))
+			{
+				loadPreset(node, removeFileExtension(files[n]));
+				current_item = n;
+			}
+
+			if (is_selected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	// // Create save button
+	if (current_item != 0)
+	{
+		if (ImGui::Button("Save"))
+		{
+			savePreset(node, files[current_item]);
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Delete"))
+		{
+		}
+	}
+	else
+	{
+		ImGui::BeginDisabled();
+		if (ImGui::Button("Save"))
+		{
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Delete"))
+		{
+		}
+		ImGui::EndDisabled();
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Save As"))
+	{
+		ImGui::OpenPopup("Save As");
+		ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Always);
+	}
+
+	if (ImGui::BeginPopupModal("Save As", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+	{
+		static char buf[128] = "";
+		ImGui::InputText("Name", buf, IM_ARRAYSIZE(buf));
+		if (ImGui::Button("Save"))
+		{
+			savePreset(node, buf);
+			loadPreset(node, buf);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel"))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+}
+
 class DisplayNode : public Autonav::ROS::AutoNode
 {
 public:
@@ -447,11 +634,7 @@ public:
 
 				if (ImGui::BeginTabItem("Configuration"))
 				{
-					if (ImGui::Button("Request All"))
-					{
-						this->config.requestAllRemoteRegisters();
-					}
-
+					showConfigPresetDropdown(this);
 					showSerialConfiguration(this);
 					showIMUConfiguration(this);
 					showManualSteamConfiguration(this);

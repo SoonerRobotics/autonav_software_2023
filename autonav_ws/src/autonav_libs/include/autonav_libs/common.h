@@ -85,6 +85,7 @@ namespace Autonav
             void writeTo(Device device, uint8_t registerAddress, int32_t data);
             void writeTo(Device device, uint8_t registerAddress, float data);
             void writeTo(Device device, uint8_t registerAddress, bool data);
+            void writeTo(Device device, uint8_t registerAddress, std::vector<uint8_t> data);
 
             template <typename T>
             T read(uint8_t registerAddress);
