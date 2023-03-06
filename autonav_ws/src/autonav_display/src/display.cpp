@@ -370,7 +370,7 @@ public:
 
 		ImGui::NewFrame();
 		{
-			ImGui::Begin("Autonav 2023 | The Weeb Wagon", nullptr);
+			ImGui::Begin("Autonav 2023 | The Weeb Wagon", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 			ImGui::SetWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Once);
 			ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Once);
 
