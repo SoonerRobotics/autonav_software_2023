@@ -1,6 +1,7 @@
-import rclpy
+import signal
 import time
 from rclpy.node import Node
+import os
 from enum import IntEnum
 from autonav_msgs.msg import ConBusInstruction, Log, DeviceState, SystemState
 from autonav_msgs.srv import SetDeviceState, SetSystemState
@@ -28,6 +29,7 @@ class SystemStateEnum(IntEnum):
     DISABLED = 0
     AUTONOMOUS = 1
     MANUAL = 2
+    SHUTDOWN = 3
 
 
 class ConbusOpcode(IntEnum):
@@ -76,6 +78,9 @@ class AutoNode(Node):
     def deoperate(self):
         pass
 
+    def shutdown(self):
+        pass
+
     def getSystemState(self):
         return self.m_systemState
 
@@ -91,7 +96,10 @@ class AutoNode(Node):
         self.setDeviceState(DeviceStateEnum.STANDBY)
 
     def onSystemStateChanged(self, state: SystemState):
-        self.system_state = SystemStateEnum(state.state)
+        self.m_systemState = SystemStateEnum(state.state)
+
+        if self.m_systemState == SystemStateEnum.SHUTDOWN:
+            os.kill(os.getpid(), signal.SIGKILL)
 
     def onDeviceStateChanged(self, state: DeviceState):
         originalState = self.getDeviceState()
@@ -119,8 +127,8 @@ class AutoNode(Node):
         self.m_deviceStateClient.call_async(request)
         return False
 
-    def set_system_state(self, state: SystemStateEnum):
-        if self.system_state == state:
+    def setSystemState(self, state: SystemStateEnum):
+        if self.m_systemState == state:
             return True
         request = SetSystemState.Request()
         request.state = state.value

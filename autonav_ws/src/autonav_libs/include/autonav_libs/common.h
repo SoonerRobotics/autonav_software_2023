@@ -37,7 +37,8 @@ namespace Autonav
         {
             DISABLED = 0,
             AUTONOMOUS = 1,
-            MANUAL = 2
+            MANUAL = 2,
+            SHUTDOWN = 3
         };
     }
 

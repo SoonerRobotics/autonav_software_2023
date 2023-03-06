@@ -6,7 +6,7 @@ import threading
 import cv2
 from enum import IntEnum
 
-from autonav_libs import Device, AutoNode, DeviceStateEnum
+from autonav_libs import Device, AutoNode, DeviceStateEnum, SystemStateEnum as SystemState
 from sensor_msgs.msg._image import Image
 
 from cv_bridge import CvBridge
@@ -28,7 +28,13 @@ class CameraNode(AutoNode):
         self.m_cameraThread = threading.Thread(target=self.camera_read)
         self.m_cameraThread.start()
 
+    def shutdown(self):
+        self.m_cameraThread.join()
+
     def camera_read(self):
+        if self.getSystemState() != SystemState.SHUTDOWN:
+            return
+
         # Check if /dev/video0 exists
         capture = None
         try:

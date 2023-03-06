@@ -33,18 +33,23 @@ class SerialMotors(AutoNode):
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
 
     def canWorker(self):
-        if self.m_can is None:
-            try:
-                with open("/dev/autonav-can-835", "w") as f:
-                    pass
+        try:
+            # Determine if /dev/autonav-can-835 exists without opening it
+            with open("/dev/autonav-can-835", "r") as f:
+                pass
 
-                self.m_can = can.ThreadSafeBus(
-                    bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
-                self.setDeviceState(DeviceState.READY)
-            except:
-                if self.getDeviceState() != DeviceState.STANDBY:
-                    self.setDeviceState(DeviceState.STANDBY)
+            if self.m_can is not None:
                 return
+
+            self.m_can = can.ThreadSafeBus(
+                bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
+            self.setDeviceState(DeviceState.READY)
+        except:
+            if self.m_can is not None:
+                self.m_can = None
+
+            if self.getDeviceState() != DeviceState.STANDBY:
+                self.setDeviceState(DeviceState.STANDBY)
 
         if self.m_can is not None and self.getDeviceState() != DeviceState.READY:
             self.setDeviceState(DeviceState.READY)

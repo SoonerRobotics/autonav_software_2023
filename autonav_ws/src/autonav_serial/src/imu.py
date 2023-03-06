@@ -10,7 +10,7 @@ from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import Log
 from autonav_msgs.msg import GPSData
 
-from autonav_libs import Device, AutoNode, LogLevel, DeviceStateEnum as DeviceState
+from autonav_libs import Device, AutoNode, LogLevel, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
 
 class Registers(Enum):
     IMU_READ_RATE = 0
@@ -36,9 +36,11 @@ class IMUNode(AutoNode):
         self.m_imuThread = threading.Thread(target=self.imuWorker)
         self.m_imuThread.start()
 
+    def shutdown(self):
+        self.m_imuThread.join()
+
     def imuWorker(self):
-        time.sleep(1.5)
-        while rclpy.ok():
+        while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
             if (not self.m_hasPublishedHeaders):
                 self.log("time,accel_x,accel_y,accel_z,yaw,pitch,roll,angular_x,angular_y,angular_z,gps_fix,latitude,longitude,altitude", file="imu_data", skipConsole=True)
                 self.m_hasPublishedHeaders = True
@@ -66,6 +68,7 @@ class IMUNode(AutoNode):
             if (self.getDeviceState() != DeviceState.READY):
                 time.sleep(0.5)
                 self.setDeviceState(DeviceState.READY)
+                continue
 
             if self.getDeviceState() != DeviceState.OPERATING:
                 continue

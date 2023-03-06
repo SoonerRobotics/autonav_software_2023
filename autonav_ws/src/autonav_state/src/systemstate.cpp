@@ -38,7 +38,14 @@ void setSystemState(Autonav::State::SystemState state)
 	g_systemStatePublisher->publish(msg);
 }
 
-bool trySwitchManual()
+bool isReadonlyNode(Autonav::Device device)
+{
+	return device == Autonav::Device::DISPLAY_NODE 
+		|| device == Autonav::Device::LOGGING
+		|| device == Autonav::Device::STEAM_TRANSLATOR;
+}
+
+bool trySwitchManual(bool dontSwitch = false)
 {
 	auto canSwitch = (
 		g_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
@@ -52,13 +59,17 @@ bool trySwitchManual()
 		g_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY
 	);
 
+	if (dontSwitch)
+	{
+		return canSwitch;
+	}
+
 	if (!canSwitch)
 	{
 		return false;
 	}
 
 	setSystemState(Autonav::State::SystemState::MANUAL);
-	setDeviceState(Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OPERATING);
 	setDeviceState(Autonav::Device::SERIAL_CAN, Autonav::State::DeviceState::OPERATING);
 	if (g_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY)
 	{
@@ -71,7 +82,19 @@ bool trySwitchManual()
 	return true;
 }
 
-bool trySwitchAutonomous()
+void switchDisabled()
+{
+	setSystemState(Autonav::State::SystemState::DISABLED);
+	for (auto deviceState : g_deviceStates)
+	{
+		if (deviceState.second == Autonav::State::DeviceState::OPERATING && !isReadonlyNode(deviceState.first))
+		{
+			setDeviceState(deviceState.first, Autonav::State::DeviceState::READY);
+		}
+	}
+}
+
+bool trySwitchAutonomous(bool dontSwitch = false)
 {
 	auto canSwitch = (
 		g_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
@@ -80,13 +103,17 @@ bool trySwitchAutonomous()
 		g_deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY
 	);
 
+	if (dontSwitch)
+	{
+		return canSwitch;
+	}
+
 	if (!canSwitch)
 	{
 		return false;
 	}
 
 	setSystemState(Autonav::State::SystemState::AUTONOMOUS);
-	setDeviceState(Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OPERATING);
 	setDeviceState(Autonav::Device::LOGGING, Autonav::State::DeviceState::OPERATING);
 	setDeviceState(Autonav::Device::SERIAL_CAN, Autonav::State::DeviceState::OPERATING);
 	setDeviceState(Autonav::Device::SERIAL_IMU, Autonav::State::DeviceState::OPERATING);
@@ -113,7 +140,17 @@ void set_system_state(const std::shared_ptr<autonav_msgs::srv::SetSystemState::R
 		return;
 	}
 
-	setSystemState(Autonav::State::SystemState::DISABLED);
+	if (request->state == Autonav::State::SystemState::SHUTDOWN)
+	{
+		response->ok = true;
+		setSystemState(Autonav::State::SystemState::SHUTDOWN);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		rclcpp::shutdown(nullptr, "Shutdown requested");
+		return;
+	}
+
+	// This is bad, we should also be doing an if statement just incase we add more states later on
+	switchDisabled();
 	response->ok = true;
 }
 
@@ -131,6 +168,12 @@ void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::R
 
 	setDeviceState(device, state);
 	response->ok = true;
+
+	if(g_systemState == Autonav::State::SystemState::MANUAL && !trySwitchManual(true))
+	{
+		switchDisabled();
+		return;
+	}
 }
 
 int main(int argc, char **argv)

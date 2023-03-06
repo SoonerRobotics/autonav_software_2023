@@ -85,6 +85,11 @@ namespace Autonav
 		void AutoNode::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
 		{
 			m_systemState = static_cast<State::SystemState>(msg->state);
+			
+			if (m_systemState == State::SystemState::SHUTDOWN)
+			{
+				kill(getpid(), SIGKILL);
+			}
 		}
 
 		void AutoNode::onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg)
