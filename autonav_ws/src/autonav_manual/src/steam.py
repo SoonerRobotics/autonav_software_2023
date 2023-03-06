@@ -87,9 +87,9 @@ class SteamTranslationNode(AutoNode):
         msg.buttons = []
         for button in SCButtons:
             msg.buttons.append(bool(sci.buttons & button))
-            if self.m_Buttons[button] == 0 and (sci.buttons & button):
+            if self.m_Buttons[button] == 0 and bool(sci.buttons & button):
                 self.m_Buttons[button] = time.time() * 1000
-            if self.m_Buttons[button] > 0 and (sci.buttons & button) == False:
+            if self.m_Buttons[button] > 0 and bool(sci.buttons & button) == False:
                 self.m_Buttons[button] = 0
                 if button == SCButtons.START:
                     self.m_debounce["MANUAL"] = False
