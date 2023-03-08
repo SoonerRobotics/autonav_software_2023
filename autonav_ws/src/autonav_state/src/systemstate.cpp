@@ -21,7 +21,17 @@ public:
 	
 		// Declare is_simulator ros parameter
 		this->declare_parameter("is_simulator", false);
+		this->declare_parameter("forced_state", "");
 		m_isSimulator = this->get_parameter("is_simulator").as_bool();
+		m_forcedState = this->get_parameter("forced_state").as_string();
+
+		if(m_forcedState == "autonomous") {
+			m_systemState = Autonav::State::SystemState::AUTONOMOUS;
+		}
+
+		if(m_forcedState == "manual") {
+			m_systemState = Autonav::State::SystemState::MANUAL;
+		}
 
 		RCLCPP_INFO(this->get_logger(), "Is Simulator -> %s", m_isSimulator ? "true" : "false");
 	}
@@ -77,16 +87,16 @@ private:
 	bool trySwitchManual(bool dontSwitch = false)
 	{
 		auto canSwitch = (
-			m_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
+			(m_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY) &&
 			(
-				m_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY ||
+				(m_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY) ||
 				(
-					m_deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] >= Autonav::State::DeviceState::READY &&
-					m_deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY
+					(m_deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] >= Autonav::State::DeviceState::READY) &&
+					(m_deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY)
 				)
 			) &&
 			(
-				m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY ||
+				(m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY) ||
 				this->get_parameter("is_simulator").as_bool()
 			)
 		);
@@ -129,12 +139,12 @@ private:
 	bool trySwitchAutonomous(bool dontSwitch = false)
 	{
 		auto canSwitch = (
-			m_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
-			m_deviceStates[Autonav::Device::LOGGING] >= Autonav::State::DeviceState::READY &&
+			((m_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY) &&
+			(m_deviceStates[Autonav::Device::LOGGING] >= Autonav::State::DeviceState::READY) &&
 			(
-				m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY &&
-				m_deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY
-			) || this->get_parameter("is_simulator").as_bool()
+				(m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY) &&
+				(m_deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY)
+			)) || this->get_parameter("is_simulator").as_bool()
 		);
 
 		if (dontSwitch)
@@ -200,7 +210,13 @@ private:
 			return;
 		}
 
-		setDeviceState(device, state);
+		if (state == Autonav::State::DeviceState::READY && m_forcedState == "autonomous" && !isReadonlyNode(device))
+		{
+			setDeviceState(device, Autonav::State::DeviceState::OPERATING);
+		} else {
+			setDeviceState(device, state);
+		}
+
 		response->ok = true;
 		
 		auto sys_msg = autonav_msgs::msg::SystemState();
@@ -208,11 +224,17 @@ private:
 		sys_msg.is_simulator = this->get_parameter("is_simulator").as_bool();
 		m_systemStatePublisher->publish(sys_msg);
 
-		if(m_systemState == Autonav::State::SystemState::MANUAL && !trySwitchManual(true))
+		if(m_systemState == Autonav::State::SystemState::MANUAL && !trySwitchManual(true) && m_forcedState != "manual")
 		{
 			switchDisabled();
 			return;
 		}
+
+		if(m_systemState == Autonav::State::SystemState::AUTONOMOUS && !trySwitchAutonomous(true) && m_forcedState != "autonomous")
+		{
+			switchDisabled();
+			return;
+		}	
 	}
 
 private:
@@ -223,6 +245,7 @@ private:
 	rclcpp::TimerBase::SharedPtr m_timer;
 
 	Autonav::State::SystemState m_systemState;
+	std::string m_forcedState = "";
 	bool m_isSimulator;
 	std::map<Autonav::Device, Autonav::State::DeviceState> m_deviceStates = {{
 		{Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OFF},

@@ -18,7 +18,7 @@ set(msg_files
   "msg/IMUData.msg"
   "msg/SteamInput.msg"
   "msg/ConBusInstruction.msg"
-  "msg/GPSData.msg"
+  "msg/GPSFeedback.msg"
   "msg/DeviceState.msg"
   "msg/SystemState.msg"
 )

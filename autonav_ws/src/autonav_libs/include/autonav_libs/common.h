@@ -20,7 +20,8 @@ namespace Autonav
         SERIAL_IMU = 104,
         SERIAL_CAN = 105,
         LOGGING = 106,
-        CAMERA_TRANSLATOR = 107
+        CAMERA_TRANSLATOR = 107,
+        IMAGE_TRANSFORMER = 108
     };
 
     namespace State

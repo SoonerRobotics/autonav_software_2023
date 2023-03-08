@@ -22,7 +22,7 @@ namespace fs = std::filesystem;
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
 #include "autonav_msgs/msg/imu_data.hpp"
-#include "autonav_msgs/msg/gps_data.hpp"
+#include "autonav_msgs/msg/gps_feedback.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/steam_input.hpp"
 #include "autonav_msgs/msg/log.hpp"
@@ -98,6 +98,8 @@ const char *deviceToString(Autonav::Device device)
 		return "LOGGER";
 	case Autonav::Device::CAMERA_TRANSLATOR:
 		return "CAMERA_TRANSLATOR";
+	case Autonav::Device::IMAGE_TRANSFORMER:
+		return "IMAGE_TRANSFORMER";
 	default:
 		return "UNKNOWN";
 	}
@@ -248,6 +250,68 @@ void showCameraConfiguration(Autonav::ROS::AutoNode *node)
 			if (ImGui::InputInt("Refresh Rate", &data))
 			{
 				node->config.writeTo(Autonav::Device::CAMERA_TRANSLATOR, address, data);
+			}
+			break;
+		}
+		}
+	}
+}
+
+void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
+{
+	auto lanemap_reg = node->config.getRegistersForDevice(Autonav::Device::IMAGE_TRANSFORMER);
+	if (lanemap_reg.size() == 0)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("Image Transformer Configuration");
+	for (auto it = lanemap_reg.begin(); it != lanemap_reg.end(); it++)
+	{
+		auto address = it->first;
+		auto data = it->second;
+
+		switch (address)
+		{
+		// 0 through 5 are lower and upper bounds for the color filter in HSV
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		{
+			auto title = address == 0 ? "Lower Hue" : address == 1 ? "Lower Sat"
+												  : address == 2   ? "Lower Val"
+												  : address == 3   ? "Upper Hue"
+												  : address == 4   ? "Upper Sat"
+																   : "Upper Val";
+			auto data = node->config.read<int32_t>(Autonav::Device::IMAGE_TRANSFORMER, address);
+			if (ImGui::InputInt(title, &data))
+			{
+				node->config.writeTo(Autonav::Device::IMAGE_TRANSFORMER, address, data);
+			}
+			break;
+		}
+
+		case 6:
+		{
+			// Blur Kernel Size
+			auto data = node->config.read<int32_t>(Autonav::Device::IMAGE_TRANSFORMER, address);
+			if (ImGui::InputInt("Blur Kernel Size", &data))
+			{
+				node->config.writeTo(Autonav::Device::IMAGE_TRANSFORMER, address, data);
+			}
+			break;
+		}
+
+		case 7:
+		{
+			// Blur Iterations
+			auto data = node->config.read<int32_t>(Autonav::Device::IMAGE_TRANSFORMER, address);
+			if (ImGui::InputInt("Blur Iterations", &data))
+			{
+				node->config.writeTo(Autonav::Device::IMAGE_TRANSFORMER, address, data);
 			}
 			break;
 		}
@@ -456,11 +520,12 @@ public:
 	{
 		RCLCPP_INFO(this->get_logger(), "Starting Display Node");
 
-		m_gpsSubscriber = this->create_subscription<autonav_msgs::msg::GPSData>("/autonav/gps", 20, std::bind(&DisplayNode::onGpsDataReceived, this, std::placeholders::_1));
+		m_gpsSubscriber = this->create_subscription<autonav_msgs::msg::GPSFeedback>("/autonav/gps", 20, std::bind(&DisplayNode::onGPSFeedbackReceived, this, std::placeholders::_1));
 		m_imuSubscriber = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::onImuDataReceived, this, std::placeholders::_1));
 		m_motorSubscriber = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::onMotorDataReceived, this, std::placeholders::_1));
 		m_steamSubscriber = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::onSteamDataReceived, this, std::placeholders::_1));
-		m_cameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::onCameraDataReceived, this, std::placeholders::_1));
+		m_filteredCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/filtered", 20, std::bind(&DisplayNode::onFilteredCameraDataReceived, this, std::placeholders::_1));
+		m_rawCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/igvc/camera/compressed", 20, std::bind(&DisplayNode::onRawCameraDataReceived, this, std::placeholders::_1));
 		m_logSubscriber = this->create_subscription<autonav_msgs::msg::Log>("/autonav/logging", 20, std::bind(&DisplayNode::onLogReceived, this, std::placeholders::_1));
 
 		if (!setup_imgui())
@@ -594,6 +659,7 @@ public:
 					showNodeState(this, Autonav::Device::SERIAL_IMU);
 					showNodeState(this, Autonav::Device::STEAM_TRANSLATOR);
 					showNodeState(this, Autonav::Device::CAMERA_TRANSLATOR);
+					showNodeState(this, Autonav::Device::IMAGE_TRANSFORMER);
 
 					ImGui::EndTabItem();
 				}
@@ -615,6 +681,18 @@ public:
 
 				if (ImGui::BeginTabItem("Maps & Path Planning"))
 				{
+					// Show Camera
+					ImGui::SeparatorText("Camera");
+					if(m_rawCameraTextureId != -1)
+					{
+						ImGui::Image((void *)(intptr_t)m_rawCameraTextureId, ImVec2(m_rawCameraWidth, m_rawCameraHeight), ImVec2(0, 0), ImVec2(1, 1));
+					}		
+					if (m_filteredCameraTextureId != -1)
+					{
+						ImGui::SameLine();
+						ImGui::Image((void *)(intptr_t)m_filteredCameraTextureId, ImVec2(m_filteredCameraWidth, m_filteredCameraHeight), ImVec2(0, 0), ImVec2(1, 1));
+					}
+
 					ImGui::EndTabItem();
 				}
 
@@ -640,6 +718,7 @@ public:
 					showIMUConfiguration(this);
 					showManualSteamConfiguration(this);
 					showCameraConfiguration(this);
+					showImageTransformerConfiugration(this);
 
 					ImGui::EndTabItem();
 				}
@@ -743,7 +822,7 @@ public:
 	}
 
 	// Other Callbacks
-	void onGpsDataReceived(const autonav_msgs::msg::GPSData::SharedPtr data)
+	void onGPSFeedbackReceived(const autonav_msgs::msg::GPSFeedback::SharedPtr data)
 	{
 		this->m_lastGpsMessage = *data;
 	}
@@ -763,7 +842,7 @@ public:
 		this->m_lastSteamMessage = *data;
 	}
 
-	void onCameraDataReceived(const sensor_msgs::msg::CompressedImage::SharedPtr data)
+	void onFilteredCameraDataReceived(const sensor_msgs::msg::CompressedImage::SharedPtr data)
 	{
 		cv_bridge::CvImagePtr cv_ptr;
 		try
@@ -776,8 +855,57 @@ public:
 			return;
 		}
 
-		this->m_hasAnyImage = true;
-		this->m_lastImage = cv_ptr->image;
+		// Update texture
+		auto mat = cv_ptr->image;
+		auto width = mat.cols;
+		auto height = mat.rows;
+		if (m_filteredCameraTextureId == -1)
+		{
+			glGenTextures(1, &m_filteredCameraTextureId);
+		}
+
+		m_filteredCameraWidth = width;
+		m_filteredCameraHeight = height;
+
+		glBindTexture(GL_TEXTURE_2D, m_filteredCameraTextureId);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, mat.data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	void onRawCameraDataReceived(const sensor_msgs::msg::CompressedImage::SharedPtr data)
+	{
+		cv_bridge::CvImagePtr cv_ptr;
+		try
+		{
+			cv_ptr = cv_bridge::toCvCopy(data, sensor_msgs::image_encodings::BGR8);
+		}
+		catch (cv_bridge::Exception &e)
+		{
+			RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
+			return;
+		}
+
+		// Update texture
+		auto mat = cv_ptr->image;
+		auto width = mat.cols;
+		auto height = mat.rows;
+		if (m_rawCameraTextureId == -1)
+		{
+			glGenTextures(1, &m_rawCameraTextureId);
+		}
+
+		m_rawCameraWidth = width;
+		m_rawCameraHeight = height;
+
+		glBindTexture(GL_TEXTURE_2D, m_rawCameraTextureId);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, mat.data);
+		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
 	void onLogReceived(const autonav_msgs::msg::Log::SharedPtr msg)
@@ -791,23 +919,29 @@ public:
 
 private:
 	rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr conbus_subscriber_;
-	rclcpp::Subscription<autonav_msgs::msg::GPSData>::SharedPtr m_gpsSubscriber;
+	rclcpp::Subscription<autonav_msgs::msg::GPSFeedback>::SharedPtr m_gpsSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::IMUData>::SharedPtr m_imuSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr m_motorSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr m_steamSubscriber;
-	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_cameraSubscriber;
+	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_filteredCameraSubscriber;
+	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_rawCameraSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr m_logSubscriber;
 
 	rclcpp::TimerBase::SharedPtr m_renderClock;
 
-	autonav_msgs::msg::GPSData m_lastGpsMessage;
+	autonav_msgs::msg::GPSFeedback m_lastGpsMessage;
 	autonav_msgs::msg::IMUData m_lastImuMessage;
 	autonav_msgs::msg::MotorInput m_lastMotorMessage;
 	autonav_msgs::msg::SteamInput m_lastSteamMessage;
 	float m_fontSize = 20.0f;
 	std::vector<std::string> m_latestLogs;
-	cv::Mat m_lastImage;
-	bool m_hasAnyImage = false;
+
+	// Images
+	GLuint m_filteredCameraTextureId = -1;
+	int m_filteredCameraWidth, m_filteredCameraHeight;
+
+	GLuint m_rawCameraTextureId = -1;
+	int m_rawCameraWidth, m_rawCameraHeight;
 };
 
 int main(int, char **)

@@ -8,7 +8,7 @@ from enum import Enum
 
 from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import Log
-from autonav_msgs.msg import GPSData
+from autonav_msgs.msg import GPSFeedback
 
 from autonav_libs import Device, AutoNode, LogLevel, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
 
@@ -31,7 +31,7 @@ class IMUNode(AutoNode):
         self.config.writeFloat(Registers.IMU_BADCONNECT_RETRY.value, 5.0)
 
         self.m_imuPublisher = self.create_publisher(IMUData, "/autonav/imu", 20)
-        self.m_gpsPublisher = self.create_publisher(GPSData, "/autonav/gps", 20)
+        self.m_gpsPublisher = self.create_publisher(GPSFeedback, "/autonav/gps", 20)
 
         self.m_imuThread = threading.Thread(target=self.imuWorker)
         self.m_imuThread.start()
@@ -90,7 +90,7 @@ class IMUNode(AutoNode):
             data.angular_z = angular_velocity.z
             self.m_imuPublisher.publish(data)
 
-            gps = GPSData()
+            gps = GPSFeedback()
             gps.latitude = sensor_register.lla.x
             gps.longitude = sensor_register.lla.y
             gps.altitude = sensor_register.lla.z
