@@ -566,6 +566,7 @@ public:
 				if (ImGui::BeginTabItem("General Data"))
 				{
 					ImGui::Text("System State: %s", systemStateToString(getSystemState()));
+					ImGui::Text("Is Simulator: %s", this->m_isSimulator ? "True" : "False");
 
 					ImGui::SeparatorText("GPS Data");
 					ImGui::Text("Latitude: %f", m_lastGpsMessage.latitude);

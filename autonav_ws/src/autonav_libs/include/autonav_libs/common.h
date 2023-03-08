@@ -140,6 +140,7 @@ namespace Autonav
         protected:
             virtual void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
             virtual void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg);
+            bool m_isSimulator;
 
         private:
             void onInitializeTimer();

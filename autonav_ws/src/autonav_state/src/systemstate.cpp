@@ -18,6 +18,12 @@ public:
 		m_deviceStatePublisher = this->create_publisher<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10);
 		m_systemStatePublisher = this->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
 		m_timer = this->create_wall_timer(std::chrono::milliseconds(250), std::bind(&StateSystemNode::on_requires_timer_tick, this));
+	
+		// Declare is_simulator ros parameter
+		this->declare_parameter("is_simulator", false);
+		m_isSimulator = this->get_parameter("is_simulator").as_bool();
+
+		RCLCPP_INFO(this->get_logger(), "Is Simulator -> %s", m_isSimulator ? "true" : "false");
 	}
 
 private:
@@ -57,6 +63,7 @@ private:
 
 		auto msg = autonav_msgs::msg::SystemState();
 		msg.state = state;
+		msg.is_simulator = this->get_parameter("is_simulator").as_bool();
 		m_systemStatePublisher->publish(msg);
 	}
 
@@ -78,7 +85,10 @@ private:
 					m_deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY
 				)
 			) &&
-			m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY
+			(
+				m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY ||
+				this->get_parameter("is_simulator").as_bool()
+			)
 		);
 
 		if (dontSwitch)
@@ -121,8 +131,10 @@ private:
 		auto canSwitch = (
 			m_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY &&
 			m_deviceStates[Autonav::Device::LOGGING] >= Autonav::State::DeviceState::READY &&
-			m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY &&
-			m_deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY
+			(
+				m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY &&
+				m_deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY
+			) || this->get_parameter("is_simulator").as_bool()
 		);
 
 		if (dontSwitch)
@@ -190,6 +202,11 @@ private:
 
 		setDeviceState(device, state);
 		response->ok = true;
+		
+		auto sys_msg = autonav_msgs::msg::SystemState();
+		sys_msg.state = (uint8_t)m_systemState;
+		sys_msg.is_simulator = this->get_parameter("is_simulator").as_bool();
+		m_systemStatePublisher->publish(sys_msg);
 
 		if(m_systemState == Autonav::State::SystemState::MANUAL && !trySwitchManual(true))
 		{
@@ -206,6 +223,7 @@ private:
 	rclcpp::TimerBase::SharedPtr m_timer;
 
 	Autonav::State::SystemState m_systemState;
+	bool m_isSimulator;
 	std::map<Autonav::Device, Autonav::State::DeviceState> m_deviceStates = {{
 		{Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OFF},
 		{Autonav::Device::LOGGING, Autonav::State::DeviceState::OFF},

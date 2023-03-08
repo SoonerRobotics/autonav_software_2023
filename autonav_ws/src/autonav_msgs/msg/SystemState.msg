@@ -1,2 +1,2 @@
 int32 state
-bool estop
+bool is_simulator

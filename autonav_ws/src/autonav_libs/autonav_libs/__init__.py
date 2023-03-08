@@ -65,6 +65,7 @@ class AutoNode(Node):
             SetSystemState, "/autonav/state/set_system_state")
 
         self.m_systemState = SystemStateEnum.DISABLED
+        self.m_isSimulator = False
         self.m_deviceStates = {}
         self.m_deviceStates[device] = DeviceStateEnum.OFF
         self.m_initializeTimer = self.create_timer(0.3, self.onInitializeTimer)
@@ -97,6 +98,7 @@ class AutoNode(Node):
 
     def onSystemStateChanged(self, state: SystemState):
         self.m_systemState = SystemStateEnum(state.state)
+        self.m_isSimulator = state.is_simulator
 
         if self.m_systemState == SystemStateEnum.SHUTDOWN:
             os.kill(os.getpid(), signal.SIGKILL)

@@ -85,6 +85,7 @@ namespace Autonav
 		void AutoNode::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
 		{
 			m_systemState = static_cast<State::SystemState>(msg->state);
+			m_isSimulator = msg->is_simulator;
 			
 			if (m_systemState == State::SystemState::SHUTDOWN)
 			{
