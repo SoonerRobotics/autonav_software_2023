@@ -28,6 +28,7 @@ namespace fs = std::filesystem;
 #include "autonav_msgs/msg/log.hpp"
 #include "std_msgs/msg/header.h"
 #include "sensor_msgs/msg/image.hpp"
+#include "geometry_msgs/msg/pose.hpp"
 
 // Other Imports
 #include "cv_bridge/cv_bridge.h"
@@ -526,6 +527,7 @@ public:
 		m_steamSubscriber = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::onSteamDataReceived, this, std::placeholders::_1));
 		m_filteredCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/filtered", 20, std::bind(&DisplayNode::onFilteredCameraDataReceived, this, std::placeholders::_1));
 		m_rawCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/igvc/camera/compressed", 20, std::bind(&DisplayNode::onRawCameraDataReceived, this, std::placeholders::_1));
+		m_poseSubscriber = this->create_subscription<geometry_msgs::msg::Pose>("/autonav/pose", 20, std::bind(&DisplayNode::onPoseReceived, this, std::placeholders::_1));
 		m_logSubscriber = this->create_subscription<autonav_msgs::msg::Log>("/autonav/logging", 20, std::bind(&DisplayNode::onLogReceived, this, std::placeholders::_1));
 
 		if (!setup_imgui())
@@ -638,6 +640,7 @@ public:
 					ImGui::Text("Longitude: %f", m_lastGpsMessage.longitude);
 					ImGui::Text("Altitude: %f", m_lastGpsMessage.altitude);
 					ImGui::Text("Current Fix: %d", m_lastGpsMessage.gps_fix);
+					ImGui::Text("Locked: %d", m_lastGpsMessage.gps_fix > 0 || m_lastGpsMessage.is_locked);
 
 					ImGui::SeparatorText("IMU Data");
 					ImGui::Text("Pitch: %f", m_lastImuMessage.pitch);
@@ -645,6 +648,11 @@ public:
 					ImGui::Text("Yaw: %f", m_lastImuMessage.yaw);
 					ImGui::Text("Acceleration: (%f, %f, %f)", m_lastImuMessage.accel_x, m_lastImuMessage.accel_y, m_lastImuMessage.accel_z);
 					ImGui::Text("Angular Velocity: (%f, %f, %f)", m_lastImuMessage.angular_x, m_lastImuMessage.angular_y, m_lastImuMessage.angular_z);
+
+					ImGui::SeparatorText("Pose");
+					ImGui::Text("X: %f", m_lastPose.position.x);
+					ImGui::Text("Y: %f", m_lastPose.position.y);
+					ImGui::Text("Theta: %f", m_lastPose.orientation.z);
 
 					ImGui::SeparatorText("Motor Data");
 					ImGui::Text("Left Motor: %.1f", m_lastMotorMessage.left_motor);
@@ -842,6 +850,11 @@ public:
 		this->m_lastSteamMessage = *data;
 	}
 
+	void onPoseReceived(const geometry_msgs::msg::Pose::SharedPtr data)
+	{
+		this->m_lastPose = *data;
+	}
+
 	void onFilteredCameraDataReceived(const sensor_msgs::msg::CompressedImage::SharedPtr data)
 	{
 		cv_bridge::CvImagePtr cv_ptr;
@@ -926,6 +939,7 @@ private:
 	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_filteredCameraSubscriber;
 	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_rawCameraSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr m_logSubscriber;
+	rclcpp::Subscription<geometry_msgs::msg::Pose>::SharedPtr m_poseSubscriber;
 
 	rclcpp::TimerBase::SharedPtr m_renderClock;
 
@@ -933,6 +947,7 @@ private:
 	autonav_msgs::msg::IMUData m_lastImuMessage;
 	autonav_msgs::msg::MotorInput m_lastMotorMessage;
 	autonav_msgs::msg::SteamInput m_lastSteamMessage;
+	geometry_msgs::msg::Pose m_lastPose;
 	float m_fontSize = 20.0f;
 	std::vector<std::string> m_latestLogs;
 

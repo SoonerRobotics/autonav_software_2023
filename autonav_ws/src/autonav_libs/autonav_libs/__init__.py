@@ -16,7 +16,8 @@ class Device(IntEnum):
     SERIAL_CAN = 105
     LOGGING = 106
     CAMERA_TRANSLATOR = 107,
-    IMAGE_TRANSFORMER = 108
+    IMAGE_TRANSFORMER = 108,
+    PARTICLE_FILTER = 109
 
 
 class DeviceStateEnum(IntEnum):
@@ -82,6 +83,12 @@ class AutoNode(Node):
 
     def shutdown(self):
         pass
+    
+    def onSystemStateUpdated(self):
+        pass
+    
+    def onDeviceStateUpdated(self):
+        pass
 
     def getSystemState(self):
         return self.m_systemState
@@ -100,6 +107,7 @@ class AutoNode(Node):
     def onSystemStateChanged(self, state: SystemState):
         self.m_systemState = SystemStateEnum(state.state)
         self.m_isSimulator = state.is_simulator
+        self.onSystemStateUpdated()
 
         if self.m_systemState == SystemStateEnum.SHUTDOWN:
             os.kill(os.getpid(), signal.SIGKILL)
@@ -114,6 +122,7 @@ class AutoNode(Node):
         if newState == originalState:
             return
         
+        self.onDeviceStateUpdated()
         if newState == DeviceStateEnum.STANDBY and originalState == DeviceStateEnum.OFF:
             self.setup()
             

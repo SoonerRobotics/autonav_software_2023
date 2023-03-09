@@ -21,7 +21,8 @@ namespace Autonav
         SERIAL_CAN = 105,
         LOGGING = 106,
         CAMERA_TRANSLATOR = 107,
-        IMAGE_TRANSFORMER = 108
+        IMAGE_TRANSFORMER = 108,
+        PARTICLE_FILTER = 109
     };
 
     namespace State

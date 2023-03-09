@@ -8,5 +8,6 @@
     <node pkg="autonav_manual" exec="steam.py" />
     <node pkg="autonav_manual" exec="steamremote" />
     <node pkg="autonav_vision" exec="transformations.py" />
+    <node pkg="autonav_filters" exec="pf.py" />
     <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
 </launch>
