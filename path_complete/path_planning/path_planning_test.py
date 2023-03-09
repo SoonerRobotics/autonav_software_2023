@@ -7,7 +7,13 @@ def planning_test(wpoints, obstacles):
     test = path_planning.path_planning()
     test.setpath(wpoints)
     test.setobstacles(obstacles)
-    test.intersections("cw")
+
+    # run test.intersections until no new points are added
+
+    for i in range(1):
+        print("intersections called")
+        test.intersections("cw")
+
     # here
     print(f"Start test, test.final {test.final}")
     obstacle_circles = []
@@ -46,12 +52,15 @@ def planning_test(wpoints, obstacles):
     ax1.set(xlabel='Before path planning')
 
     
-    print(f"test.final in PATH PLANNING TESTER {test.final}")
+    #print(f"test.final in PATH PLANNING TESTER {test.final}")
 
     final_path = []
+
+
     for i in range(len(test.final)):
+        #print(f"test.final[i] {test.final[i]}")
         final_path.append(test.final[i][0:2])
-    print(f"final path in PATH PLANNING TESTER {final_path}")
+    #print(f"final path in PATH PLANNING TESTER {final_path}")
     x, y = zip(*final_path)
     
     ax2.set_ylim(-6, 6)
@@ -66,3 +75,4 @@ def planning_test(wpoints, obstacles):
 
     plt.legend()
     plt.show()
+

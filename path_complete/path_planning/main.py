@@ -9,10 +9,10 @@ def get_random_path_planning_simulation():
     for i in range(rand_path_length):
         rand_x = random.randint(-5, 5)
         rand_y = random.randint(-5, 5)
-        rand_wps.append((rand_x, rand_y, 0))
+        rand_wps.append([rand_x, rand_y, 0, 0])
 
     rand_obstacles = []
-    rand_amount_obstacles = random.randint(4, 4)
+    rand_amount_obstacles = random.randint(20,30)
     for i in range(rand_amount_obstacles):
         rand_safety_d = random.uniform(.5, .75)
         rand_obst_x = random.uniform(-5, 5)
@@ -73,3 +73,4 @@ if __name__ == "__main__":
     #waypoints = [(1,0), (2,2), (3,3)]
     #obstacles = [(1.5, 1.5), (5, 5)]
     #path_planning_test.planning_test(waypoints, obstacles, .5)
+
