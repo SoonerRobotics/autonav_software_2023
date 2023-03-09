@@ -91,10 +91,16 @@ class path_planning:
     # sort obstacles based on which cartesian distance from the waypoint to the obstacles edge is closest
     def sort(self, waypoint, obstacles):
         for obst in range(len(obstacles)-1):
-            hold = obstacles[obst]
-            if (math.sqrt((obstacles[obst][0] - waypoint[0]) ** 2 + (obstacles[obst][1] - waypoint[1]) ** 2) - obstacles[obst][2]) < (math.sqrt((obstacles[obst][0] - waypoint[0]) ** 2 + (obstacles[obst][1] - waypoint[1]) ** 2) - obstacles[obst][2]):
-                obstacles[obst] = obstacles[obst+1]
-                obstacles[obst+1] = hold 
+            for obst2 in range(len(obstacles) - obst - 1):
+                dist_to_obst_1 = math.sqrt(((obstacles[obst2][0] - waypoint[0]) ** 2) + ((obstacles[obst2][1] - waypoint[1]) ** 2)) - obstacles[obst2][2]
+                dist_to_obst_2 = math.sqrt(((obstacles[obst2 + 1][0] - waypoint[0]) ** 2) + ((obstacles[obst2 + 1][1] - waypoint[1]) ** 2)) - obstacles[obst2 + 1][2]
+                if dist_to_obst_1 > dist_to_obst_2:
+                    # move obj 1 down the list
+                    hold = obstacles[obst2]
+                    obstacles[obst2] = obstacles[obst2+1]
+                    obstacles[obst2+1] = hold
+
+
         return obstacles
 
     # check for double intersections of the path of waypoints with the obstacles
@@ -120,8 +126,10 @@ class path_planning:
 
 
         for i in range(len(self.final)-1):
-            print("next waypoint")
+            print(f"next waypoint {self.final[i]}")
+            print(f"OBSTACLES BEFORE SORTING {self.obstacles}")
             self.obstacles = self.sort(working_path[i], self.obstacles)
+            print(f"OBSTACLES AFTER SORTING {self.obstacles}")
             # draw the segment
             seg_start = self.final[i]
             seg_end = self.final[i+1]
