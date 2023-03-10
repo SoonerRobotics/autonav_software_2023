@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import MotorFeedback, GPSFeedback
+from autonav_msgs.msg import MotorFeedback, GPSFeedback, Position
 from autonav_libs import AutoNode, Device, DeviceStateEnum, SystemStateEnum
-from geometry_msgs.msg import Pose, Point
 
 import rclpy
 import math
@@ -12,7 +11,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 class Particle:
-    def __init__(self, x=0, y=0, weight=1, theta=0):
+    def __init__(self, x = 0, y = 0, theta = 0, weight = 1):
         self.x = x
         self.y = y
         self.weight = weight
@@ -107,7 +106,7 @@ class ParticleFilter:
             x = particle.x + randx * math.cos(particle.theta) + randy * math.sin(particle.theta)
             y = particle.y + randx * math.sin(particle.theta) + randy * math.cos(particle.theta)
             theta = np.random.normal(particle.theta, self.m_odomNoise[2]) % (2 * math.pi)
-            self.m_particles.append(Particle(x, y, particle.weight, theta))
+            self.m_particles.append(Particle(x, y, theta, particle.theta))
 
 
 class ParticleFilterNode(AutoNode):
@@ -116,7 +115,7 @@ class ParticleFilterNode(AutoNode):
 
         self.m_gpsSubscriber = self.create_subscription(GPSFeedback, "/autonav/gps", self.onGPSReceived, 20)
         self.m_motorFeedbackSubscriber = self.create_subscription(MotorFeedback, "/autonav/MotorFeedback", self.onMotorFeedbackReceived, 20)
-        self.m_posePublisher = self.create_publisher(Pose, "/autonav/pose", 20)
+        self.m_posePublisher = self.create_publisher(Position, "/autonav/position", 20)
 
         self.m_firstGps = None
         self.m_collecting = True
@@ -138,22 +137,19 @@ class ParticleFilterNode(AutoNode):
             self.m_pf.setFirstGPS(self.m_firstGps[0], self.m_firstGps[1])
             return
         
-        self.log(f"GPS -> ({msg.latitude}, {msg.longitude})")
         self.m_pf.updateGPS(msg)
 
     def onMotorFeedbackReceived(self, msg: MotorFeedback):
         avg_x, avg_y, avg_theta = self.m_pf.updateMotors(msg)
-        output = Pose()
-        point = Point()
-        point.x = avg_x
-        point.y = avg_y
-        point.z = avg_theta
+        output = Position()
+        output.x = avg_x
+        output.y = avg_y
+        output.theta = avg_theta
         
         if self.m_firstGps is not None:
-            point.x = self.m_firstGps[0] + avg_x / 111086.2
-            point.y = self.m_firstGps[1] - avg_y / 81978.2
+            output.latitude = self.m_firstGps[0] + avg_x / 111086.2
+            output.longitude = self.m_firstGps[1] - avg_y / 81978.2
         
-        output.position = point
         self.m_posePublisher.publish(output)
 
         

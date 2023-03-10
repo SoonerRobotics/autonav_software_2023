@@ -21,6 +21,7 @@ set(msg_files
   "msg/GPSFeedback.msg"
   "msg/DeviceState.msg"
   "msg/SystemState.msg"
+  "msg/Position.msg"
 )
 
 set(srv_files
