@@ -12,7 +12,7 @@ def get_random_path_planning_simulation():
         rand_wps.append([rand_x, rand_y, 0, 0])
 
     rand_obstacles = []
-    rand_amount_obstacles = random.randint(10,10)
+    rand_amount_obstacles = random.randint(20,20)
     for i in range(rand_amount_obstacles):
         rand_safety_d = random.uniform(.5, .75)
         rand_obst_x = random.uniform(-5, 5)

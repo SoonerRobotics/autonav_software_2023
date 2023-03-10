@@ -7,12 +7,15 @@ def planning_test(wpoints, obstacles):
     test = path_planning.path_planning()
     test.setpath(wpoints)
     test.setobstacles(obstacles)
+    
 
     # run test.intersections until no new points are added
 
     for i in range(1):
         print("intersections called")
         test.intersections("cw")
+        test.path_intersections()
+    
 
     # here
     print(f"Start test, test.final {test.final}")
