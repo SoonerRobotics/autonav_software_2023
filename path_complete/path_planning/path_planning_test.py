@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import path_planning
+import time
 
 def planning_test(wpoints, obstacles):
     test = path_planning.path_planning()
@@ -10,11 +11,16 @@ def planning_test(wpoints, obstacles):
     
 
     # run test.intersections until no new points are added
-
-    for i in range(20):
+    
+    start_time = time.time()
+    
+    for i in range(50):
         print("intersections called")
         test.intersections("cw")
         test.path_intersections()
+    
+    execution_time = time.time() - start_time
+    
     
 
     # here
@@ -76,6 +82,7 @@ def planning_test(wpoints, obstacles):
 
     ax2.set(xlabel='After path planning')
 
+    print(f"Entire process time: {execution_time}")
     plt.legend()
     plt.show()
 
