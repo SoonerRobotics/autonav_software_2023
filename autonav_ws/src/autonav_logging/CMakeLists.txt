@@ -15,8 +15,15 @@ find_package(autonav_libs REQUIRED)
 add_executable(logging src/logging.cpp)
 ament_target_dependencies(logging rclcpp std_msgs autonav_msgs autonav_libs)
 
+add_executable(combined_logging src/combined_logger.cpp)
+ament_target_dependencies(combined_logging rclcpp std_msgs autonav_msgs autonav_libs)
+
 install(TARGETS
   logging
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS
+combined_logging
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

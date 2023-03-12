@@ -5,6 +5,7 @@
     </node>
     <node pkg="autonav_display" exec="primary_display" output="screen" />
     <node pkg="autonav_logging" exec="logging" />
+    <node pkg="autonav_logging" exec="combined_logging" />
     <node pkg="autonav_manual" exec="steam.py" />
     <node pkg="autonav_manual" exec="steamremote" />
     <node pkg="autonav_vision" exec="transformations.py" />

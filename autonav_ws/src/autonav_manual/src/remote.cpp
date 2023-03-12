@@ -17,14 +17,14 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-class JoyNode : public Autonav::ROS::AutoNode
+class LoggingNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoyNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_XBOX, "autonav_remote_xbox") {}
+	LoggingNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_XBOX, "autonav_remote_xbox") {}
 
 	void setup() override
 	{
-		m_steamSubscription = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 10, std::bind(&JoyNode::on_joy_received, this, _1));
+		m_steamSubscription = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 10, std::bind(&LoggingNode::on_joy_received, this, _1));
 		m_motorPublisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
 	}
 
@@ -59,7 +59,7 @@ private:
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<JoyNode>());
+	rclcpp::spin(std::make_shared<LoggingNode>());
 	rclcpp::shutdown();
 	return 0;
 }

@@ -24,6 +24,7 @@ namespace fs = std::filesystem;
 #include "autonav_msgs/msg/imu_data.hpp"
 #include "autonav_msgs/msg/gps_feedback.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
+#include "autonav_msgs/msg/motor_feedback.hpp"
 #include "autonav_msgs/msg/steam_input.hpp"
 #include "autonav_msgs/msg/position.hpp"
 #include "autonav_msgs/msg/log.hpp"
@@ -101,6 +102,8 @@ const char *deviceToString(Autonav::Device device)
 		return "CAMERA_TRANSLATOR";
 	case Autonav::Device::IMAGE_TRANSFORMER:
 		return "IMAGE_TRANSFORMER";
+	case Autonav::Device::LOGGING_COMBINED:
+		return "LOGGING_COMBINED";
 	default:
 		return "UNKNOWN";
 	}
@@ -320,6 +323,39 @@ void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 	}
 }
 
+void showCombinedLoggingConfiguration(Autonav::ROS::AutoNode *node)
+{
+	auto lcomb_reg = node->config.getRegistersForDevice(Autonav::Device::LOGGING_COMBINED);
+	if (lcomb_reg.size() == 0)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("Combined Logger");
+	for (auto it = lcomb_reg.begin(); it != lcomb_reg.end(); it++)
+	{
+		auto address = it->first;
+		auto data = it->second;
+
+		switch (address)
+		{
+		// 0 through 2 are boolean values
+		case 0:
+		case 1:
+		case 2:
+		{
+			auto title = address == 0 ? "Motor Feedback" : address == 1 ? "GPS" : "IMU";
+			auto data = node->config.read<bool>(Autonav::Device::LOGGING_COMBINED, address);
+			if (ImGui::Checkbox(title, &data))
+			{
+				node->config.writeTo(Autonav::Device::LOGGING_COMBINED, address, data);
+			}
+			break;
+		}
+		}
+	}
+}
+
 void savePreset(Autonav::ROS::AutoNode *node, std::string file_name)
 {
 	std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs/" + file_name + ".csv";
@@ -524,6 +560,7 @@ public:
 		m_gpsSubscriber = this->create_subscription<autonav_msgs::msg::GPSFeedback>("/autonav/gps", 20, std::bind(&DisplayNode::onGPSFeedbackReceived, this, std::placeholders::_1));
 		m_imuSubscriber = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::onImuDataReceived, this, std::placeholders::_1));
 		m_motorSubscriber = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::onMotorDataReceived, this, std::placeholders::_1));
+		m_motorFeedbackSubscriber = this->create_subscription<autonav_msgs::msg::MotorFeedback>("/autonav/MotorFeedback", 20, std::bind(&DisplayNode::onMotorFeedbackReceived, this, std::placeholders::_1));
 		m_steamSubscriber = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::onSteamDataReceived, this, std::placeholders::_1));
 		m_filteredCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/filtered", 20, std::bind(&DisplayNode::onFilteredCameraDataReceived, this, std::placeholders::_1));
 		m_rawCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/igvc/camera/compressed", 20, std::bind(&DisplayNode::onRawCameraDataReceived, this, std::placeholders::_1));
@@ -652,13 +689,17 @@ public:
 					ImGui::SeparatorText("Estimated Position");
 					ImGui::Text("X: %f", m_lastPose.x);
 					ImGui::Text("Y: %f", m_lastPose.y);
-					ImGui::Text("Theta: %f", m_lastPose.theta);
+					static auto theta_to_degs = [](double theta) -> double {
+						return theta * 180 / M_PI;
+					};
+					ImGui::Text("Theta: %f radians -> %f degrees", m_lastPose.theta, theta_to_degs(m_lastPose.theta));
 					ImGui::Text("Latitude: %f", m_lastPose.latitude);
 					ImGui::Text("Longitude: %f", m_lastPose.longitude);
 
 					ImGui::SeparatorText("Motor Data");
 					ImGui::Text("Left Motor: %.1f", m_lastMotorMessage.left_motor);
 					ImGui::Text("Right Motor: %.1f", m_lastMotorMessage.right_motor);
+					ImGui::Text("Delta X, Y, Theta = (%f, %f, %f)", m_lastMotorFeedbackMessage.delta_x, m_lastMotorFeedbackMessage.delta_y, m_lastMotorFeedbackMessage.delta_theta);
 
 					ImGui::SeparatorText("Device States");
 					showNodeState(this, Autonav::Device::DISPLAY_NODE);
@@ -670,6 +711,7 @@ public:
 					showNodeState(this, Autonav::Device::STEAM_TRANSLATOR);
 					showNodeState(this, Autonav::Device::CAMERA_TRANSLATOR);
 					showNodeState(this, Autonav::Device::IMAGE_TRANSFORMER);
+					showNodeState(this, Autonav::Device::LOGGING_COMBINED);
 
 					ImGui::EndTabItem();
 				}
@@ -729,6 +771,7 @@ public:
 					showManualSteamConfiguration(this);
 					showCameraConfiguration(this);
 					showImageTransformerConfiugration(this);
+					showCombinedLoggingConfiguration(this);
 
 					ImGui::EndTabItem();
 				}
@@ -846,6 +889,11 @@ public:
 	{
 		this->m_lastMotorMessage = *data;
 	}
+	
+	void onMotorFeedbackReceived(const autonav_msgs::msg::MotorFeedback::SharedPtr data)
+	{
+		this->m_lastMotorFeedbackMessage = *data;
+	}
 
 	void onSteamDataReceived(const autonav_msgs::msg::SteamInput::SharedPtr data)
 	{
@@ -937,6 +985,7 @@ private:
 	rclcpp::Subscription<autonav_msgs::msg::GPSFeedback>::SharedPtr m_gpsSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::IMUData>::SharedPtr m_imuSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr m_motorSubscriber;
+	rclcpp::Subscription<autonav_msgs::msg::MotorFeedback>::SharedPtr m_motorFeedbackSubscriber;
 	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr m_steamSubscriber;
 	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_filteredCameraSubscriber;
 	rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr m_rawCameraSubscriber;
@@ -948,6 +997,7 @@ private:
 	autonav_msgs::msg::GPSFeedback m_lastGpsMessage;
 	autonav_msgs::msg::IMUData m_lastImuMessage;
 	autonav_msgs::msg::MotorInput m_lastMotorMessage;
+	autonav_msgs::msg::MotorFeedback m_lastMotorFeedbackMessage;
 	autonav_msgs::msg::SteamInput m_lastSteamMessage;
 	autonav_msgs::msg::Position m_lastPose;
 	float m_fontSize = 20.0f;

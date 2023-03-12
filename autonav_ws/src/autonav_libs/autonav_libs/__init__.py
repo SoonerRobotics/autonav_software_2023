@@ -17,7 +17,8 @@ class Device(IntEnum):
     LOGGING = 106
     CAMERA_TRANSLATOR = 107,
     IMAGE_TRANSFORMER = 108,
-    PARTICLE_FILTER = 109
+    PARTICLE_FILTER = 109,
+    LOGGING_COMBINED = 110
 
 
 class DeviceStateEnum(IntEnum):

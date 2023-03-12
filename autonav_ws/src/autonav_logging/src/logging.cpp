@@ -68,12 +68,12 @@ void append_to_file(const std::string &name, const std::string &contents)
 	out.close();
 }
 
-class JoyNode : public Autonav::ROS::AutoNode
+class LoggingNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoyNode() : AutoNode(Autonav::Device::LOGGING, "autonav_logging")
+	LoggingNode() : AutoNode(Autonav::Device::LOGGING, "autonav_logging")
 	{
-		m_steamSubscription = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&JoyNode::on_log_received, this, _1));
+		m_steamSubscription = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&LoggingNode::on_log_received, this, _1));
 	}
 
 	void setup() override
@@ -94,7 +94,7 @@ private:
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<JoyNode>());
+	rclcpp::spin(std::make_shared<LoggingNode>());
 	rclcpp::shutdown();
 	return 0;
 }

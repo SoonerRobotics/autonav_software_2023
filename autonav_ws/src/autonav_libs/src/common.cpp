@@ -213,6 +213,9 @@ namespace Autonav
 			msg.data = data;
 			msg.opcode = ConbusOpcode::WRITE;
 			m_conbusPublisher->publish(msg);
+
+			// Set it lcally
+			m_registers[device][address] = data;
 		}
 
 		void Conbus::writeTo(Device device, uint8_t address, int32_t data)
