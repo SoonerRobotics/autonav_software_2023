@@ -82,7 +82,7 @@ void setup() {
 
   pinMode(LED0, OUTPUT);
   pinMode(CANLED, OUTPUT);
-  pinMode(estopPin, INPUT_PULLDOWN);
+  pinMode(estopPin, INPUT);
   pinMode(encoderRightA, INPUT);
   pinMode(encoderRightB, INPUT);
   pinMode(encoderLeftA, INPUT);
@@ -121,11 +121,11 @@ void loop() {
     dyn = dyn + (left_distance + right_distance) / 2 * sin(don); 
     don = don + (right_distance - left_distance) * DIAMETER_FROM_CENTER_WHEEL / DISTANCE_BETWEEN_WHEELS; //diametrer of center of wheel and diameter between wheel TODO: no magic numbers
 
-    motorDistances.xn = (short)(dxn * SPEED_SCALE_FACTOR);
-    motorDistances.yn = (short)(dyn * SPEED_SCALE_FACTOR);
-    motorDistances.on = (short)(don * SPEED_SCALE_FACTOR);
+    motorDistances.xn = (short)(dxn * ODOM_SCALE_FACTOR);
+    motorDistances.yn = (short)(dyn * ODOM_SCALE_FACTOR);
+    motorDistances.on = (short)(don * ODOM_SCALE_FACTOR);
 
-    //sendCanOdomMsgOut();
+    sendCanOdomMsgOut();
 
     resetDelta(dxn, dyn, don);
     

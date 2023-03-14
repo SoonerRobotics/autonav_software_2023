@@ -8,9 +8,9 @@
 
 #define MOTOR_UPDATE_RATE 100            // Frequency that motor PID is updated (Hz)
 #define MAX_SPEED 2.2f                   // (m/s)
-#define PULSES_PER_REV (600.0f * 7 * 2)  // (revs)
+#define PULSES_PER_REV (600.0f * 12 * 2 * 24 / 16)  // (revs)
 //#define LINEAR_PER_REV 0.2054f // Wheel radius (m) old
-#define LINEAR_PER_REV 0.2032f  // Wheel radius (m)
+#define LINEAR_PER_REV 0.2667f  // Wheel radius (m)
 #define MILLIS_TO_FULL 250      // Milliseconds to go from 0 output speed to 1
 #define LPIIR_DECAY 0.1f        // Decay rate of low pass filter on velocity
 
@@ -129,6 +129,13 @@ public:
     currentOutput = clamp(currentOutput, -MAX_SPEED, MAX_SPEED);
     //Serial.println("curr output");
     //Serial.println(currentOutput);
+
+
+    // TEMP HACK REMOVE LATER
+    if (this->pulses < 20) {
+        this->integrator = 0;
+    }
+
     this->pulses = 0;
     int servoOut = out2servo(currentOutput);
     motorServo.write(servoOut);
