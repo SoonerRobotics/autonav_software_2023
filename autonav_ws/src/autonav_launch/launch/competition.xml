@@ -5,6 +5,7 @@
     <node pkg="autonav_logging" exec="combined_logging" />
     <node pkg="autonav_serial" exec="camera.py" name="autonav_serial_camera" />
     <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" />
+    <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial_core" />
     <node pkg="autonav_filters" exec="pf.py" />
     <node pkg="autonav_manual" exec="steam.py" name="autonav_joy_steam" />
     <node pkg="autonav_manual" exec="steamremote" name="autonav_remote" />

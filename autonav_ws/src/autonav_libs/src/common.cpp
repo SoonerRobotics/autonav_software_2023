@@ -154,7 +154,6 @@ namespace Autonav
 		{
 		}
 
-		// TODO: Tell everyone else about our config changes!
 		void Conbus::writeBytes(uint8_t address, std::vector<uint8_t> data)
 		{
 			m_registers[m_device][address] = data;

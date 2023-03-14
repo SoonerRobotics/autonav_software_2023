@@ -42,7 +42,6 @@ class IMUNode(AutoNode):
     def imuWorker(self):
         while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
             if (not self.m_hasPublishedHeaders):
-                self.log("time,accel_x,accel_y,accel_z,yaw,pitch,roll,angular_x,angular_y,angular_z,gps_fix,latitude,longitude,altitude", file="imu_data", skipConsole=True)
                 self.m_hasPublishedHeaders = True
                 continue
 
@@ -98,7 +97,6 @@ class IMUNode(AutoNode):
             self.m_gpsPublisher.publish(gps)
 
             # Get lat/long if the sensor has GPS fix
-            self.log(f"{round(time.time()*1000)},{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll},{angular_velocity.x},{angular_velocity.y},{angular_velocity.z},{sensor_register.gps_fix},{sensor_register.lla.x},{sensor_register.lla.y},{sensor_register.lla.y}", file="imu_data")
             time.sleep(self.config.readFloat(Registers.IMU_READ_RATE.value))
 
 

@@ -34,7 +34,6 @@ class SerialMotors(AutoNode):
 
     def canWorker(self):
         try:
-            # Determine if /dev/autonav-can-835 exists without opening it
             with open("/dev/autonav-can-835", "r") as f:
                 pass
 

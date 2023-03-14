@@ -5,6 +5,7 @@
 #include <string>
 #include <fstream>
 #include <filesystem>
+#include "math.h"
 
 namespace fs = std::filesystem;
 
@@ -35,8 +36,6 @@ namespace fs = std::filesystem;
 #include "cv_bridge/cv_bridge.h"
 #include <image_transport/image_transport.hpp>
 #include "opencv4/opencv2/opencv.hpp"
-
-// TODO: Fix image flashing issue
 
 const char *glsl_version = "#version 130";
 GLFWwindow *window;
@@ -104,6 +103,8 @@ const char *deviceToString(Autonav::Device device)
 		return "IMAGE_TRANSFORMER";
 	case Autonav::Device::LOGGING_COMBINED:
 		return "LOGGING_COMBINED";
+	case Autonav::Device::PARTICLE_FILTER:
+		return "FILTERS";
 	default:
 		return "UNKNOWN";
 	}
@@ -352,6 +353,44 @@ void showCombinedLoggingConfiguration(Autonav::ROS::AutoNode *node)
 			}
 			break;
 		}
+		}
+	}
+}
+
+void showFiltersConfiguration(Autonav::ROS::AutoNode* node)
+{
+	auto lcomb_reg = node->config.getRegistersForDevice(Autonav::Device::PARTICLE_FILTER);
+	if (lcomb_reg.size() == 0)
+	{
+		return;
+	}
+
+	ImGui::SeparatorText("Filters");
+	for (auto it = lcomb_reg.begin(); it != lcomb_reg.end(); it++)
+	{
+		auto address = it->first;
+		auto data = it->second;
+
+		switch (address)
+		{
+			case 0: // A dropdown box of available filters (particle filter, deadreckoning)
+			{
+				auto data = node->config.read<int32_t>(Autonav::Device::PARTICLE_FILTER, address);
+				if (ImGui::Combo("Filter", &data, "Dead Reckoning\0Particle Filter\0"))
+				{
+					node->config.writeTo(Autonav::Device::PARTICLE_FILTER, address, data);
+				}
+				break;
+			}
+			case 1:
+			{
+				auto data = node->config.read<bool>(Autonav::Device::PARTICLE_FILTER, address);
+				if (ImGui::Checkbox("Show Debug Plots", &data))
+				{
+					node->config.writeTo(Autonav::Device::PARTICLE_FILTER, address, data);
+				}
+				break;
+			}
 		}
 	}
 }
@@ -672,38 +711,51 @@ public:
 					ImGui::Text("System State: %s", systemStateToString(getSystemState()));
 					ImGui::Text("Is Simulator: %s", this->m_isSimulator ? "True" : "False");
 
-					ImGui::SeparatorText("GPS Data");
-					ImGui::Text("Latitude: %f", m_lastGpsMessage.latitude);
-					ImGui::Text("Longitude: %f", m_lastGpsMessage.longitude);
-					ImGui::Text("Altitude: %f", m_lastGpsMessage.altitude);
-					ImGui::Text("Current Fix: %d", m_lastGpsMessage.gps_fix);
-					ImGui::Text("Locked: %d", m_lastGpsMessage.gps_fix > 0 || m_lastGpsMessage.is_locked);
+					if(m_showGpsData)
+					{
+						ImGui::SeparatorText("GPS Data");
+						ImGui::Text("Latitude: %f", m_lastGpsMessage.latitude);
+						ImGui::Text("Longitude: %f", m_lastGpsMessage.longitude);
+						ImGui::Text("Altitude: %f", m_lastGpsMessage.altitude);
+						ImGui::Text("Current Fix: %d", m_lastGpsMessage.gps_fix);
+						ImGui::Text("Locked: %d", m_lastGpsMessage.gps_fix > 0 || m_lastGpsMessage.is_locked);
+					}
 
-					ImGui::SeparatorText("IMU Data");
-					ImGui::Text("Pitch: %f", m_lastImuMessage.pitch);
-					ImGui::Text("Roll: %f", m_lastImuMessage.roll);
-					ImGui::Text("Yaw: %f", m_lastImuMessage.yaw);
-					ImGui::Text("Acceleration: (%f, %f, %f)", m_lastImuMessage.accel_x, m_lastImuMessage.accel_y, m_lastImuMessage.accel_z);
-					ImGui::Text("Angular Velocity: (%f, %f, %f)", m_lastImuMessage.angular_x, m_lastImuMessage.angular_y, m_lastImuMessage.angular_z);
+					if(m_showImuData)
+					{
+						ImGui::SeparatorText("IMU Data");
+						ImGui::Text("Pitch: %f", m_lastImuMessage.pitch);
+						ImGui::Text("Roll: %f", m_lastImuMessage.roll);
+						ImGui::Text("Yaw: %f", m_lastImuMessage.yaw);
+						ImGui::Text("Acceleration: (%f, %f, %f)", m_lastImuMessage.accel_x, m_lastImuMessage.accel_y, m_lastImuMessage.accel_z);
+						ImGui::Text("Angular Velocity: (%f, %f, %f)", m_lastImuMessage.angular_x, m_lastImuMessage.angular_y, m_lastImuMessage.angular_z);
+					}
 
-					ImGui::SeparatorText("Estimated Position");
-					ImGui::Text("X: %f", m_lastPose.x);
-					ImGui::Text("Y: %f", m_lastPose.y);
-					static auto theta_to_degs = [](double theta) -> double {
-						return theta * 180 / M_PI;
-					};
-					ImGui::Text("Theta: %f radians -> %f degrees", m_lastPose.theta, theta_to_degs(m_lastPose.theta));
-					ImGui::Text("Latitude: %f", m_lastPose.latitude);
-					ImGui::Text("Longitude: %f", m_lastPose.longitude);
+					if(m_showEstimatedPose)
+					{
+						ImGui::SeparatorText("Estimated Position");
+						ImGui::Text("X: %f", m_lastPose.x);
+						ImGui::Text("Y: %f", m_lastPose.y);
+						static auto theta_to_degs = [](double theta) -> double {
+							return fmod(360.0 + (theta * 180 / M_PI), 360.0);
+						};
+						ImGui::Text("Theta: %f radians -> %f degrees", m_lastPose.theta, theta_to_degs(m_lastPose.theta));
+						ImGui::Text("Latitude: %f", m_lastPose.latitude);
+						ImGui::Text("Longitude: %f", m_lastPose.longitude);
+					}
 
-					ImGui::SeparatorText("Motor Data");
-					ImGui::Text("Left Motor: %.1f", m_lastMotorMessage.left_motor);
-					ImGui::Text("Right Motor: %.1f", m_lastMotorMessage.right_motor);
-					ImGui::Text("Delta X, Y, Theta = (%f, %f, %f)", m_lastMotorFeedbackMessage.delta_x, m_lastMotorFeedbackMessage.delta_y, m_lastMotorFeedbackMessage.delta_theta);
+					if(m_showMotorData)
+					{
+						ImGui::SeparatorText("Motor Data");
+						ImGui::Text("Left Motor: %.1f", m_lastMotorMessage.left_motor);
+						ImGui::Text("Right Motor: %.1f", m_lastMotorMessage.right_motor);
+						ImGui::Text("Delta X, Y, Theta = (%f, %f, %f)", m_lastMotorFeedbackMessage.delta_x, m_lastMotorFeedbackMessage.delta_y, m_lastMotorFeedbackMessage.delta_theta);
+					}
 
 					ImGui::SeparatorText("Device States");
 					showNodeState(this, Autonav::Device::DISPLAY_NODE);
 					showNodeState(this, Autonav::Device::LOGGING);
+					showNodeState(this, Autonav::Device::LOGGING_COMBINED);
 					showNodeState(this, Autonav::Device::MANUAL_CONTROL_STEAM);
 					showNodeState(this, Autonav::Device::MANUAL_CONTROL_XBOX);
 					showNodeState(this, Autonav::Device::SERIAL_CAN);
@@ -711,7 +763,7 @@ public:
 					showNodeState(this, Autonav::Device::STEAM_TRANSLATOR);
 					showNodeState(this, Autonav::Device::CAMERA_TRANSLATOR);
 					showNodeState(this, Autonav::Device::IMAGE_TRANSFORMER);
-					showNodeState(this, Autonav::Device::LOGGING_COMBINED);
+					showNodeState(this, Autonav::Device::PARTICLE_FILTER);
 
 					ImGui::EndTabItem();
 				}
@@ -771,6 +823,7 @@ public:
 					showManualSteamConfiguration(this);
 					showCameraConfiguration(this);
 					showImageTransformerConfiugration(this);
+					showFiltersConfiguration(this);
 					showCombinedLoggingConfiguration(this);
 
 					ImGui::EndTabItem();
@@ -815,6 +868,12 @@ public:
 						}
 						ImGui::EndCombo();
 					}
+
+					ImGui::SeparatorText("Data");
+					ImGui::Checkbox("Show GPS", &m_showGpsData);
+					ImGui::Checkbox("Show IMU", &m_showImuData);
+					ImGui::Checkbox("Show Estimated Position", &m_showEstimatedPose);
+					ImGui::Checkbox("Show Motor Data", &m_showMotorData);
 
 					ImGui::EndTabItem();
 				}
@@ -1009,6 +1068,12 @@ private:
 
 	GLuint m_rawCameraTextureId = -1;
 	int m_rawCameraWidth, m_rawCameraHeight;
+
+	// Preferences
+	bool m_showEstimatedPose = true;
+	bool m_showMotorData = true;
+	bool m_showGpsData = true;
+	bool m_showImuData = true;
 };
 
 int main(int, char **)

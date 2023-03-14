@@ -3,7 +3,7 @@ import time
 from rclpy.node import Node
 import os
 from enum import IntEnum
-from autonav_msgs.msg import ConBusInstruction, Log, DeviceState, SystemState
+from autonav_msgs.msg import ConBusInstruction, Log, DeviceState, SystemState, PerfResult
 from autonav_msgs.srv import SetDeviceState, SetSystemState
 
 
@@ -56,8 +56,10 @@ class AutoNode(Node):
         super().__init__(node_name)
 
         self.config = Conbus(device, self)
+        self.per = Performance(device, self)
         self.device = device
-        self.m_logPublisher = self.create_publisher(Log, "/autonav/logging", 10)
+        self.m_logPublisher = self.create_publisher(
+            Log, "/autonav/logging", 10)
         self.m_deviceStateSubscriber = self.create_subscription(
             DeviceState, "/autonav/state/device", self.onDeviceStateChanged, 10)
         self.m_systemStateSubscriber = self.create_subscription(
@@ -84,10 +86,10 @@ class AutoNode(Node):
 
     def shutdown(self):
         pass
-    
+
     def onSystemStateUpdated(self):
         pass
-    
+
     def onDeviceStateUpdated(self):
         pass
 
@@ -115,18 +117,19 @@ class AutoNode(Node):
 
     def onDeviceStateChanged(self, state: DeviceState):
         originalState = self.getDeviceState()
-        self.m_deviceStates[Device(state.device)] = DeviceStateEnum(state.state)
+        self.m_deviceStates[Device(state.device)
+                            ] = DeviceStateEnum(state.state)
         if state.device != self.device.value:
             return
-        
+
         newState = self.getDeviceState()
         if newState == originalState:
             return
-        
+
         self.onDeviceStateUpdated()
         if newState == DeviceStateEnum.STANDBY and originalState == DeviceStateEnum.OFF:
             self.setup()
-            
+
         if newState == DeviceStateEnum.OPERATING and originalState == DeviceStateEnum.READY:
             self.operate()
 
@@ -171,6 +174,38 @@ class AutoNode(Node):
                 self.get_logger().error(message)
 
 
+
+class Performance:
+    def __init__(self, device: Device, node: Node):
+        self.device = device
+        self.functions = {}
+        self.results = {}
+        
+        self.publisher = node.create_publisher(PerfResult, "/autonav/performance", 10)
+        
+    def start(self, function: int):
+        self.functions[function] = time.time()
+        
+    def end(self, function: int):
+        if function not in self.functions:
+            return
+        
+        if function not in self.results:
+            self.results[function] = []
+        
+        msg = PerfResult()
+        msg.device = self.device.value
+        msg.function = function
+        msg.time = time.time() - self.functions[function]
+        self.results[function].append(msg)
+        msg.average = sum([x.time for x in self.results[function]]) / len(self.results[function])
+        msg.max = max([x.time for x in self.results[function]])
+        msg.min = min([x.time for x in self.results[function]])
+        self.publisher.publish(msg)
+        
+        del self.functions[function]
+
+
 FLOAT_PRECISION = 10000000.0
 MAX_DEVICE_ID = 200
 
@@ -180,10 +215,8 @@ class Conbus:
         self.device = device
         self.registers = {}
 
-        self.publisher = node.create_publisher(
-            ConBusInstruction, "/autonav/conbus", 10)
-        self.subscriber = node.create_subscription(
-            ConBusInstruction, "/autonav/conbus", self.on_conbus_instruction, 10)
+        self.publisher = node.create_publisher(ConBusInstruction, "/autonav/conbus", 10)
+        self.subscriber = node.create_subscription(ConBusInstruction, "/autonav/conbus", self.on_conbus_instruction, 10)
 
     def intToBytes(self, data: int):
         byts = data.to_bytes(4, byteorder="big", signed=True)

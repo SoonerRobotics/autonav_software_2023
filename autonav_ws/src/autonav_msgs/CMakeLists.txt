@@ -22,6 +22,7 @@ set(msg_files
   "msg/DeviceState.msg"
   "msg/SystemState.msg"
   "msg/Position.msg"
+  "msg/PerfResult.msg"
 )
 
 set(srv_files

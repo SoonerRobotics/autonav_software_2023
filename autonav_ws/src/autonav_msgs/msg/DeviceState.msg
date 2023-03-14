@@ -1,2 +1,2 @@
-int32 device
-int32 state
+uint8 device
+uint8 state
