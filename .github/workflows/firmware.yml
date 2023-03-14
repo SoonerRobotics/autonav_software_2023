@@ -1,4 +1,4 @@
-name: RobotLib CI
+name: Firmware CI
 
 on:
   pull_request:
