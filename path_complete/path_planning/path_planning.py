@@ -105,6 +105,7 @@ class path_planning:
     def path_intersections(self):
         working_path = self.final.copy()
         for_deletion = []
+        for_addition = []
         iterated_through = [] # debug
         print(f"path intersections PATH LENGTH: {len(working_path)}")
         for point1 in range(len(self.final) - 1):
@@ -164,19 +165,23 @@ class path_planning:
                         start = point2
                         end = point1
                     
-                    # assigned waypoint
-                    if working_path[point1][2] == 0:
-                        for betweens in range(start + 1, end):
+                    # point 1 and point 2 are both generated waypoints
+                    if working_path[point1][2] != 2:
+                        print("Intersection is not between the end or the start of the path")
+                        for betweens in range(start, end + 1):
                             if working_path[betweens] not in for_deletion:
                                 for_deletion.append(working_path[betweens])
                             print(f"betweens: {betweens}")
 
-                    # if point1 or point2 is a generated waypoint, probably don't want to delete anyway 
-                    elif working_path[point1][2] == 1:
+                    # if point1 or point2 is the start or end, we don't want to delete them
+                    elif working_path[point1][2] == 2:
                         for betweens in range(start + 1, end):
                             if working_path[betweens] not in for_deletion:
                                 for_deletion.append(working_path[betweens])
                             print(f"betweens: {betweens}")
+                    
+                    for_addition.append([intersecting_point_x, intersecting_point_y, point1])
+
 
         print(f"for_deletion {for_deletion} length: {len(for_deletion)}")
         print(f"PATH LENGTH BEFORE DELETION: {len(working_path)}")

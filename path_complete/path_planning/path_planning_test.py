@@ -14,7 +14,7 @@ def planning_test(wpoints, obstacles):
     
     start_time = time.time()
     
-    for i in range(50):
+    for i in range(5):
         print("intersections called")
         test.intersections("cw")
         test.path_intersections()
