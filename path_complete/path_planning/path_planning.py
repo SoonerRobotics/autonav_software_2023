@@ -171,14 +171,14 @@ class path_planning:
                         for betweens in range(start, end + 1):
                             if working_path[betweens] not in for_deletion:
                                 for_deletion.append(working_path[betweens])
-                            print(f"betweens: {betweens}")
+                            #print(f"betweens: {betweens}")
 
                     # if point1 or point2 is the start or end, we don't want to delete them
                     elif working_path[point1][2] == 2:
                         for betweens in range(start + 1, end):
                             if working_path[betweens] not in for_deletion:
                                 for_deletion.append(working_path[betweens])
-                            print(f"betweens: {betweens}")
+                            #print(f"betweens: {betweens}")
                     
                     for_addition.append([intersecting_point_x, intersecting_point_y, point1])
 
@@ -187,9 +187,9 @@ class path_planning:
         print(f"PATH LENGTH BEFORE DELETION: {len(working_path)}")
         for deletes in for_deletion:
             if deletes in working_path:
-                #if deletes[2] == 1:
-                print("Deleting a waypoint")
-                working_path.remove(deletes)
+                if deletes[2] != 2:
+                    print("Deleting a waypoint")
+                    working_path.remove(deletes)
         
         print(f"PATH LENGTH AFTER DELETION: {len(working_path)}")
         print(f"iterated through {iterated_through}")
@@ -198,6 +198,7 @@ class path_planning:
 
     # check for double intersections of the path of waypoints with the obstacles
     def intersections(self, rotation):
+        for_deletion = []
         intersecting_point_single_1 = None
         intersecting_point_single_2 = None
         # select the path to use from rotation
@@ -216,178 +217,184 @@ class path_planning:
         original_path_length = len(self.final)
 
         for i in range(len(self.final)-1):
-            print(f"next waypoint {self.final[i]}")
-            #print(f"OBSTACLES BEFORE SORTING {self.obstacles}")
-            self.obstacles = self.sort(self.final[i], self.obstacles)
-            #print(f"OBSTACLES AFTER SORTING {self.obstacles}")
-            # draw the segment
-            seg_start = self.final[i]
-            seg_end = self.final[i+1]
+            if self.final[i] not in for_deletion:
+                print(f"next waypoint {self.final[i]}")
+                #print(f"OBSTACLES BEFORE SORTING {self.obstacles}")
+                self.obstacles = self.sort(self.final[i], self.obstacles)
+                #print(f"OBSTACLES AFTER SORTING {self.obstacles}")
+                # draw the segment
+                seg_start = self.final[i]
+                seg_end = self.final[i+1]
 
-            # sort the list of obstacles so in order of closest to segment start
+                # sort the list of obstacles so in order of closest to segment start
 
-            # intersect the obstacles with the segment
-            for j in range(len(self.obstacles.copy())):
-                intersecting_point_1 = None
-                intersecting_point_2 = None
+                # intersect the obstacles with the segment
+                for j in range(len(self.obstacles.copy())):
+                    intersecting_point_1 = None
+                    intersecting_point_2 = None
 
-                # translate the segment to the origin
-                p1 = seg_start[0] - self.obstacles[j][0], seg_start[1] - self.obstacles[j][1]
-                p2 = seg_end[0] - self.obstacles[j][0], seg_end[1] - self.obstacles[j][1]
+                    # translate the segment to the origin
+                    p1 = seg_start[0] - self.obstacles[j][0], seg_start[1] - self.obstacles[j][1]
+                    p2 = seg_end[0] - self.obstacles[j][0], seg_end[1] - self.obstacles[j][1]
 
-                # get dr, D, sgn(dy) and the discriminant to compute intersections from https://mathworld.wolfram.com/Circle-LineIntersection.html
-                # first implemented by https://github.com/xiaoxiae/PurePursuitAlgorithm/blob/master/src/main/PurePursuit.java
-                dx = p2[0] - p1[0]
-                dy = p2[1] - p1[1]
+                    # get dr, D, sgn(dy) and the discriminant to compute intersections from https://mathworld.wolfram.com/Circle-LineIntersection.html
+                    # first implemented by https://github.com/xiaoxiae/PurePursuitAlgorithm/blob/master/src/main/PurePursuit.java
+                    dx = p2[0] - p1[0]
+                    dy = p2[1] - p1[1]
 
-                dr = math.sqrt((dx**2 + dy**2))
-                D = (p1[0]*p2[1]) - (p2[0]*p1[1])
+                    dr = math.sqrt((dx**2 + dy**2))
+                    D = (p1[0]*p2[1]) - (p2[0]*p1[1])
 
-                discrim = self.obstacles[j][2]**2 * dr**2 - D**2
+                    discrim = self.obstacles[j][2]**2 * dr**2 - D**2
 
-                if dy < 0:
-                    sgn_dy = -1
-                else:
-                    sgn_dy = 1
+                    if dy < 0:
+                        sgn_dy = -1
+                    else:
+                        sgn_dy = 1
 
-                # if the discriminant is < 0, the segment does not intersect the circle. If it = 0 then it is tangent to the circle
-                if discrim <= 0 or p1 == p2:
-                    continue
+                    # if the discriminant is < 0, the segment does not intersect the circle. If it = 0 then it is tangent to the circle
+                    if discrim <= 0 or p1 == p2:
+                        continue
 
-                # x and y coordinates of the intersections are solved with the quadratic formula, giving 2 points, labeled _add and _sub respectively
-                # x1 = (D * dy + sign(dy) * dx * math.sqrt(discriminant)) / (d * d)
-                new_x_add = ((D * dy) + (sgn_dy * dx * math.sqrt(discrim))) / dr**2
-                new_y_add = ((-D * dx) + (abs(dy) * math.sqrt(discrim))) / dr**2
+                    # x and y coordinates of the intersections are solved with the quadratic formula, giving 2 points, labeled _add and _sub respectively
+                    # x1 = (D * dy + sign(dy) * dx * math.sqrt(discriminant)) / (d * d)
+                    new_x_add = ((D * dy) + (sgn_dy * dx * math.sqrt(discrim))) / dr**2
+                    new_y_add = ((-D * dx) + (abs(dy) * math.sqrt(discrim))) / dr**2
 
-                new_x_sub = ((D * dy) - (sgn_dy * dx * math.sqrt(discrim))) / dr**2
-                new_y_sub = ((-D * dx) - (abs(dy) * math.sqrt(discrim))) / dr**2
-                #print(f"new_x_add is {new_x_add}\nnew_y_add is {new_y_add}\nnew_x_sub is {new_x_sub}\nnew_y_sub is {new_y_sub}")
-                #print(f"obstacles[j][x] {self.obstacles[j][0]}")
-                #print(f"obstacles[j][y] {self.obstacles[j][1]}")
+                    new_x_sub = ((D * dy) - (sgn_dy * dx * math.sqrt(discrim))) / dr**2
+                    new_y_sub = ((-D * dx) - (abs(dy) * math.sqrt(discrim))) / dr**2
+                    #print(f"new_x_add is {new_x_add}\nnew_y_add is {new_y_add}\nnew_x_sub is {new_x_sub}\nnew_y_sub is {new_y_sub}")
+                    #print(f"obstacles[j][x] {self.obstacles[j][0]}")
+                    #print(f"obstacles[j][y] {self.obstacles[j][1]}")
 
-                # check that the new point is actually on the segment
-                # segment min x < goal x < segment max x, or segment min y < goal y < segment max y
-                #print(f'segment_min_x {min(p1[0], p2[0])} < new_x_add {new_x_add} < segment_max_x {max(p1[0], p2[0])}')
-                valid_intersection_add = min(p1[0], p2[0]) < new_x_add and new_x_add < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_add and new_y_add < max(p1[1], p2[1])
-                valid_intersection_sub = min(p1[0], p2[0]) < new_x_sub and new_x_sub < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_sub and new_y_sub < max(p1[1], p2[1])
-                #print(f"VALID INTERSECTIONS: {valid_intersection_add} {valid_intersection_sub}")
+                    # check that the new point is actually on the segment
+                    # segment min x < goal x < segment max x, or segment min y < goal y < segment max y
+                    #print(f'segment_min_x {min(p1[0], p2[0])} < new_x_add {new_x_add} < segment_max_x {max(p1[0], p2[0])}')
+                    valid_intersection_add = min(p1[0], p2[0]) < new_x_add and new_x_add < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_add and new_y_add < max(p1[1], p2[1])
+                    valid_intersection_sub = min(p1[0], p2[0]) < new_x_sub and new_x_sub < max(p1[0], p2[0]) or min(p1[1], p2[1]) < new_y_sub and new_y_sub < max(p1[1], p2[1])
+                    #print(f"VALID INTERSECTIONS: {valid_intersection_add} {valid_intersection_sub}")
 
-               
+                
 
-                # second check for tangency, after limiting the intersections to those only on the line segment
-                if valid_intersection_add and valid_intersection_sub != None:
-                    waypoint_before_intersection = None
-                    waypoint_after_intersection = None
-                    intersecting_point_single_1 = None
-                    intersecting_point_single_2 = None
-                    intersecting_point_1 = (new_x_add, new_y_add)
-                    intersecting_point_2 = (new_x_sub, new_y_sub)
-                    swapper = (0, 0)
-                    # check cartesian distance from p1 to the first intersection candidate
-                    distance_to_1 = math.sqrt((p1[0] - intersecting_point_1[0])**2 + (p1[1] - intersecting_point_1[1])**2)
-                    distance_to_2 = math.sqrt((p1[0] - intersecting_point_2[0])**2 + (p1[1] - intersecting_point_2[1])**2)
-                    #print(f"distance_to_1 {distance_to_1}\ndistancy_point_2[0] + self.obstacles[j][0]} intersecting_point_2y {intersecting_point_2[1] + self.obstacles[j][1]}")
-                    # if intersecting_point_2 is closer, it is actually the first intersection
-                    if distance_to_1 > distance_to_2:
-                        #print("swapping")
-                        swapper = intersecting_point_1
-                        intersecting_point_1 = intersecting_point_2
-                        intersecting_point_2 = swapper
+                    # second check for tangency, after limiting the intersections to those only on the line segment
+                    if valid_intersection_add and valid_intersection_sub != None:
+                        waypoint_before_intersection = None
+                        waypoint_after_intersection = None
+                        intersecting_point_single_1 = None
+                        intersecting_point_single_2 = None
+                        intersecting_point_1 = (new_x_add, new_y_add)
+                        intersecting_point_2 = (new_x_sub, new_y_sub)
+                        swapper = (0, 0)
+                        # check cartesian distance from p1 to the first intersection candidate
+                        distance_to_1 = math.sqrt((p1[0] - intersecting_point_1[0])**2 + (p1[1] - intersecting_point_1[1])**2)
+                        distance_to_2 = math.sqrt((p1[0] - intersecting_point_2[0])**2 + (p1[1] - intersecting_point_2[1])**2)
+                        #print(f"distance_to_1 {distance_to_1}\ndistancy_point_2[0] + self.obstacles[j][0]} intersecting_point_2y {intersecting_point_2[1] + self.obstacles[j][1]}")
+                        # if intersecting_point_2 is closer, it is actually the first intersection
+                        if distance_to_1 > distance_to_2:
+                            #print("swapping")
+                            swapper = intersecting_point_1
+                            intersecting_point_1 = intersecting_point_2
+                            intersecting_point_2 = swapper
 
-                # populate the circle with waypoints around the safety_d of the object
-                points = []
-                # theta value of first intersection
-                # draw points around the circle
-                if intersecting_point_1 and intersecting_point_2 != None:
+                    # populate the circle with waypoints around the safety_d of the object
+                    points = []
+                    # theta value of first intersection
+                    # draw points around the circle
+                    if intersecting_point_1 and intersecting_point_2 != None:
 
-                    # clamp acos and asin arguments to -1 or 1 so that floating point error doesn't ruin the program
-                    theta1t_arg = math.atan((intersecting_point_1[1]) / (intersecting_point_1[0]))
-                    theta2t_arg = math.atan((intersecting_point_2[1]) / (intersecting_point_2[0]))
+                        # clamp acos and asin arguments to -1 or 1 so that floating point error doesn't ruin the program
+                        theta1t_arg = math.atan((intersecting_point_1[1]) / (intersecting_point_1[0]))
+                        theta2t_arg = math.atan((intersecting_point_2[1]) / (intersecting_point_2[0]))
 
-                    # check quadrant
-                    #print(f"theta1t_arg {theta1t_arg}")
-                    #print(f"theta2t_arg {theta2t_arg}")
-                    # check quadrant
+                        # check quadrant
+                        #print(f"theta1t_arg {theta1t_arg}")
+                        #print(f"theta2t_arg {theta2t_arg}")
+                        # check quadrant
 
-                    #print(f"initially {theta1t_arg} {theta2t_arg}")
-                    theta1t_arg = self.quadrant(theta1t_arg, intersecting_point_1[0], intersecting_point_1[1])
-                    theta2t_arg = self.quadrant(theta2t_arg, intersecting_point_2[0], intersecting_point_2[1])
-                    #print(f"after quadrant checking {theta1t_arg} {theta2t_arg}")
+                        #print(f"initially {theta1t_arg} {theta2t_arg}")
+                        theta1t_arg = self.quadrant(theta1t_arg, intersecting_point_1[0], intersecting_point_1[1])
+                        theta2t_arg = self.quadrant(theta2t_arg, intersecting_point_2[0], intersecting_point_2[1])
+                        #print(f"after quadrant checking {theta1t_arg} {theta2t_arg}")
 
 
-                    """print(f"safety_d {self.obstacles[j][2]}")
-                    print(f"Fake circle intersecting point 1 polar {(self.obstacles[j][2] * math.cos(theta1t_arg))}, {(self.obstacles[j][2] * math.sin(theta1t_arg))}")
-                    print(f"Fake circle intersecting point 1 cartesian {(intersecting_point_1[0])}, {(intersecting_point_1[1])}")
-                    print(f"Fake circle intersecting point 2 polar {(self.obstacles[j][2] * math.cos(theta2t_arg))}, {(self.obstacles[j][2] * math.sin(theta2t_arg))}")
-                    print(f"Fake circle intersecting point 2 cartesian {(intersecting_point_2[0])}, {(intersecting_point_2[1])}")
-                    print(f"1st intersection point polar {(self.obstacles[j][2] * math.cos(theta1t_arg)) + self.obstacles[j][0]}, {(self.obstacles[j][2] * math.sin(theta1t_arg) + self.obstacles[j][1])}")
-                    print(f"1st intersection point cartesian {(intersecting_point_1[0]) + self.obstacles[j][0]}, {(intersecting_point_1[1]) + self.obstacles[j][1]}")
-                    print(f"2nd intersection point polar {(self.obstacles[j][2] * math.cos(theta2t_arg)) + self.obstacles[j][0]}, {(self.obstacles[j][2] * math.sin(theta2t_arg) + self.obstacles[j][1])}")
-                    print(f"2nd intersection point cartesian {(intersecting_point_2[0]) + self.obstacles[j][0]}, {(intersecting_point_2[1]) + self.obstacles[j][1]}")
-                    print(f"theta1t_arg {theta1t_arg}")
-                    print(f"theta2t_arg {theta2t_arg}")"""
+                        """print(f"safety_d {self.obstacles[j][2]}")
+                        print(f"Fake circle intersecting point 1 polar {(self.obstacles[j][2] * math.cos(theta1t_arg))}, {(self.obstacles[j][2] * math.sin(theta1t_arg))}")
+                        print(f"Fake circle intersecting point 1 cartesian {(intersecting_point_1[0])}, {(intersecting_point_1[1])}")
+                        print(f"Fake circle intersecting point 2 polar {(self.obstacles[j][2] * math.cos(theta2t_arg))}, {(self.obstacles[j][2] * math.sin(theta2t_arg))}")
+                        print(f"Fake circle intersecting point 2 cartesian {(intersecting_point_2[0])}, {(intersecting_point_2[1])}")
+                        print(f"1st intersection point polar {(self.obstacles[j][2] * math.cos(theta1t_arg)) + self.obstacles[j][0]}, {(self.obstacles[j][2] * math.sin(theta1t_arg) + self.obstacles[j][1])}")
+                        print(f"1st intersection point cartesian {(intersecting_point_1[0]) + self.obstacles[j][0]}, {(intersecting_point_1[1]) + self.obstacles[j][1]}")
+                        print(f"2nd intersection point polar {(self.obstacles[j][2] * math.cos(theta2t_arg)) + self.obstacles[j][0]}, {(self.obstacles[j][2] * math.sin(theta2t_arg) + self.obstacles[j][1])}")
+                        print(f"2nd intersection point cartesian {(intersecting_point_2[0]) + self.obstacles[j][0]}, {(intersecting_point_2[1]) + self.obstacles[j][1]}")
+                        print(f"theta1t_arg {theta1t_arg}")
+                        print(f"theta2t_arg {theta2t_arg}")"""
 
-                    print("adding points from double intersection")
-                    working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg)
+                        print("adding points from double intersection")
+                        working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg)
 
-                # this part is really not working
-                # Definitely necessary for good accuracy with lots of obstacle clumps
-                # SINGLE INTERSECTION: on a single intersection, wait until the second single intersection is detected, then delete all the none gps wps, and add new wps cw or ccw around circle between intersection
-                # finds a first intersection and waits for the second
-                """if (valid_intersection_add or valid_intersection_sub) and (not (valid_intersection_add and valid_intersection_sub)):
-                    print("SINGLE INTERSECTION DETECTED")
-                    if intersecting_point_single_1 == None:
+                    # this part is really not working
+                    # Definitely necessary for good accuracy with lots of obstacle clumps
+                    # SINGLE INTERSECTION: on a single intersection, wait until the second single intersection is detected, then delete all the none gps wps, and add new wps cw or ccw around circle between intersection
+                    # finds a first intersection and waits for the second
+                    if (valid_intersection_add or valid_intersection_sub) and (not (valid_intersection_add and valid_intersection_sub)):
+                        # First single intersection is breaking HARD
+                        print("SINGLE INTERSECTION DETECTED")
+                        # n = points deleted, reset after adding points from single intersections
+                        n = 0
                         if valid_intersection_add:
                             intersecting_point_single_1 = new_x_add, new_y_add
                             waypoint_before_intersection = i
-                            print(f"intersecting_point_single_1 assigned: {intersecting_point_single_1} and its type is {waypoint_before_intersection}")
+                            print(f"intersecting_point_single_1 assigned: {intersecting_point_single_1[0] + self.obstacles[j][0]}, {intersecting_point_single_1[1]+ self.obstacles[j][1]}")
                         elif valid_intersection_sub:
                             intersecting_point_single_1 = new_x_sub, new_y_sub
-                            print(f"intersecting_point_single_1 assigned: {intersecting_point_single_1}")
+                            print(f"intersecting_point_single_1 assigned: ({intersecting_point_single_1[0] + self.obstacles[j][0]}, {intersecting_point_single_1[1]+ self.obstacles[j][1]})")
                             waypoint_before_intersection = i
                             print(f"waypoint before intersection {waypoint_before_intersection} and its type is {type(waypoint_before_intersection)}")
 
-                    # this is the second intersection, when things get going
-                    else:
-                        print("SECOND SINGLE INTERSECTION DETECTED")
-                        if valid_intersection_add:
-                            intersecting_point_single_2 = new_x_add, new_y_add
-                            print(f"intersecting_point_single_2 assigned: {intersecting_point_single_2}")
-                            waypoint_after_intersection = i+1
-                            print(f"waypoint_after_interesction {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
-                        elif valid_intersection_sub:
-                            intersecting_point_single_2 = new_x_sub, new_y_sub
-                            print(f"intersecting_point_single_2 assigned: {intersecting_point_single_2}")
-                            waypoint_after_intersection = i+1
-                            print(f"waypoint_after_intersection {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
+                        # second single intersection is properly detecting points at least sometimes
+                        # this is the second intersection, when things get going
+                        else:
+                            print("SECOND SINGLE INTERSECTION DETECTED")
+                            if valid_intersection_add:
+                                intersecting_point_single_2 = new_x_add, new_y_add
+                                print(f"intersecting_point_single_2 assigned: ({intersecting_point_single_2[0] + self.obstacles[j][0]}, {intersecting_point_single_2[1] + self.obstacles[j][1]})")
+                                waypoint_after_intersection = i+1
+                                print(f"waypoint_after_interesction {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
+                            elif valid_intersection_sub:
+                                intersecting_point_single_2 = new_x_sub, new_y_sub
+                                print(f"intersecting_point_single_2 assigned: ({intersecting_point_single_2[0] + self.obstacles[j][0]}, {intersecting_point_single_2[1] + self.obstacles[j][1]})")
+                                waypoint_after_intersection = i+1
+                                print(f"waypoint_after_intersection {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
 
-                        if intersecting_point_single_1 and intersecting_point_single_2:
-                            # generate points around the circle
+                            if intersecting_point_single_1 and intersecting_point_single_2:
+                                # generate points around the circle
 
-                            theta1 = self.quadrant(math.atan((intersecting_point_single_1[1] / intersecting_point_single_1[0])), intersecting_point_single_1[0], intersecting_point_single_2[1])
-                            theta2 = self.quadrant(math.atan((intersecting_point_single_1[1] / intersecting_point_single_2[0])), intersecting_point_single_2[0], intersecting_point_single_2[1])
-                            
-                            for_deletion = []
-                            # Do need to delete points inside the loop
-                            print(f"LENGTH OF WORKING PATH len(working_path)")
-                            for z in range(waypoint_before_intersection + 1, waypoint_after_intersection + 1):
+                                theta1 = self.quadrant(math.atan((intersecting_point_single_1[1] / intersecting_point_single_1[0])), intersecting_point_single_1[0], intersecting_point_single_2[1])
+                                theta2 = self.quadrant(math.atan((intersecting_point_single_1[1] / intersecting_point_single_2[0])), intersecting_point_single_2[0], intersecting_point_single_2[1])
                                 
-                                print("ADDING A POINT TO DELETION LIST")
-                                for_deletion.append(working_path[z])
+                                # for_deletion = []
+                                # Do need to delete points inside the loop
+                                """print(f"LENGTH OF WORKING PATH {len(working_path)}")
+                                for z in range(waypoint_before_intersection + 1, waypoint_after_intersection):
+                                    
+                                    print("ADDING A POINT TO DELETION LIST")
+                                    if working_path[z][2] != 2:
+                                        for_deletion.append(working_path[z])
 
-                            for item in for_deletion:
-                                print(f"DELETING A POINT {item}")
-                                if item in working_path:
-                                    if item[2] == 1:
-                                        working_path.remove(item)
-                            
-                            #def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):
-                            print(f"adding points from single intersections")
-                            self.obstacles = self.sort(working_path[waypoint_before_intersection], self.obstacles)
-                            self.point_adder(working_path, original_clockwise_path_length, waypoint_before_intersection, rotation, self.obstacles[j], theta1, theta2)
+                                for item in for_deletion:
+                                    print(f"DELETING A POINT {item}")
+                                    if item in working_path:
+                                        if item[2] == 1:
+                                            n = n + 1
+                                            working_path.remove(item)
+                                
+                                #def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):
+                                print(f"adding points from single intersections")
+                                self.obstacles = self.sort(working_path[waypoint_before_intersection], self.obstacles)
+                                self.point_adder(working_path, original_clockwise_path_length, waypoint_before_intersection + n, rotation, self.obstacles[j], theta1, theta2)"""
 
-                            intersecting_point_single_1 = None
-                            intersecting_point_single_2 = None"""
+                                intersecting_point_single_1 = None
+                                intersecting_point_single_2 = None
         
         if rotation == "cw":
             self.clockwise = working_path

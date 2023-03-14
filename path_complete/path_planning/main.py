@@ -12,8 +12,8 @@ def get_random_path_planning_simulation():
         rand_y = random.randint(-5, 5)
         rand_wps.append([rand_x, rand_y, 0, 0])
 
-    rand_wps[0][2] = 2
-    rand_wps[-1][2] = 2
+    
+
     rand_obstacles = []
     rand_amount_obstacles = random.randint(30, 40)
     for i in range(rand_amount_obstacles):
@@ -56,13 +56,15 @@ def get_random_path_planning_simulation():
         if i in rand_wps:
             rand_wps.remove(i)
 
+    rand_wps[0][2] = 2
+    rand_wps[len(rand_wps) - 1][2] = 2
     
-        
     print(f"removed {len(for_removal)} points")
     print(f"Length of rand_wps after removal {len(rand_wps)}")
     print(f"rand_wps is now {rand_wps}")
     #print(f"Length of rand_wps {len(rand_wps)} length of rand_obstacles {len(rand_obstacles)}")
 
+    
     return rand_wps, rand_obstacles, rand_safety_d
 
 
