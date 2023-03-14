@@ -81,10 +81,10 @@ public:
 		const float steeringVoid = config.read<float>(Registers::STEERING_DEADZONE);
 		const float offset = config.read<float>(Registers::SPEED_OFFSET);
 
-		if (abs(msg.rtrig) > deadzone || abs(msg.rtrig) > deadzone)
+		if (abs(msg.rtrig) > deadzone || abs(msg.ltrig) > deadzone)
 		{
-			throttle = (1 - -msg.rtrig) * maxSpeed * 0.8;
-			throttle = throttle - (1 - -msg.rtrig) * maxSpeed * 0.8;
+			throttle = (1 - msg.ltrig) * maxSpeed * 0.8;
+			throttle = throttle - (1 - msg.rtrig) * maxSpeed * 0.8;
 		}
 
 		if (abs(msg.lpad_x) > steeringVoid)
