@@ -56,26 +56,6 @@ class path_planning:
 
         return theta
 
-    def isInside(self, circle_x, circle_y, rad, x, y):
-        if ((x - circle_x) * (x - circle_x) +
-            (y - circle_y) * (y - circle_y) <= rad * rad):
-            return True
-        else:
-            return False
-    
-    def delete_inside(self):
-        for_removal = []
-        for wps in self.final:
-            for circles in self.obstacles:
-                if self.isInside(circles[0], circles[1], circles[2], wps[0], wps[1]):
-                    if wps not in for_removal:
-                        for_removal.append(wps)
-            
-        for removals in for_removal:
-            if removals in self.final:
-                self.final.remove(removals)
-
-
     def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):
         # go clockwise or counter-clockwise depending on which theta is smaller
         points = []
@@ -98,8 +78,8 @@ class path_planning:
         for k in range(0, 5):
             #print(f"dtheta5t * k {dtheta5t * (k)}")
             points.append([(((obstacle[2]+ .25) * (math.cos(theta1 + (dtheta5t * (k))))) + obstacle[0]), (((obstacle[2] + .25) * math.sin(theta1+ (dtheta5t * (k)))) + obstacle[1]), 1, 0])
-            #print(f"points is {points}")
-            #print(len(self.final))
+            print(f"points is {points}")
+            print(len(self.final))
                     
         # inserts the points in the right order into the waypoint list
         for l in range(len(points)):
@@ -127,7 +107,7 @@ class path_planning:
         for_deletion = []
         for_addition = []
         iterated_through = [] # debug
-        #print(f"path intersections PATH LENGTH: {len(working_path)}")
+        print(f"path intersections PATH LENGTH: {len(working_path)}")
         for point1 in range(len(self.final) - 1):
             iterated_through.append(point1)
             for point2 in range(point1 + 1, len(self.final) - 1):
@@ -176,8 +156,8 @@ class path_planning:
                 if(flag):
                     intersecting_point_x = x1 + ua * (x2-x1)
                     intersecting_point_y = y1 + ua * (y2-y1)
-                    #print(f"VALID INTERSECTION {intersecting_point_x}, {intersecting_point_y}")
-                    #print(f"point1 {point1} point2 {point2}")
+                    print(f"VALID INTERSECTION {intersecting_point_x}, {intersecting_point_y}")
+                    print(f"point1 {point1} point2 {point2}")
                     
                     start = point1
                     end = point2
@@ -187,7 +167,7 @@ class path_planning:
                     
                     # point 1 and point 2 are both generated waypoints
                     if working_path[point1][2] != 2:
-                        #print("Intersection is not between the end or the start of the path")
+                        print("Intersection is not between the end or the start of the path")
                         for betweens in range(start, end + 1):
                             if working_path[betweens] not in for_deletion:
                                 for_deletion.append(working_path[betweens])
@@ -203,16 +183,16 @@ class path_planning:
                     for_addition.append([intersecting_point_x, intersecting_point_y, point1])
 
 
-        #print(f"for_deletion {for_deletion} length: {len(for_deletion)}")
-        #print(f"PATH LENGTH BEFORE DELETION: {len(working_path)}")
+        print(f"for_deletion {for_deletion} length: {len(for_deletion)}")
+        print(f"PATH LENGTH BEFORE DELETION: {len(working_path)}")
         for deletes in for_deletion:
             if deletes in working_path:
                 if deletes[2] != 2:
-                    #print("Deleting a waypoint")
+                    print("Deleting a waypoint")
                     working_path.remove(deletes)
         
-        #print(f"PATH LENGTH AFTER DELETION: {len(working_path)}")
-        #print(f"iterated through {iterated_through}")
+        print(f"PATH LENGTH AFTER DELETION: {len(working_path)}")
+        print(f"iterated through {iterated_through}")
         self.final = working_path
 
 
@@ -238,7 +218,7 @@ class path_planning:
 
         for i in range(len(self.final)-1):
             if self.final[i] not in for_deletion:
-                #print(f"next waypoint {self.final[i]}")
+                print(f"next waypoint {self.final[i]}")
                 #print(f"OBSTACLES BEFORE SORTING {self.obstacles}")
                 self.obstacles = self.sort(self.final[i], self.obstacles)
                 #print(f"OBSTACLES AFTER SORTING {self.obstacles}")
@@ -349,42 +329,42 @@ class path_planning:
                         print(f"theta1t_arg {theta1t_arg}")
                         print(f"theta2t_arg {theta2t_arg}")"""
 
-                        #print("adding points from double intersection")
+                        print("adding points from double intersection")
                         working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg)
 
-                    """# this part is really not working
+                    # this part is really not working
                     # Definitely necessary for good accuracy with lots of obstacle clumps
                     # SINGLE INTERSECTION: on a single intersection, wait until the second single intersection is detected, then delete all the none gps wps, and add new wps cw or ccw around circle between intersection
                     # finds a first intersection and waits for the second
                     if (valid_intersection_add or valid_intersection_sub) and (not (valid_intersection_add and valid_intersection_sub)):
                         # First single intersection is breaking HARD
-                        #print("SINGLE INTERSECTION DETECTED")
+                        print("SINGLE INTERSECTION DETECTED")
                         # n = points deleted, reset after adding points from single intersections
                         n = 0
                         if valid_intersection_add:
                             intersecting_point_single_1 = new_x_add, new_y_add
                             waypoint_before_intersection = i
-                            #print(f"intersecting_point_single_1 assigned: {intersecting_point_single_1[0] + self.obstacles[j][0]}, {intersecting_point_single_1[1]+ self.obstacles[j][1]}")
+                            print(f"intersecting_point_single_1 assigned: {intersecting_point_single_1[0] + self.obstacles[j][0]}, {intersecting_point_single_1[1]+ self.obstacles[j][1]}")
                         elif valid_intersection_sub:
                             intersecting_point_single_1 = new_x_sub, new_y_sub
-                            #print(f"intersecting_point_single_1 assigned: ({intersecting_point_single_1[0] + self.obstacles[j][0]}, {intersecting_point_single_1[1]+ self.obstacles[j][1]})")
+                            print(f"intersecting_point_single_1 assigned: ({intersecting_point_single_1[0] + self.obstacles[j][0]}, {intersecting_point_single_1[1]+ self.obstacles[j][1]})")
                             waypoint_before_intersection = i
-                            #print(f"waypoint before intersection {waypoint_before_intersection} and its type is {type(waypoint_before_intersection)}")
+                            print(f"waypoint before intersection {waypoint_before_intersection} and its type is {type(waypoint_before_intersection)}")
 
                         # second single intersection is properly detecting points at least sometimes
                         # this is the second intersection, when things get going
                         else:
-                            #print("SECOND SINGLE INTERSECTION DETECTED")
+                            print("SECOND SINGLE INTERSECTION DETECTED")
                             if valid_intersection_add:
                                 intersecting_point_single_2 = new_x_add, new_y_add
-                                #print(f"intersecting_point_single_2 assigned: ({intersecting_point_single_2[0] + self.obstacles[j][0]}, {intersecting_point_single_2[1] + self.obstacles[j][1]})")
+                                print(f"intersecting_point_single_2 assigned: ({intersecting_point_single_2[0] + self.obstacles[j][0]}, {intersecting_point_single_2[1] + self.obstacles[j][1]})")
                                 waypoint_after_intersection = i+1
-                                #print(f"waypoint_after_interesction {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
+                                print(f"waypoint_after_interesction {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
                             elif valid_intersection_sub:
                                 intersecting_point_single_2 = new_x_sub, new_y_sub
-                                #print(f"intersecting_point_single_2 assigned: ({intersecting_point_single_2[0] + self.obstacles[j][0]}, {intersecting_point_single_2[1] + self.obstacles[j][1]})")
+                                print(f"intersecting_point_single_2 assigned: ({intersecting_point_single_2[0] + self.obstacles[j][0]}, {intersecting_point_single_2[1] + self.obstacles[j][1]})")
                                 waypoint_after_intersection = i+1
-                                #print(f"waypoint_after_intersection {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
+                                print(f"waypoint_after_intersection {waypoint_after_intersection} and its type is {type(waypoint_after_intersection)}")
 
                             if intersecting_point_single_1 and intersecting_point_single_2:
                                 # generate points around the circle
@@ -394,7 +374,7 @@ class path_planning:
                                 
                                 # for_deletion = []
                                 # Do need to delete points inside the loop
-                                print(f"LENGTH OF WORKING PATH {len(working_path)}")
+                                """print(f"LENGTH OF WORKING PATH {len(working_path)}")
                                 for z in range(waypoint_before_intersection + 1, waypoint_after_intersection):
                                     
                                     print("ADDING A POINT TO DELETION LIST")
@@ -411,10 +391,10 @@ class path_planning:
                                 #def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):
                                 print(f"adding points from single intersections")
                                 self.obstacles = self.sort(working_path[waypoint_before_intersection], self.obstacles)
-                                self.point_adder(working_path, original_clockwise_path_length, waypoint_before_intersection + n, rotation, self.obstacles[j], theta1, theta2)
+                                self.point_adder(working_path, original_clockwise_path_length, waypoint_before_intersection + n, rotation, self.obstacles[j], theta1, theta2)"""
 
                                 intersecting_point_single_1 = None
-                                intersecting_point_single_2 = None"""
+                                intersecting_point_single_2 = None
         
         if rotation == "cw":
             self.clockwise = working_path
@@ -425,9 +405,9 @@ class path_planning:
 
 
         #self.final = self.clockwise
-        #print(f"obstacles {self.obstacles}")        
-        #print(f"original path {self.path}")
+        print(f"obstacles {self.obstacles}")        
+        print(f"original path {self.path}")
         #print(f"final clockwise path {self.clockwise}")
         #print(f"final counter clockwise path {self.counter_clockwise}")
-        #print(f"final path {self.final}")
+        print(f"final path {self.final}")
 

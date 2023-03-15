@@ -3,6 +3,13 @@ import path_planning_test
 import random
 import time
 
+
+def isInside(circle_x, circle_y, rad, x, y):
+    if ((x - circle_x) * (x - circle_x) +
+        (y - circle_y) * (y - circle_y) <= rad * rad):
+        return True
+    else:
+        return False
 # returns a random set of waypoints, obstacles, and a radius around those obstacles to path plan around them.
 def get_random_path_planning_simulation():
     rand_wps = []
@@ -21,40 +28,17 @@ def get_random_path_planning_simulation():
         rand_obst_x = random.uniform(-5, 5)
         rand_obst_y = random.uniform(-5, 5)
         rand_obstacles.append([rand_obst_x, rand_obst_y, rand_safety_d])
-    
 
-
-    # deleting waypoints that are inside of objects
-    print("This is where removal statements would be")
-    
-    print(f"Length of rand_obstacles before removal {len(rand_obstacles)}")
-    print(f"rand_obstacles is {rand_obstacles}")
+    # removing waypoints that are inside obstacles
     for_removal = []
-    for i in range(len(rand_obstacles)):
-        for j in range(len(rand_obstacles)):
-            if (rand_obstacles[i][0] >= ((rand_obstacles[j][0] - rand_safety_d)/2) and rand_obstacles[i][0] <= ((rand_obstacles[j][0] + rand_safety_d)*2)) and (rand_obstacles[i][1] >= ((rand_obstacles[j][1] - rand_safety_d)/2) and rand_obstacles[i][1] <= ((rand_obstacles[j][1] + rand_safety_d)*2)):
-                if i not in for_removal and i != j:
-                    for_removal.append(rand_obstacles[i])
-    for i in for_removal:
-        if i in rand_obstacles:
-            rand_obstacles.remove(i)
-
-    print(f"removed {len(for_removal)} points")
-    print(f"Length of rand_obstacles after removal {len(rand_obstacles)}")
-    print(f"rand_obstacles is now {rand_obstacles}")
-
-    print(f"Length of rand _wps before removal {len(rand_wps)}")
-    print(f"rand_wps is {rand_wps}")
-
-    for_removal = []
-    for i in range(len(rand_wps)):
-        for j in range(len(rand_obstacles)):
-            if (rand_wps[i][0] >= ((rand_obstacles[j][0] - rand_safety_d)/2) and rand_wps[i][0] <= ((rand_obstacles[j][0] + rand_safety_d)*2)) and (rand_wps[i][1] >= ((rand_obstacles[j][1] - rand_safety_d)/2) and rand_wps[i][1] <= ((rand_obstacles[j][1] + rand_safety_d)*2)):
-                if i not in for_removal:
-                    for_removal.append(rand_wps[i])
-    for i in for_removal:
-        if i in rand_wps:
-            rand_wps.remove(i)
+    for wps in rand_wps:
+        for obstacles in rand_obstacles:
+            if isInside(obstacles[0], obstacles[1], obstacles[2], wps[0], wps[1]):
+                if wps not in for_removal:
+                    for_removal.append(wps)
+    for waypoints in for_removal:
+        if waypoints in rand_wps:
+            rand_wps.remove(waypoints)
 
     rand_wps[0][2] = 2
     rand_wps[len(rand_wps) - 1][2] = 2
