@@ -126,35 +126,6 @@ const char *deviceStateToString(Autonav::State::DeviceState state)
 	}
 }
 
-void showSerialConfiguration(Autonav::ROS::AutoNode *node)
-{
-	auto can_reg = node->config.getRegistersForDevice(Autonav::Device::SERIAL_CAN);
-	if (can_reg.size() == 0)
-	{
-		return;
-	}
-
-	ImGui::SeparatorText("Serial Configuration");
-	for (auto it = can_reg.begin(); it != can_reg.end(); it++)
-	{
-		auto address = it->first;
-		auto data = it->second;
-
-		switch (address)
-		{
-		case 0: // Motor Offset
-		{
-			auto data = node->config.read<float>(Autonav::Device::SERIAL_CAN, address);
-			if (ImGui::InputFloat("Motor Offset", &data))
-			{
-				node->config.writeTo(Autonav::Device::SERIAL_CAN, address, data);
-			}
-			break;
-		}
-		}
-	}
-}
-
 void showIMUConfiguration(Autonav::ROS::AutoNode *node)
 {
 	auto imu_reg = node->config.getRegistersForDevice(Autonav::Device::SERIAL_IMU);
@@ -818,7 +789,6 @@ public:
 				if (ImGui::BeginTabItem("Configuration"))
 				{
 					showConfigPresetDropdown(this);
-					showSerialConfiguration(this);
 					showIMUConfiguration(this);
 					showManualSteamConfiguration(this);
 					showCameraConfiguration(this);

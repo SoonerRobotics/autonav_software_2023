@@ -2,6 +2,7 @@
 
 import rclpy
 import can
+import threading
 import struct
 from enum import Enum
 
@@ -32,17 +33,19 @@ class SerialMotors(AutoNode):
 
         self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
         self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
-        self.config.writeFloat(Registers.MOTOR_OFFSET.value, 35.0)
         self.m_can = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
-        self.m_canReadThread = self.create_thread(self.canThreadWorker)
-        self.m_canReadThread.setDaemon(True)
+        self.m_canReadThread = threading.Thread(target = self.canThreadWorker)
+        self.m_canReadThread.daemon = True
     
     def operate(self):
+        if self.m_canReadThread is not None:
+            self.m_canReadThread.join()
+        
         self.m_canReadThread.start()
 
     def canThreadWorker(self):
-        while True:
+        while self.getDeviceState() == DeviceState.OPERATING:
             if self.getDeviceState() != DeviceState.READY and self.getDeviceState() != DeviceState.OPERATING:
                 continue
             if self.m_can is not None:
@@ -57,9 +60,9 @@ class SerialMotors(AutoNode):
         if msg.arbitration_id == MOTOR_FEEDBACK_ID:
             deltaTheta, deltaY, deltaX  = struct.unpack("hhh", msg.data)
             feedback = MotorFeedback()
-            feedback.delta_theta = deltaTheta
-            feedback.delta_y = deltaY
-            feedback.delta_x = deltaX
+            feedback.delta_theta = deltaTheta / 1000.0
+            feedback.delta_y = deltaY / 1000.0
+            feedback.delta_x = deltaX / 1000.0
             self.m_feedbackPublisher.publish(feedback)  
 
     def canWorker(self):
@@ -87,8 +90,8 @@ class SerialMotors(AutoNode):
         if self.getDeviceState() != DeviceState.OPERATING:
             return
 
-        left_speed = int(input.left_motor * self.config.readFloat(Registers.MOTOR_OFFSET.value))
-        right_speed = int(input.right_motor * self.config.readFloat(Registers.MOTOR_OFFSET.value))
+        left_speed = int(input.left_motor * 10000.0)
+        right_speed = int(input.right_motor * 10000.0)
         packed_data = struct.pack("hh", left_speed, right_speed)
         can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
