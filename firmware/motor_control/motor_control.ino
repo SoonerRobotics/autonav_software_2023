@@ -112,7 +112,7 @@ void loop() {
     // Serial.println("Left speed");
     // Serial.println(leftMotor.getSpeedEstimate());
 
-    FIVE_MS_FLAG = false;
+    TEN_MS_FLAG = false;
   }
   if (FIFTY_MS_FLAG ) {
     float left_distance = leftMotor.getDistance();
@@ -196,8 +196,8 @@ void onCanRecieve() {
       roboStatus.mStop = 0;
       roboStatus.mStart = 1;
       motoCommand = *(motorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
-      leftMotor = motoCommand.setpointLeft/(float)SPEED_SCALE_FACTOR;
-      rightMotor = motoCommand.setpointRight/(float)SPEED_SCALE_FACTOR;
+      leftMotor = ((float)motoCommand.setpointLeft)/(float)SPEED_SCALE_FACTOR;
+      rightMotor = ((float)motoCommand.setpointRight)/(float)SPEED_SCALE_FACTOR;
       // leftSpeedSetpoint = (frame.data[0] << 8 & 0xFF00) | frame.data[1];
       // rightSpeedSetpoint = (frame.data[2] << 8 & 0xFF00) | frame.data[3];
       

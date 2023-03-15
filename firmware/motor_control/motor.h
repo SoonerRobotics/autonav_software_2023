@@ -12,7 +12,7 @@
 //#define LINEAR_PER_REV 0.2054f // Wheel radius (m) old
 #define LINEAR_PER_REV 0.2667f  // Wheel radius (m)
 #define MILLIS_TO_FULL 250      // Milliseconds to go from 0 output speed to 1
-#define LPIIR_DECAY 0.1f        // Decay rate of low pass filter on velocity
+#define LPIIR_DECAY 0.05f        // Decay rate of low pass filter on velocity
 
 #define INCREMENT_AMT (1000.0f / (MILLIS_TO_FULL * MOTOR_UPDATE_RATE))
 
