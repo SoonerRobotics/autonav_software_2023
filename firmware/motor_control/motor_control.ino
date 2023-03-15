@@ -38,7 +38,7 @@ distance motorDistances;
 motorCommand motoCommand;
 
 
-motor leftMotor(leftMotorPwmPin, true);
+motor leftMotor(leftMotorPwmPin, false);
 motor rightMotor(rightMotorPwmPin, false);
 
 void configureCan();
@@ -57,6 +57,7 @@ float dyn = 0;
 float don = 0;
 
 bool blinky = false;
+bool canBlinky = false;
 
 
 short leftSpeedSetpoint;
@@ -82,7 +83,7 @@ void setup() {
 
   pinMode(LED0, OUTPUT);
   pinMode(CANLED, OUTPUT);
-  pinMode(estopPin, INPUT_PULLDOWN);
+  pinMode(estopPin, INPUT);
   pinMode(encoderRightA, INPUT);
   pinMode(encoderRightB, INPUT);
   pinMode(encoderLeftA, INPUT);
@@ -111,31 +112,31 @@ void loop() {
     // Serial.println("Left speed");
     // Serial.println(leftMotor.getSpeedEstimate());
 
-    FIVE_MS_FLAG = false;
+    TEN_MS_FLAG = false;
   }
   if (FIFTY_MS_FLAG ) {
     float left_distance = leftMotor.getDistance();
     float right_distance = rightMotor.getDistance();
     
+    don = don + (right_distance - left_distance) * DIAMETER_FROM_CENTER_WHEEL / DISTANCE_BETWEEN_WHEELS; //diametrer of center of wheel and diameter between wheel
     dxn = dxn + (left_distance + right_distance) / 2 * cos(don);
     dyn = dyn + (left_distance + right_distance) / 2 * sin(don); 
-    don = don + (right_distance - left_distance) * DIAMETER_FROM_CENTER_WHEEL / DISTANCE_BETWEEN_WHEELS; //diametrer of center of wheel and diameter between wheel TODO: no magic numbers
 
-    motorDistances.xn = (short)(dxn * SPEED_SCALE_FACTOR);
-    motorDistances.yn = (short)(dyn * SPEED_SCALE_FACTOR);
-    motorDistances.on = (short)(don * SPEED_SCALE_FACTOR);
+    motorDistances.xn = (short)(dxn * ODOM_SCALE_FACTOR);
+    motorDistances.yn = (short)(dyn * ODOM_SCALE_FACTOR);
+    motorDistances.on = (short)(don * ODOM_SCALE_FACTOR);
 
-    //sendCanOdomMsgOut();
+    sendCanOdomMsgOut();
 
     resetDelta(dxn, dyn, don);
     
     blinky = !blinky;
     digitalWrite(LED0, blinky);
 
-    Serial.print("Right speed: ");
-    Serial.println(right_distance);
-    Serial.print("Left speed: ");
-    Serial.println(left_distance);
+    // Serial.print("Right speed: ");
+    // Serial.println(right_distance);
+    // Serial.print("Left speed: ");
+    // Serial.println(left_distance);
     FIFTY_MS_FLAG = false;
   }
 }
@@ -167,11 +168,13 @@ void configureCan() {
 }
 
 void onCanRecieve() {
+  canBlinky = !canBlinky;
+  digitalWrite(CANLED, canBlinky);
+
   can.isr();
   can.receive(frame);  
   switch (frame.id) {
     case 0:
-      Serial.print("ESTOP \n");
       roboStatus.eStop = 1;
       roboStatus.mStop = 1;
       roboStatus.mStart = 0;
@@ -189,47 +192,35 @@ void onCanRecieve() {
       break;
 
     case 10:
-      Serial.print("10 ID \n");
       roboStatus.eStop = 0;
       roboStatus.mStop = 0;
       roboStatus.mStart = 1;
       motoCommand = *(motorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
-      leftMotor = motoCommand.setpointLeft/(float)SPEED_SCALE_FACTOR;
-      rightMotor = motoCommand.setpointRight/(float)SPEED_SCALE_FACTOR;
+      leftMotor = ((float)motoCommand.setpointLeft)/(float)SPEED_SCALE_FACTOR;
+      rightMotor = ((float)motoCommand.setpointRight)/(float)SPEED_SCALE_FACTOR;
       // leftSpeedSetpoint = (frame.data[0] << 8 & 0xFF00) | frame.data[1];
       // rightSpeedSetpoint = (frame.data[2] << 8 & 0xFF00) | frame.data[3];
       
       break;
   }
-  Serial.print("LEFT: ");
-  Serial.println(leftSpeedSetpoint);
-  Serial.print("RIGHT: ");
-  Serial.println(rightSpeedSetpoint);
-  printCanMsg(frame);
+  // Serial.print("LEFT: ");
+  // Serial.println(leftSpeedSetpoint);
+  // Serial.print("RIGHT: ");
+  // Serial.println(rightSpeedSetpoint);
+  // printCanMsg(frame);
 }
 
 void sendCanOdomMsgOut(){
   outFrame.id = ODOM_OUT_ID;
   outFrame.len = ODOM_OUT_LEN;
-  memcpy(outFrame.data, &motorDistances, 6 );
+  memcpy(outFrame.data, &motorDistances, ODOM_OUT_LEN );
 
-  const bool ok = can.tryToSend (frame) ;
-  if(ok){
-    Serial.print ("Sent: Odom Data");
-  }
-  else{
-    Serial.println ("Send failure") ;
-  }
+  const bool ok = can.tryToSend (outFrame) ;
 
 }
 void printCanMsg(CANMessage frame) {
   Serial.print("  id: ");
   Serial.println(frame.id, HEX);
-  Serial.print("  ext: ");
-  Serial.println(frame.ext);
-  Serial.print("  rtr: ");
-  Serial.println(frame.rtr);
-  Serial.print("  len: ");
   Serial.println(frame.len);
   Serial.print("  data: ");
   for (int x = 0; x < frame.len; x++) {
@@ -239,7 +230,6 @@ void printCanMsg(CANMessage frame) {
   Serial.println("");
 }
 void updateLeft(){
-  //Serial.printf("Left update \n");
   leftMotor.pulse(digitalRead(encoderLeftA),digitalRead(encoderLeftB));
 }
 void updateRight(){
