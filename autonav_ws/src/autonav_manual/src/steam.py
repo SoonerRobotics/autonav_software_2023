@@ -77,8 +77,17 @@ class SteamTranslationNode(AutoNode):
             self.setDeviceState(DeviceState.STANDBY)
             self.start_steam_controller()
 
+    def allButtonsPressed(self):
+        for button in SCButtons:
+            if self.m_Buttons[button] == 0:
+                return False
+        return True
+
     def on_callback(self, _, sci: SteamControllerInput):
         if self.getDeviceState() != DeviceState.OPERATING:
+            return
+        
+        if self.allButtonsPressed():
             return
 
         msg = SteamInput()
