@@ -108,9 +108,12 @@ class AutoNode(Node):
         self.setDeviceState(DeviceStateEnum.STANDBY)
 
     def onSystemStateChanged(self, state: SystemState):
+        originalState = self.getSystemState()
         self.m_systemState = SystemStateEnum(state.state)
         self.m_isSimulator = state.is_simulator
-        self.onSystemStateUpdated()
+        
+        if self.m_systemState != originalState:
+            self.onSystemStateUpdated()
 
         if self.m_systemState == SystemStateEnum.SHUTDOWN:
             os.kill(os.getpid(), signal.SIGKILL)

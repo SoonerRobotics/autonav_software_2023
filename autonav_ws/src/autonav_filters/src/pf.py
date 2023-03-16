@@ -119,6 +119,8 @@ class DeadReckoningFilter:
     def updateMotors(self, feedback: MotorFeedback):
         self.m_xSum = self.m_xSum + feedback.delta_x * math.cos(self.m_thetaSum) + feedback.delta_y * math.sin(self.m_thetaSum)
         self.m_ySum = self.m_ySum + feedback.delta_x * math.sin(self.m_thetaSum) + feedback.delta_y * math.cos(self.m_thetaSum)
+        # self.m_xSum += feedback.delta_x
+        # self.m_ySum += feedback.delta_y
         self.m_thetaSum += feedback.delta_theta
         self.estimate()
 
@@ -129,9 +131,9 @@ class DeadReckoningFilter:
         if self.m_firstGPS is None:
             self.m_firstGPS = (msg.latitude, msg.longitude)
         
-        latX = (msg.latitude - self.m_firstGPS[0]) * 111086.2
-        latY = (self.m_firstGPS[1] - msg.longitude) * 81978.2
-        dist = math.sqrt((latX - self.m_xSum) ** 2 + (latY - self.m_ySum) ** 2)
+        # latX = (msg.latitude - self.m_firstGPS[0]) * 111086.2
+        # latY = (self.m_firstGPS[1] - msg.longitude) * 81978.2
+        # dist = math.sqrt((latX - self.m_xSum) ** 2 + (latY - self.m_ySum) ** 2)
         
         # if dist > 5.0:
             # self.m_xSum = latX
@@ -140,29 +142,20 @@ class DeadReckoningFilter:
         self.m_lastLat = msg.latitude
         self.m_lastLong = msg.longitude
         self.estimate()
-        if self.m_node.config.readBool(Register.SHOW_PLOT):
-            self.visualizeParticles()
 
     def estimate(self):
         msg = Position()
-        msg.x = self.m_xSum / 10.0
-        msg.y = self.m_ySum / 10.0
+        offset = 1
+        if self.m_node.m_isSimulator:
+            offset = 10
+        msg.x = self.m_xSum / offset
+        msg.y = self.m_ySum / offset
         msg.theta = self.m_thetaSum
         if self.m_lastLat is not None and self.m_lastLong is not None:
             msg.latitude = self.m_lastLat
             msg.longitude = self.m_lastLong
 
         self.m_node.m_posePublisher.publish(msg)
-        
-        self.recordedPoints.append((msg.y, msg.x, msg.theta))
-
-    def visualizeParticles(self):
-        plt.clf()
-        self.rescalePlot()
-        plt.plot([p[1] for p in self.recordedPoints], [p[0] for p in self.recordedPoints], 'r.')
-        plt.plot(self.m_xSum, self.m_ySum, 'b.')
-        plt.pause(0.0001)
-
 
 class ParticleFilter:
     def __init__(self, node):

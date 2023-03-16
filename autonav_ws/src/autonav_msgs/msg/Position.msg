@@ -1,5 +1,5 @@
-float32 x
-float32 y
-float32 theta
+float32 x 0
+float32 y 0
+float32 theta 0
 float32 latitude
 float32 longitude
