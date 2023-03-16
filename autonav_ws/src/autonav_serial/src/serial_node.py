@@ -60,9 +60,9 @@ class SerialMotors(AutoNode):
         if msg.arbitration_id == MOTOR_FEEDBACK_ID:
             deltaTheta, deltaY, deltaX  = struct.unpack("hhh", msg.data)
             feedback = MotorFeedback()
-            feedback.delta_theta = deltaTheta / 1000.0
-            feedback.delta_y = deltaY / 1000.0
-            feedback.delta_x = deltaX / 1000.0
+            feedback.delta_theta = deltaTheta / 10000.0
+            feedback.delta_y = deltaY / 10000.0
+            feedback.delta_x = deltaX / 10000.0
             self.m_feedbackPublisher.publish(feedback)  
 
     def canWorker(self):
@@ -73,8 +73,7 @@ class SerialMotors(AutoNode):
             if self.m_can is not None:
                 return
 
-            self.m_can = can.ThreadSafeBus(
-                bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
+            self.m_can = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
             self.setDeviceState(DeviceState.READY)
         except:
             if self.m_can is not None:
@@ -90,8 +89,8 @@ class SerialMotors(AutoNode):
         if self.getDeviceState() != DeviceState.OPERATING:
             return
 
-        left_speed = int(input.left_motor * 10000.0)
-        right_speed = int(input.right_motor * 10000.0)
+        left_speed = int(input.left_motor * 1000.0)
+        right_speed = int(input.right_motor * 1000.0)
         packed_data = struct.pack("hh", left_speed, right_speed)
         can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
