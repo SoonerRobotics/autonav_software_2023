@@ -1,5 +1,5 @@
-import path_planning
-import path_planning_test
+import TangentBased
+import PlanningTest
 import random
 import time
 
@@ -10,6 +10,7 @@ def isInside(circle_x, circle_y, rad, x, y):
         return True
     else:
         return False
+    
 # returns a random set of waypoints, obstacles, and a radius around those obstacles to path plan around them.
 def get_random_path_planning_simulation():
     rand_wps = []
@@ -57,7 +58,7 @@ if __name__ == "__main__":
     # this generates a random set of parameters for the path planner
     path_test = get_random_path_planning_simulation()
     
-    path_planning_test.planning_test(path_test[0], path_test[1])
+    PlanningTest.planning_test(path_test[0], path_test[1])
     
     
     

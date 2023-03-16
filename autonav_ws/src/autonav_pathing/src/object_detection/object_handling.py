@@ -1,42 +1,31 @@
-import math
-# get a list of object points that can be "seen"
+from circumscriber import Circumscriber
+from circumscription_test import Circumscription_Tester
+import random
 
-# get the farthest points on each object from this list
+# generates a random set of coordinates for 3 points
+def random_triangle(p1, p2, p3):
 
-# get a list of road edge points that can be "seen"
-# draw a circle around the object points for avoidance
+    p1[0] = random.randint(-10, 10)
+    p1[1] = random.randint(-10, 10)
+    p2[0] = random.randint(-10, 10)
+    p2[1] = random.randint(-10, 10)
+    p3[0] = random.randint(-10, 10)
+    p3[1] = random.randint(-10, 10)
 
-# This is a mathematical version of this technique: https://www.mathsisfun.com/geometry/construct-trianglecircum.html
-class circumscriber:
-    
-    def __init__(self, p1, p2, p3):
-        self.point1 = p1
-        self.point2 = p2
-        self.point3 = p3
 
-    # finds the circumcenter of the triangle and the radius of the circumscribing circle
-    def circumscribe(self):
-        # solve the triangle: https://socratic.org/questions/how-do-you-find-the-three-angles-of-the-triangle-with-the-given-vertices-a-1-0-b
-        # get side lengths of the triangle
-        length_a = math.sqrt((self.point2[0] - self.point3[0])**2 + (self.point2[1] - self.point3[1])**2) 
-        length_b = math.sqrt((self.point1[0] - self.point3[0])**2 + (self.point1[1] - self.point3[1])**2)
-        length_c = math.sqrt((self.point1[0] - self.point2[0])**2 + (self.point1[1] - self.point2[1])**2)
-        
-        # apply the law of cosines to find each angle
-        cos_arg_a = (length_b**2 + length_c**2 - length_a**2) / (2 * length_b * length_c)
-        angle_a = math.acos(cos_arg_a)
-        cos_arg_b = (length_a**2 + length_c**2 - length_b**2) / (2 * length_c * length_a)
-        angle_b = math.acos(cos_arg_b)
-        cos_arg_c = (length_a**2 + length_b**2 - length_c**2) / (2 * length_a * length_b)
-        angle_c = math.acos(cos_arg_c)
-        
-        # circumcenter formula: https://www.cuemath.com/geometry/circumcenter/
-        x = (self.point1[0] * math.sin(2 * angle_a) + self.point2[0] * math.sin(2 * angle_b) + self.point3[0] * math.sin(2 * angle_c)) / (math.sin(2 * angle_a) + math.sin(2 * angle_b) + math.sin(2 * angle_c))
-        y = (self.point1[1] * math.sin(2 * angle_a) + self.point2[1] * math.sin(2 * angle_b) + self.point3[1] * math.sin(2 * angle_c)) / (math.sin(2 * angle_a) + math.sin(2 * angle_b) + math.sin(2 * angle_c))
-        circumcenter = (x, y)     
+if __name__ == "__main__":
+    print("I am the main function for the object_handler")
+    p1 = [0, 0]
+    p2 = [0, 0]
+    p3 = [0, 0]
 
-        # the radius of the circumscribing circle
-        radius = math.sqrt((circumcenter[0] - self.point1[0])**2 + (circumcenter[1] - self.point1[1])**2)
+    random_triangle(p1, p2, p3)
 
-        return [circumcenter, radius]
-        
+    # create a circumscriber object to get the circumcenter and radius of the circumscribing circle
+    triangle1 = Circumscriber(p1, p2, p3)
+    center, radius = triangle1.circumscribe()
+
+    # create a circumscription tester to test and plot the circle and triangle 
+    test1 = Circumscription_Tester()
+    print(f"p1 {p1}, p2 {p2}, p3 {p3}, geom_ctr {center}, radius {radius}")
+    Circumscription_Tester.test(test1, p1, p2, p3, center, radius)

@@ -1,15 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-import path_planning
+import tangent_based
 import time
 
 def planning_test(wpoints, obstacles):
-    testcw = path_planning.path_planning()
+    testcw = tangent_based.PathPlanning()
     testcw.setpath(wpoints)
     testcw.setobstacles(obstacles)
     
-    testccw = path_planning.path_planning()
+    testccw = tangent_based.PathPlanning()
     testccw.setpath(wpoints)
     testccw.setobstacles(obstacles)
 

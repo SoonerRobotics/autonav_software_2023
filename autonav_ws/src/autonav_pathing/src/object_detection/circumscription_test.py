@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-class circumscription_tester:
+class Circumscription_Tester:
     def initialize(self):
         self.blank = None
 
