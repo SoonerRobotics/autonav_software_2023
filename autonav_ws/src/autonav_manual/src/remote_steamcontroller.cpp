@@ -51,6 +51,11 @@ public:
 		m_timer = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
 	}
 
+	void deoperate() override
+	{
+		m_timer->cancel();
+	}
+
 	void on_timer_elapsed()
 	{
 		long currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
