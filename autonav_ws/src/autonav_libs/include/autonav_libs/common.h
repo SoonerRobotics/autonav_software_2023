@@ -23,7 +23,9 @@ namespace Autonav
         CAMERA_TRANSLATOR = 107,
         IMAGE_TRANSFORMER = 108,
         PARTICLE_FILTER = 109,
-        LOGGING_COMBINED = 110
+        LOGGING_COMBINED = 110,
+        NAV_RESOLVER = 111,
+        NAV_ASTAR = 112
     };
 
     namespace State

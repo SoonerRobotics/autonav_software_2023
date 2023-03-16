@@ -76,7 +76,7 @@ class ImageTransformer(AutoNode):
                     self.circles.append((x, y, np.sqrt(x ** 2 + y ** 2)))
 
         self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/igvc/camera/compressed", self.onImageReceived, 20)
-        self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/map", 20)
+        self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space", 20)
         self.m_lanePreviewPublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 20)
         self.setDeviceState(DeviceState.READY)
         
