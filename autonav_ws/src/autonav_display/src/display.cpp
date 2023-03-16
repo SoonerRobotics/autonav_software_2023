@@ -583,6 +583,9 @@ public:
 			return;
 		}
 
+		this->declare_parameter("default_preset", "default");
+		activePreset = this->get_parameter("default_preset").as_string();
+
 		this->setDeviceState(Autonav::State::DeviceState::READY);
 		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
 	}
