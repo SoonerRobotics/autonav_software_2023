@@ -40,7 +40,7 @@ public:
 		config.write(Registers::TIMEOUT_DELAY, 500);
 		config.write(Registers::STEERING_DEADZONE, 0.35f);
 		config.write(Registers::THROTTLE_DEADZONE, 0.1f);
-		config.write(Registers::MAX_SPEED, 2.0f);
+		config.write(Registers::MAX_SPEED, 2.2f);
 		config.write(Registers::SPEED_OFFSET, 0.6f);
 
 		setDeviceState(Autonav::State::DeviceState::READY);
