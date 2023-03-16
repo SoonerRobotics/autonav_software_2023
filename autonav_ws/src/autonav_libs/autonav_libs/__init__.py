@@ -52,6 +52,10 @@ class LogLevel(IntEnum):
     CRITICAL = 4
 
 
+def clamp(n, minn, maxn):
+    return max(min(maxn, n), minn)
+
+
 class AutoNode(Node):
     def __init__(self, device: Device, node_name):
         super().__init__(node_name)

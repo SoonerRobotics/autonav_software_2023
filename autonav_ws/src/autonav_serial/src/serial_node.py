@@ -8,19 +8,11 @@ from enum import Enum
 
 from rclpy.node import Node
 from autonav_msgs.msg import MotorInput, MotorFeedback
-from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState, LogLevel
-
-
-def clamp(n, minn, maxn):
-    return max(min(maxn, n), minn)
+from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState, LogLevel, clamp
 
 
 MOTOR_CONTROL_ID = 10
 MOTOR_FEEDBACK_ID = 14
-
-
-class Registers(Enum):
-    MOTOR_OFFSET = 0
 
 
 class SerialMotors(AutoNode):

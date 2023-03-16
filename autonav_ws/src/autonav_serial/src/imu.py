@@ -4,15 +4,14 @@ import rclpy
 import time
 import threading
 from vnpy import *
-from enum import Enum
+from enum import IntEnum
 
 from autonav_msgs.msg import IMUData
-from autonav_msgs.msg import Log
 from autonav_msgs.msg import GPSFeedback
 
 from autonav_libs import Device, AutoNode, LogLevel, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
 
-class Registers(Enum):
+class Registers(IntEnum):
     IMU_READ_RATE = 0
     IMU_NOTFOUND_RETRY = 1
     IMU_BADCONNECT_RETRY = 2
@@ -26,9 +25,9 @@ class IMUNode(AutoNode):
         self.m_sensor = VnSensor()
         self.m_hasPublishedHeaders = False
 
-        self.config.writeFloat(Registers.IMU_READ_RATE.value, 0.1)
-        self.config.writeFloat(Registers.IMU_NOTFOUND_RETRY.value, 5.0)
-        self.config.writeFloat(Registers.IMU_BADCONNECT_RETRY.value, 5.0)
+        self.config.writeFloat(Registers.IMU_READ_RATE, 0.1)
+        self.config.writeFloat(Registers.IMU_NOTFOUND_RETRY, 5.0)
+        self.config.writeFloat(Registers.IMU_BADCONNECT_RETRY, 5.0)
 
         self.m_imuPublisher = self.create_publisher(IMUData, "/autonav/imu", 20)
         self.m_gpsPublisher = self.create_publisher(GPSFeedback, "/autonav/gps", 20)
@@ -52,14 +51,11 @@ class IMUNode(AutoNode):
                     
                     self.m_sensor.connect("/dev/autonav-imu-200", 115200)
                 except:
-                    self.log(f"No IMU found, retrying in {self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value)} second(s)", LogLevel.WARNING)
-                    time.sleep(self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value))
                     self.setDeviceState(DeviceState.STANDBY)
+                    time.sleep(self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value))
                     continue
 
             if (not self.m_sensor.is_connected):
-                self.log(f"Failed to connect to IMU, retrying in {self.config.readFloat(Registers.IMU_BADCONNECT_RETRY.value)} second(s)",
-                        LogLevel.WARNING, skipFile=True)
                 time.sleep(self.config.readFloat(Registers.IMU_BADCONNECT_RETRY.value))
                 self.setDeviceState(DeviceState.STANDBY)
                 continue
