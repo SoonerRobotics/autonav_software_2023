@@ -173,8 +173,8 @@ namespace Autonav
 
 		void Conbus::write(uint8_t address, float data)
 		{
-			auto dataInt = static_cast<int32_t>(data * FLOAT_PRECISION);
-			writeBytes(address, {0, static_cast<uint8_t>(dataInt >> 24), static_cast<uint8_t>(dataInt >> 16), static_cast<uint8_t>(dataInt >> 8), static_cast<uint8_t>(dataInt & 0xFF)});
+			unsigned char const *dataChar = reinterpret_cast<unsigned char const *>(&data);
+			writeBytes(address, {0, dataChar[0], dataChar[1], dataChar[2], dataChar[3]});
 		}
 
 		void Conbus::write(uint8_t address, bool data)
@@ -192,8 +192,9 @@ namespace Autonav
 		template <>
 		float Conbus::read(uint8_t address)
 		{
-			auto data = static_cast<int32_t>((this->m_registers[m_device][address][1] << 24) | (this->m_registers[m_device][address][2] << 16) | (this->m_registers[m_device][address][3] << 8) | this->m_registers[m_device][address][4]);
-			float realData = data / FLOAT_PRECISION;
+			auto data = std::vector<uint8_t>(this->m_registers[m_device][address].begin() + 1, this->m_registers[m_device][address].end());
+			float realData;
+			memcpy(&realData, data.data(), sizeof(realData));
 			return realData;
 		}
 

@@ -1,8 +1,9 @@
 import signal
 import time
-from rclpy.node import Node
+import struct
 import os
 from enum import IntEnum
+from rclpy.node import Node
 from autonav_msgs.msg import ConBusInstruction, Log, DeviceState, SystemState, PerfResult
 from autonav_msgs.srv import SetDeviceState, SetSystemState
 
@@ -58,16 +59,11 @@ class AutoNode(Node):
         self.config = Conbus(device, self)
         self.per = Performance(device, self)
         self.device = device
-        self.m_logPublisher = self.create_publisher(
-            Log, "/autonav/logging", 10)
-        self.m_deviceStateSubscriber = self.create_subscription(
-            DeviceState, "/autonav/state/device", self.onDeviceStateChanged, 10)
-        self.m_systemStateSubscriber = self.create_subscription(
-            SystemState, "/autonav/state/system", self.onSystemStateChanged, 10)
-        self.m_deviceStateClient = self.create_client(
-            SetDeviceState, "/autonav/state/set_device_state")
-        self.m_systemStateClient = self.create_client(
-            SetSystemState, "/autonav/state/set_system_state")
+        self.m_logPublisher = self.create_publisher(Log, "/autonav/logging", 10)
+        self.m_deviceStateSubscriber = self.create_subscription(DeviceState, "/autonav/state/device", self.onDeviceStateChanged, 10)
+        self.m_systemStateSubscriber = self.create_subscription(SystemState, "/autonav/state/system", self.onSystemStateChanged, 10)
+        self.m_deviceStateClient = self.create_client(SetDeviceState, "/autonav/state/set_device_state")
+        self.m_systemStateClient = self.create_client(SetSystemState, "/autonav/state/set_system_state")
 
         self.m_systemState = SystemStateEnum.DISABLED
         self.m_isSimulator = False
@@ -206,7 +202,6 @@ class Performance:
         del self.functions[function]
 
 
-FLOAT_PRECISION = 10000000.0
 MAX_DEVICE_ID = 200
 
 
@@ -224,9 +219,8 @@ class Conbus:
         return byts
 
     def floatToBytes(self, data: float):
-        data = int(data * FLOAT_PRECISION)
-        byts = self.intToBytes(data)
-        byts = bytes([0]) + byts[1:]
+        # Use a struct to convert the float to a byte array
+        byts = struct.pack('>f', data)
         return byts
 
     def boolToBytes(self, data: bool):
@@ -282,7 +276,16 @@ class Conbus:
         return self.readBytes(address)[1] == 1
 
     def readFloat(self, address: int):
-        return self.readInt(address) / FLOAT_PRECISION
+        byts = self.readBytes(address)
+
+        if byts is None:
+            return None
+
+        if len(byts) == 5:
+            # Convert last 4 bytes from big endian to int
+            return struct.unpack('>f', byts[1:])[0]
+
+        raise Exception("Invalid float size")
 
     def writeTo(self, device: Device, address: int, data: bytes):
         msg = ConBusInstruction()
