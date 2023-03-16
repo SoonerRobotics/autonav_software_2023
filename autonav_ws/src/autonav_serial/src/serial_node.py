@@ -20,24 +20,16 @@ class SerialMotors(AutoNode):
         super().__init__(Device.SERIAL_CAN, "autonav_serial_can")
 
     def setup(self):
-        if self.m_canReadThread is not None:
-            self.m_canReadThread.join()
-
         self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
         self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
         self.m_can = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
         self.m_canReadThread = threading.Thread(target = self.canThreadWorker)
         self.m_canReadThread.daemon = True
-    
-    def operate(self):
-        if self.m_canReadThread is not None:
-            self.m_canReadThread.join()
-        
         self.m_canReadThread.start()
-
+    
     def canThreadWorker(self):
-        while self.getDeviceState() == DeviceState.OPERATING:
+        while rclpy.ok():
             if self.getDeviceState() != DeviceState.READY and self.getDeviceState() != DeviceState.OPERATING:
                 continue
             if self.m_can is not None:
@@ -67,10 +59,12 @@ class SerialMotors(AutoNode):
 
             self.m_can = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
             self.setDeviceState(DeviceState.READY)
+            self.log("found cannable")
         except:
             if self.m_can is not None:
                 self.m_can = None
 
+            self.log("Failed to find cannable")
             if self.getDeviceState() != DeviceState.STANDBY:
                 self.setDeviceState(DeviceState.STANDBY)
 

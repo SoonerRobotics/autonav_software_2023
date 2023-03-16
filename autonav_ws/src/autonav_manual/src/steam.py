@@ -79,7 +79,7 @@ class SteamTranslationNode(AutoNode):
 
     def allButtonsPressed(self):
         for button in SCButtons:
-            if self.m_Buttons[button] == 0:
+            if self.m_Buttons[button] == False:
                 return False
         return True
 

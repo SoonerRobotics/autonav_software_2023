@@ -4,11 +4,9 @@ import rclpy
 import time
 import threading
 import cv2
-from enum import IntEnum
 
 from autonav_libs import Device, AutoNode, DeviceStateEnum, SystemStateEnum as SystemState, clamp
-from sensor_msgs.msg._image import Image
-
+from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge
 
 
@@ -24,30 +22,29 @@ class CameraNode(AutoNode):
 
     def setup(self):
         self.config.writeInt(REFRESH_RATE, 1)
-        self.m_cameraPublisher = self.create_publisher(Image, "/autonav/camera/raw", 20)
+        self.m_cameraPublisher = self.create_publisher(CompressedImage, "/igvc/camera/compressed", 20)
         self.m_cameraThread = threading.Thread(target=self.camera_read)
         self.m_cameraThread.start()
 
-    def shutdown(self):
-        self.m_cameraThread.join()
-
     def camera_read(self):
         capture = None
-        while rclpy.ok() and self.getDeviceState() != DeviceStateEnum.SHUTDOWN:
+        while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
             try:
-                capture = cv2.VideoCapture(clamp(self.m_lastDeviceId, 0, 10))
+                capture = cv2.VideoCapture(2)
                 if capture is None or not capture.isOpened():
-                    self.m_lastDeviceId += 1
                     raise Exception("Could not open video device")
 
+                capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
                 self.setDeviceState(DeviceStateEnum.READY)
+                self.setDeviceState(DeviceStateEnum.OPERATING)
             except:
                 self.setDeviceState(DeviceStateEnum.STANDBY)
                 time.sleep(1.5)
                 continue
                 
 
-            while rclpy.ok() and self.getDeviceState() != DeviceStateEnum.SHUTDOWN:
+            while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
                 if self.getDeviceState() != DeviceStateEnum.OPERATING:
                     continue
 
@@ -64,7 +61,7 @@ class CameraNode(AutoNode):
                 if not ret or frame is None:
                     continue
 
-                self.m_cameraPublisher.publish(bridge.cv2_to_imgmsg(frame))
+                self.m_cameraPublisher.publish(bridge.cv2_to_compressed_imgmsg(frame))
                 time.sleep(1.0 / self.config.readInt(REFRESH_RATE))
 
 

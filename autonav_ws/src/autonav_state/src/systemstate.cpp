@@ -81,7 +81,13 @@ private:
 	{
 		return device == Autonav::Device::DISPLAY_NODE 
 			|| device == Autonav::Device::LOGGING
-			|| device == Autonav::Device::STEAM_TRANSLATOR;
+			|| device == Autonav::Device::STEAM_TRANSLATOR
+			|| device == Autonav::Device::CAMERA_TRANSLATOR
+			|| device == Autonav::Device::IMAGE_TRANSFORMER
+			|| device == Autonav::Device::PARTICLE_FILTER
+			|| device == Autonav::Device::LOGGING_COMBINED
+			|| device == Autonav::Device::NAV_RESOLVER
+			|| device == Autonav::Device::NAV_ASTAR;
 	}
 
 	bool trySwitchManual(bool dontSwitch = false)

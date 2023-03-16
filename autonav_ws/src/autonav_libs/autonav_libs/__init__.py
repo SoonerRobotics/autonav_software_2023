@@ -228,7 +228,7 @@ class Conbus:
     def floatToBytes(self, data: float):
         # Use a struct to convert the float to a byte array
         byts = struct.pack('>f', data)
-        return byts
+        return bytes([0]) + byts
 
     def boolToBytes(self, data: bool):
         if data:

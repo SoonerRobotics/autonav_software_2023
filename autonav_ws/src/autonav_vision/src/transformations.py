@@ -75,10 +75,11 @@ class ImageTransformer(AutoNode):
                 if self.maxRange * self.badPercent <= np.sqrt(x ** 2 + y ** 2) < self.maxRange and (x + y) % 3 == 0:
                     self.circles.append((x, y, np.sqrt(x ** 2 + y ** 2)))
 
-        self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/igvc/camera/compressed", self.onImageReceived, 20)
-        self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space", 20)
-        self.m_lanePreviewPublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 20)
+        self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/igvc/camera/compressed", self.onImageReceived, 1)
+        self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space", 1)
+        self.m_lanePreviewPublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
         self.setDeviceState(DeviceState.READY)
+        self.setDeviceState(DeviceState.OPERATING)
         
     def getBlur(self):
         blur = self.config.readInt(Register.BLUR)
@@ -109,7 +110,8 @@ class ImageTransformer(AutoNode):
         flat = list(datamap.flatten().astype(int))
         
         msg = OccupancyGrid(info = g_mapData, data = flat)
-        self.m_laneMapPublisher.publish(self.expandify_grid(msg))
+        # self.m_laneMapPublisher.publish(self.expandify_grid(msg))
+        self.m_laneMapPublisher.publish(msg)
 
     def expandify_grid(self, grid: OccupancyGrid):
         cfg_space = [0] * (80 * 80)
