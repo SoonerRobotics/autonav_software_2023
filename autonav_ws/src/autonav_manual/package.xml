@@ -1,13 +1,19 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>autonav_launch</name>
+  <name>autonav_manual</name>
   <version>1.0.0</version>
-  <description>A collection of launch files used to run multiple nodes at once</description>
+  <description>Used to manually control the robot, sending instructions directly to the motors</description>
   <maintainer email="dylan.zemlin@gmail.com">Dylan Zemlin</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>rclpy</depend>
+  <depend>autonav_msgs</depend>
+  <depend>autonav_libs</depend>
   <exec_depend>ros2launch</exec_depend>
 
   <export>

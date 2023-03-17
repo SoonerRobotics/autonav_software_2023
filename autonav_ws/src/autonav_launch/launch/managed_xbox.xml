@@ -1,0 +1,11 @@
+<launch>
+    <node pkg="joy" exec="joy_node" name="joy">
+        <param name="autorepeat_rate" value="20.0" />
+        <!-- <param name="coalesce_interval" value="0.05" /> -->
+        <param name="deadzone" value="0.1" />
+    </node>
+    <node pkg="autonav_logging" exec="logging" name="autonav_logging" />>
+    <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" />
+    <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial_core" />
+    <node pkg="autonav_manual" exec="remote" name="autonav_remote" />
+</launch>

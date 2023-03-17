@@ -1,3 +1,0 @@
-<launch>
-	<node pkg="autonav_comm" exec="can" name="can" />
-</launch>

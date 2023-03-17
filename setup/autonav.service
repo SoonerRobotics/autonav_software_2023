@@ -1,0 +1,14 @@
+[Unit]
+Description=Autonav 2023 Service
+
+[Service]
+Type=simple
+User=autonav
+Restart=always
+RestartSec=5s
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/autonav/.Xauthority"
+ExecStart=/bin/bash /usr/bin/autonav_service.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,29 @@
+name: Autonav Compilation Test
+
+on:
+  schedule:
+    - cron: "0 6 * * 5"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v3
+
+      - name: Write environment variables
+        env:
+          VN_USERNAME: ${{ secrets.VN_USERNAME }}
+          VN_PASSWORD: ${{ secrets.VN_PASSWORD }}
+        run: |
+          echo "machine files.dylanzeml.in login $VN_USERNAME password $VN_PASSWORD" >> vectorsecrets.txt
+
+      - name: Build the docker image
+        env:
+          VN_USERNAME: ${{ secrets.VN_USERNAME }}
+          VN_PASSWORD: ${{ secrets.VN_PASSWORD }}
+        run: docker build . --file Dockerfile --build-arg VN_USERNAME=${{ secrets.VN_USERNAME }} --build-arg VN_PASSWORD=${{ secrets.VN_PASSWORD }}
