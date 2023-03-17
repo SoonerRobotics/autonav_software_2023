@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import MotorInput
-from autonav_libs import AutoNode, Device, DeviceStateEnum, Position, clamp
+from autonav_msgs.msg import MotorInput, Position
+from autonav_libs import AutoNode, Device, DeviceStateEnum, clamp
 from nav_msgs.msg import Path
 from pure_pursuit import PurePursuit
 import math
