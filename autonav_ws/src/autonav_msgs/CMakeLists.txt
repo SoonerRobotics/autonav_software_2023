@@ -23,6 +23,7 @@ set(msg_files
   "msg/SystemState.msg"
   "msg/Position.msg"
   "msg/PerfResult.msg"
+  "msg/Waypoint.msg"
 )
 
 set(srv_files
@@ -31,10 +32,10 @@ set(srv_files
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-	"msg/MotorFeedback.msg"
-	"msg/MotorInput.msg"
+  ${msg_files}
+  ${srv_files}
+  DEPENDENCIES builtin_interfaces
 )
 
 ament_export_dependencies(rosidl_default_runtime)
-
 ament_package()
