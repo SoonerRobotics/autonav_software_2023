@@ -132,7 +132,7 @@ public:
 
 
     // "Fixes the estop problem" - noah
-    if (this->pulses < 10 && abs(currentOutput) > 0.01 && abs(this-> targetSpeed) < 0.01) {
+    if (abs(this->pulses) < 2 && abs(currentOutput) > 0.01 && abs(this-> targetSpeed) < 0.01) {
         this->integrator = 0;
         this->speedEstimate = 0;
         this-> lastState = 0;
