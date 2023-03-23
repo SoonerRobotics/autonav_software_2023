@@ -67,3 +67,4 @@ if __name__ == "__main__":
     #obstacles = [(1.5, 1.5), (5, 5)]
     #path_planning_test.planning_test(waypoints, obstacles, .5)
 
+
