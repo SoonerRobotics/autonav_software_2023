@@ -19,7 +19,7 @@ class PathListener(Node):
         local_path = []
         path_data = msg.path_data
         for Waypoint in path_data:
-            print(f"{Waypoint.x}, {Waypoint.y}")
+            self.get_logger().info(f"{Waypoint.x}, {Waypoint.y}")
             local_path.append([Waypoint.x, Waypoint.y])
         
         self.get_logger().info(f'I heard {local_path} as the local_path')
