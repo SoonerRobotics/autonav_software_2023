@@ -18,7 +18,7 @@ def get_random_path_planning_simulation():
     for i in range(rand_path_length):
         rand_x = random.randint(-5, 5)
         rand_y = random.randint(-5, 5)
-        rand_wps.append([rand_x, rand_y, 0, 0])
+        rand_wps.append([rand_x, rand_y, 0, 1])
 
     
 

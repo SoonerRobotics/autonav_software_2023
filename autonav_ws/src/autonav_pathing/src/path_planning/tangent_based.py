@@ -103,7 +103,7 @@ class path_planning:
         # this for loop draws points along the edge of the avoidance circles
         for k in range(0, 5):
             #print(f"dtheta5t * k {dtheta5t * (k)}")
-            points.append([(((obstacle[2]+ .1) * (math.cos(theta1 + (dtheta5t * (k))))) + obstacle[0]), (((obstacle[2] + .1) * math.sin(theta1+ (dtheta5t * (k)))) + obstacle[1]), 1, 0])
+            points.append([(((obstacle[2]+ .1) * (math.cos(theta1 + (dtheta5t * (k))))) + obstacle[0]), (((obstacle[2] + .1) * math.sin(theta1+ (dtheta5t * (k)))) + obstacle[1]), 1, 1])
             #print(f"points is {points}")
             #print(len(self.final))
                     
