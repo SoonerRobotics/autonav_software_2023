@@ -192,10 +192,25 @@ namespace Autonav
 		template <>
 		float Conbus::read(uint8_t address)
 		{
-			auto data = std::vector<uint8_t>(this->m_registers[m_device][address].begin() + 1, this->m_registers[m_device][address].end());
-			float realData;
-			memcpy(&realData, data.data(), sizeof(realData));
-			return realData;
+			unsigned char byte_array[] = {
+				this->m_registers[m_device][address][1],
+				this->m_registers[m_device][address][2],
+				this->m_registers[m_device][address][3],
+				this->m_registers[m_device][address][4]
+			};
+			float result;
+			std::copy(
+				reinterpret_cast<const char*>(&byte_array[0]),
+				reinterpret_cast<const char*>(&byte_array[4]),
+				reinterpret_cast<char*>(&result)
+			);
+			return result;
+		}
+
+		template <>
+		std::vector<uint8_t> Conbus::read(uint8_t address)
+		{
+			return this->m_registers[m_device][address];
 		}
 
 		template <>
@@ -292,9 +307,25 @@ namespace Autonav
 		template <>
 		float Conbus::read(Device device, uint8_t address)
 		{
-			auto data = (this->m_registers[device][address][1] << 24) | (this->m_registers[device][address][2] << 16) | (this->m_registers[device][address][3] << 8) | this->m_registers[device][address][4];
-			float realData = data / FLOAT_PRECISION;
-			return realData;
+			unsigned char byte_array[] = {
+				this->m_registers[device][address][1],
+				this->m_registers[device][address][2],
+				this->m_registers[device][address][3],
+				this->m_registers[device][address][4]
+			};
+			float result;
+			std::copy(
+				reinterpret_cast<const char*>(&byte_array[0]),
+				reinterpret_cast<const char*>(&byte_array[4]),
+				reinterpret_cast<char*>(&result)
+			);
+			return result;
+		}
+
+		template <>
+		std::vector<uint8_t> Conbus::read(Device device, uint8_t address)
+		{
+			return this->m_registers[device][address];
 		}
 
 		// Callbacks

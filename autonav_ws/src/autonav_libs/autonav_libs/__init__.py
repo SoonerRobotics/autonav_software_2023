@@ -228,8 +228,7 @@ class Conbus:
         return byts
 
     def floatToBytes(self, data: float):
-        # Use a struct to convert the float to a byte array
-        byts = struct.pack('>f', data)
+        byts = bytearray(struct.pack('f', data))
         return bytes([0]) + byts
 
     def boolToBytes(self, data: bool):
@@ -291,8 +290,7 @@ class Conbus:
             return None
 
         if len(byts) == 5:
-            # Convert last 4 bytes from big endian to int
-            return struct.unpack('>f', byts[1:])[0]
+            return struct.unpack('f', byts[1:])[0]
 
         raise Exception("Invalid float size")
 
