@@ -13,9 +13,6 @@ from autonav_msgs.msg import SteamInput
 from autonav_libs import Device, AutoNode, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
 
 
-# TODO: Fix buttons randomly being pressed upon startup
-
-
 class SCButtons(IntEnum):
     RPADTOUCH = 0b00010000000000000000000000000000
     LPADTOUCH = 0b00001000000000000000000000000000

@@ -38,7 +38,7 @@ public:
 		m_motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 
 		config.write(Registers::TIMEOUT_DELAY, 500);
-		config.write(Registers::STEERING_DEADZONE, 0.35f);
+		config.write(Registers::STEERING_DEADZONE, 0.1f);
 		config.write(Registers::THROTTLE_DEADZONE, 0.1f);
 		config.write(Registers::MAX_SPEED, 2.2f);
 		config.write(Registers::SPEED_OFFSET, 0.6f);
@@ -88,8 +88,8 @@ public:
 
 		if (abs(msg.rtrig) > deadzone || abs(msg.ltrig) > deadzone)
 		{
-			throttle = (1 - msg.ltrig) * maxSpeed * 0.8;
-			throttle = throttle - (1 - msg.rtrig) * maxSpeed * 0.8;
+			throttle = (1 - msg.rtrig) * maxSpeed * 0.8;
+			throttle = throttle - (1 - msg.ltrig) * maxSpeed * 0.8;
 		}
 
 		if (abs(msg.lpad_x) > steeringVoid)
@@ -100,12 +100,12 @@ public:
 				real = -real;
 			}
 
-			steering = -real * maxSpeed;
+			steering = real * maxSpeed;
 		}
 
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = clamp(-throttle + steering * offset, -maxSpeed, maxSpeed);
-		package.right_motor = clamp(-throttle - steering * offset, -maxSpeed, maxSpeed);
+		package.left_motor = -clamp(throttle + steering * offset, -maxSpeed, maxSpeed);
+		package.right_motor = clamp(throttle - steering * offset, -maxSpeed, maxSpeed);
 		m_motorPublisher->publish(package);
 	}
 

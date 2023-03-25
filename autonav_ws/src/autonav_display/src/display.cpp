@@ -1032,7 +1032,7 @@ private:
 	autonav_msgs::msg::MotorFeedback m_lastMotorFeedbackMessage;
 	autonav_msgs::msg::SteamInput m_lastSteamMessage;
 	autonav_msgs::msg::Position m_lastPose;
-	float m_fontSize = 20.0f;
+	float m_fontSize = 18.0f;
 	std::vector<std::string> m_latestLogs;
 
 	// Images
@@ -1043,10 +1043,10 @@ private:
 	int m_rawCameraWidth, m_rawCameraHeight;
 
 	// Preferences
-	bool m_showEstimatedPose = true;
-	bool m_showMotorData = true;
-	bool m_showGpsData = true;
-	bool m_showImuData = true;
+	bool m_showEstimatedPose = false;
+	bool m_showMotorData = false;
+	bool m_showGpsData = false;
+	bool m_showImuData = false;
 };
 
 int main(int, char **)
