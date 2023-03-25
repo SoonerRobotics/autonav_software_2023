@@ -729,15 +729,15 @@ public:
 					ImGui::SeparatorText("Device States");
 					showNodeState(this, Autonav::Device::DISPLAY_NODE);
 					showNodeState(this, Autonav::Device::LOGGING);
-					showNodeState(this, Autonav::Device::LOGGING_COMBINED);
+					// showNodeState(this, Autonav::Device::LOGGING_COMBINED);
 					showNodeState(this, Autonav::Device::MANUAL_CONTROL_STEAM);
 					showNodeState(this, Autonav::Device::MANUAL_CONTROL_XBOX);
 					showNodeState(this, Autonav::Device::SERIAL_CAN);
 					showNodeState(this, Autonav::Device::SERIAL_IMU);
 					showNodeState(this, Autonav::Device::STEAM_TRANSLATOR);
-					showNodeState(this, Autonav::Device::CAMERA_TRANSLATOR);
-					showNodeState(this, Autonav::Device::IMAGE_TRANSFORMER);
-					showNodeState(this, Autonav::Device::PARTICLE_FILTER);
+					// showNodeState(this, Autonav::Device::CAMERA_TRANSLATOR);
+					// showNodeState(this, Autonav::Device::IMAGE_TRANSFORMER);
+					// showNodeState(this, Autonav::Device::PARTICLE_FILTER);
 
 					ImGui::EndTabItem();
 				}
