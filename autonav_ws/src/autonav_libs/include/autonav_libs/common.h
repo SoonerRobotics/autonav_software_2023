@@ -82,19 +82,49 @@ namespace Autonav
             ~Conbus();
 
         public:
+            /**
+             * @brief Write a vector of bytes to the local configuration
+            */
             void writeBytes(uint8_t registerAddress, std::vector<uint8_t> data);
+            /**
+             * @brief Write a 32-bit integer to the local configuration
+            */
             void write(uint8_t registerAddress, int32_t data);
+            /**
+             * @brief Write a 32-bit float to the local configuration
+            */
             void write(uint8_t registerAddress, float data);
+            /**
+             * @brief Write a boolean to the local configuration
+            */
             void write(uint8_t registerAddress, bool data);
 
+            /**
+             * @brief Write a 32-bit integer to a remote configuration
+            */
             void writeTo(Device device, uint8_t registerAddress, int32_t data);
+            /**
+             * @brief Write a 32-bit float to a remote configuration
+            */
             void writeTo(Device device, uint8_t registerAddress, float data);
+            /**
+             * @brief Write a boolean to a remote configuration
+            */
             void writeTo(Device device, uint8_t registerAddress, bool data);
+            /**
+             * @brief Write a vector of bytes to a remote configuration
+            */
             void writeTo(Device device, uint8_t registerAddress, std::vector<uint8_t> data);
 
+            /**
+             * @brief Read from the local configuration
+            */
             template <typename T>
             T read(uint8_t registerAddress);
 
+            /**
+             * @brief Read from a remote configuration
+            */
             template <typename T>
             T read(Device device, uint8_t registerAddress);
 
@@ -102,10 +132,18 @@ namespace Autonav
             void requestAllRemoteRegistersFrom(Device device);
             void requestAllRemoteRegisters();
 
-            // Create iterators to read through devices
+            /**
+             * @brief Gets a iterator to the beginning of the local configuration
+            */
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator begin();
+            /**
+             * @brief Gets a iterator to the end of the local configuration
+            */
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator end();
 
+            /**
+             * @brief Returns a map of all the registers for a device
+            */
             std::map<uint8_t, std::vector<uint8_t>> getRegistersForDevice(Device device);
         private:
             void publishWrite(Device device, uint8_t address, std::vector<uint8_t> data);
@@ -134,8 +172,17 @@ namespace Autonav
             Configuration::Conbus config;
             Autonav::Device device;
 
+            /**
+             * @brief Called when the node is initialized
+            */
             virtual void setup() {}
+            /**
+             * @brief Called when the node is switched into the operating state
+            */
             virtual void operate() {}
+            /**
+             * @brief Called when the node is switched out of the operating state
+            */
             virtual void deoperate() {}
 
             State::SystemState getSystemState();
@@ -145,6 +192,11 @@ namespace Autonav
         protected:
             virtual void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
             virtual void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg);
+            /**
+             * @brief Terminates the local node by killing the process
+             * @note This does NOT tell the state manager that its terminating
+            */
+            void terminate();
             bool m_isSimulator;
 
         private:

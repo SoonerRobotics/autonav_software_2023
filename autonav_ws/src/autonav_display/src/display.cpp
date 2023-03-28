@@ -580,6 +580,7 @@ public:
 		if (!setup_imgui())
 		{
 			RCLCPP_ERROR(this->get_logger(), "Failed to setup ImGUI");
+			this->terminate();
 			return;
 		}
 

@@ -41,6 +41,11 @@ namespace Autonav
 			this->setDeviceState(State::DeviceState::STANDBY);
 		}
 
+		void AutoNode::terminate()
+		{
+			kill(getpid(), SIGKILL);
+		}
+
 		bool AutoNode::setSystemState(State::SystemState state)
 		{
 			auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
@@ -89,7 +94,7 @@ namespace Autonav
 			
 			if (m_systemState == State::SystemState::SHUTDOWN)
 			{
-				kill(getpid(), SIGKILL);
+				this->terminate();
 			}
 		}
 
