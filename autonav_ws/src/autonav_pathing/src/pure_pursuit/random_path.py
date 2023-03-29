@@ -12,6 +12,7 @@ class PathPublisher(Node):
     def __init__(self):
         super().__init__("path_publisher")
         self.publisher = self.create_publisher(Path, '/autonav/Path', 10)
+        self.timer = self.create_timer(1.0, self.publish_path)
 
     def set_path(self, local_path):
         self.msg = Path()
@@ -40,12 +41,13 @@ def main(args = None):
     generated_path = get_random_path()
 
     rclpy.init(args=args)
+    
     path_publisher = PathPublisher()
     path_publisher.set_path(generated_path)
+    rclpy.spin(path_publisher)
 
     
-    path_publisher.publish_path()
-    rclpy.spin(path_publisher)
+
     path_publisher.destroy_node
     rclpy.shutdown
 

@@ -13,17 +13,18 @@ class PurePursuit(Node):
     def __init__(self):
         super().__init__("pure_pursuit")
         self.publisher = self.create_publisher(GoalPoint, '/autonav/goal_point', 10)
-        self.subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 10)
+        self.subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 50)
         self.subscription
 
     def accept_path(self, msg):
+        
         local_path = []
         path_data = msg.path_data
-        #for Waypoint in path_data:
-            #self.get_logger().info(f"{Waypoint.x}, {Waypoint.y}")
-            #local_path.append([Waypoint.x, Waypoint.y])
-        
+        for Waypoint in path_data:
+            local_path.append([Waypoint.x, Waypoint.y])
         self.get_logger().info(f'I heard {local_path} as the local_path')
+        
+        
 
 
     def publish_lookahead(self, lookahead):
