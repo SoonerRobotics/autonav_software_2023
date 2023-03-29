@@ -23,6 +23,11 @@ class PurePursuit(Node):
         for Waypoint in path_data:
             local_path.append([Waypoint.x, Waypoint.y])
         self.get_logger().info(f'I heard {local_path} as the local_path')
+        path = lookahead_finder.PurePursuit()
+        path.setpath(local_path)
+        lookahead = path.get_lookahead_point(0, 0, 2.3)
+        self.publish_lookahead(lookahead)
+        pursuit_test.pursuit_test((0,0), local_path, 2.3)
         
         
 
@@ -56,13 +61,13 @@ def main(args=None):
     # pursuit_test.pursuit_test(test1[0], test1[1], test1[2])
 
     # hard coded 
-    waypoints = [[-4, -2], [-4, 2], [-2, 2], [-2, -2], [0, -2], [0, 2], [2, 2], [2, -2]]
+    #waypoints = [[-4, -2], [-4, 2], [-2, 2], [-2, -2], [0, -2], [0, 2], [2, 2], [2, -2]]
     
-    path = lookahead_finder.PurePursuit()
-    path.setpath(waypoints)
+    #path = lookahead_finder.PurePursuit()
+    #path.setpath(waypoints)
     
 
-    lookahead = path.get_lookahead_point(0, 0, 2.3)
+    #lookahead = path.get_lookahead_point(0, 0, 2.3)
 
 
     # waypoint publisher node initiation
@@ -71,8 +76,8 @@ def main(args=None):
     pure_pursuit = PurePursuit()
     rclpy.spin(pure_pursuit)
 
-    pure_pursuit.publish_lookahead(lookahead)
-    pursuit_test.pursuit_test((0,0), waypoints, 2.3)
+    #pure_pursuit.publish_lookahead(lookahead)
+    #pursuit_test.pursuit_test((0,0), waypoints, 2.3)
     pure_pursuit.destroy_node
     rclpy.shutdown
 
