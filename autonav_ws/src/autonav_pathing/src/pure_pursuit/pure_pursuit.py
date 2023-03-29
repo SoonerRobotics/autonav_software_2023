@@ -8,28 +8,23 @@ import random
 from autonav_msgs.msg import GoalPoint
 from autonav_msgs.msg import Path
 
-class PathListener(Node):
+class PurePursuit(Node):
 
     def __init__(self):
-        super().__init__("path_listener")
+        super().__init__("pure_pursuit")
+        self.publisher = self.create_publisher(GoalPoint, '/autonav/goal_point', 10)
         self.subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 10)
         self.subscription
 
     def accept_path(self, msg):
         local_path = []
         path_data = msg.path_data
-        for Waypoint in path_data:
-            self.get_logger().info(f"{Waypoint.x}, {Waypoint.y}")
-            local_path.append([Waypoint.x, Waypoint.y])
+        #for Waypoint in path_data:
+            #self.get_logger().info(f"{Waypoint.x}, {Waypoint.y}")
+            #local_path.append([Waypoint.x, Waypoint.y])
         
         self.get_logger().info(f'I heard {local_path} as the local_path')
 
-
-class GoalPointPublisher(Node):
-
-    def __init__(self):
-        super().__init__("goalpoint_publisher")
-        self.publisher = self.create_publisher(GoalPoint, '/autonav/goal_point', 10)
 
     def publish_lookahead(self, lookahead):
         msg = GoalPoint()
@@ -53,7 +48,7 @@ def get_random_pursuit_simulation():
 
     return rand_robo_pos, rand_wps, rand_r
 
-def main(args = None):
+def main(args=None):
    
     # test using random simulated position, path, and radius
     # test1 = get_random_pursuit_simulation()
@@ -72,15 +67,12 @@ def main(args = None):
     # waypoint publisher node initiation
     rclpy.init(args=args)
 
-    path_listener = PathListener()
-    waypoint_publisher = GoalPointPublisher()
+    pure_pursuit = PurePursuit()
+    rclpy.spin(pure_pursuit)
 
-    waypoint_publisher.publish_lookahead(lookahead)
+    pure_pursuit.publish_lookahead(lookahead)
     pursuit_test.pursuit_test((0,0), waypoints, 2.3)
-    rclpy.spin(path_listener)
-    rclpy.spin(waypoint_publisher)
-    path_listener.destroy_node
-    waypoint_publisher.destroy_node
+    pure_pursuit.destroy_node
     rclpy.shutdown
 
     
