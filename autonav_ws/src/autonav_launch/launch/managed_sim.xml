@@ -11,6 +11,7 @@
     <node pkg="autonav_manual" exec="steam.py" />
     <node pkg="autonav_manual" exec="steamremote" />
     <node pkg="autonav_vision" exec="transformations.py" />
+    <node pkg="autonav_vision" exec="expandify.py" />
     <node pkg="autonav_filters" exec="pf.py" />
     <node pkg="autonav_nav" exec="astar.py" />
     <node pkg="autonav_nav" exec="path_resolver.py" />

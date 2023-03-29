@@ -17,7 +17,8 @@ install(PROGRAMS
 	src/path_resolver.py
 	src/astar.py
 	src/pure_pursuit.py
+	src/pp_viewer.py
 	DESTINATION lib/${PROJECT_NAME}
-	)
+)
 
 ament_package()

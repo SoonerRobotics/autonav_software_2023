@@ -25,7 +25,8 @@ namespace Autonav
         PARTICLE_FILTER = 109,
         LOGGING_COMBINED = 110,
         NAV_RESOLVER = 111,
-        NAV_ASTAR = 112
+        NAV_ASTAR = 112,
+        EXPANDIFIER = 113
     };
 
     namespace State
