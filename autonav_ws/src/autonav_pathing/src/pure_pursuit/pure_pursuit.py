@@ -13,7 +13,7 @@ class PurePursuit(Node):
     def __init__(self):
         super().__init__("pure_pursuit")
         self.publisher = self.create_publisher(GoalPoint, '/autonav/goal_point', 10)
-        self.subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 50)
+        self.subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 10)
         self.subscription
 
     def accept_path(self, msg):
@@ -25,13 +25,11 @@ class PurePursuit(Node):
         self.get_logger().info(f'I heard {local_path} as the local_path')
         path = lookahead_finder.PurePursuit()
         path.setpath(local_path)
-        lookahead = path.get_lookahead_point(0, 0, 2.3)
+        lookahead = path.get_lookahead_point(local_path[0][0], local_path[0][1], 2.3)
         self.publish_lookahead(lookahead)
-        pursuit_test.pursuit_test((0,0), local_path, 2.3)
+        pursuit_test.pursuit_test(local_path[0], local_path, 2.3)
         
         
-
-
     def publish_lookahead(self, lookahead):
         msg = GoalPoint()
         msg.goalpoint_x = lookahead[0]
@@ -40,19 +38,6 @@ class PurePursuit(Node):
         self.get_logger().info('Publishing goalpoint_x: "%f"' % msg.goalpoint_x)
         self.get_logger().info('Publishing goalpoint_y: "%f"' % msg.goalpoint_y)
 
-
-# returns a random robot position, random set of waypoints, and random radius
-def get_random_pursuit_simulation():
-    rand_wps = []
-    rand_path_length = random.randint(4, 10)
-    for i in range(rand_path_length):
-        rand_x = random.randint(-5, 5)
-        rand_y = random.randint(-5, 5)
-        rand_wps.append((rand_x, rand_y))
-    rand_robo_pos = random.randint(-2,2), random.randint(-2,2)
-    rand_r = random.uniform(.5, 3)
-
-    return rand_robo_pos, rand_wps, rand_r
 
 def main(args=None):
    

@@ -29,6 +29,9 @@ install(PROGRAMS
   src/pure_pursuit/lookahead_finder.py
   src/pure_pursuit/pursuit_test.py
   src/pure_pursuit/random_path.py
+  src/path_planning/path_planning.py
+  src/path_planning/tangent_based.py
+  src/path_planning/planning_test.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
