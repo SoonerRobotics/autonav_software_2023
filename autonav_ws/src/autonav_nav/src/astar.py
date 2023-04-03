@@ -24,6 +24,7 @@ verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
 orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
+sim_waypoints = [(35.194840, -97.438550)]
 
 
 def get_angle_diff(to_angle, from_angle):
@@ -149,18 +150,23 @@ class AStarNode(AutoNode):
     def onConfigSpaceReceived(self, msg: OccupancyGrid):
         global cost_map, best_pos, planner, prev_state, map_ref, path_seq, first_waypoints_time, waypoints
         
-        grid_data = msg.data
-        temp_cost_map = [0] * 80 * 80
+        if self.m_position is None:
+            return
 
+        grid_data = msg.data
+        # Replace grid_data with all 0's
+        grid_data = [0 for _ in grid_data]
+
+        # Find the best position
         temp_best_pos = (40, 78)
-        best_pos_cost = -1000
+        best_pos_cost = -1000 
         frontier = set()
         frontier.add((40,78))
         explored = set()
 
         if first_waypoints_time > 0 and time.time() > first_waypoints_time:
             first_waypoints_time = -2
-            waypoints = [pt for pt in orig_waypoints]
+            waypoints = [pt for pt in (sim_waypoints if self.m_isSimulator else orig_waypoints)]
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
