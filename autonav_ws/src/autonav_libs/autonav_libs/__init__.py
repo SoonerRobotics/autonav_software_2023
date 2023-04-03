@@ -46,7 +46,7 @@ def hash(s: str):
         c = ord(s[b])
         h = ((h << 5) + h) + c
 
-    return h & 0xFFFFFFFF
+    return h & 0xFFFFFFFFFFFF
 
 
 def clamp(n, minn, maxn):
@@ -64,6 +64,7 @@ class AutoNode(Node):
         self.m_systemStateSubscriber = self.create_subscription(SystemState, "/autonav/state/system", self.onSystemStateChanged, 10)
         self.m_deviceStateClient = self.create_client(SetDeviceState, "/autonav/state/set_device_state")
         self.m_systemStateClient = self.create_client(SetSystemState, "/autonav/state/set_system_state")
+        self.log(f"Created node {node_name} with id {self.id}")
 
         self.m_systemState = SystemStateEnum.DISABLED
         self.m_isSimulator = False

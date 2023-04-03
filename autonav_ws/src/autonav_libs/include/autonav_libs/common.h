@@ -30,9 +30,9 @@ namespace Autonav
         };
     }
 
-    int32_t hash(std::string str)
+    int64_t hash(std::string str)
     {
-        int32_t asd = 5381;
+        int64_t asd = 5381;
         int c;
 
         for (int i = 0; i < str.length(); i++)
@@ -41,7 +41,7 @@ namespace Autonav
             asd = ((asd << 5) + asd) + c; /* hash * 33 + c */
         }
 
-        return asd & 0xFFFFFFFF;
+        return asd & 0xFFFFFFFFFFFF;
     }
     
     namespace CanBus
@@ -141,7 +141,7 @@ namespace Autonav
             void onConbusInstruction(const autonav_msgs::msg::ConBusInstruction::SharedPtr msg);
 
         private:
-            int32_t m_id;
+            int64_t m_id;
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>> m_registers;
             rclcpp::Publisher<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusPublisher;
             rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusSubscriber;
@@ -187,7 +187,7 @@ namespace Autonav
             */
             void terminate();
             bool m_isSimulator;
-            int32_t m_id;
+            int64_t m_id;
 
         private:
             void onInitializeTimer();
@@ -200,7 +200,7 @@ namespace Autonav
             rclcpp::Client<autonav_msgs::srv::SetSystemState>::SharedPtr m_systemStateClient;
 
             State::SystemState m_systemState;
-            std::map<int32_t, State::DeviceState> m_deviceStates;
+            std::map<int64_t, State::DeviceState> m_deviceStates;
 
             rclcpp::TimerBase::SharedPtr _initializeTimer;
         };

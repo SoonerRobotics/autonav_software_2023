@@ -8,6 +8,20 @@
 int g_displayForgiveness = 0;
 int g_loggingForgiveness = 0;
 
+bool isReadOnlyNode(int64_t id)
+{
+	return id == Autonav::hash("autonav_display")
+		|| id == Autonav::hash("autonav_logging")
+		|| id == Autonav::hash("autonav_logging_combined")
+		|| id == Autonav::hash("autonav_filters")
+		|| id == Autonav::hash("autonav_nav_astar")
+		|| id == Autonav::hash("autonav_nav_resolver")
+		|| id == Autonav::hash("autonav_serial_camera")
+		|| id == Autonav::hash("autonav_manual_steamtranslator")
+		|| id == Autonav::hash("autonav_vision_expandifier")
+		|| id == Autonav::hash("autonav_vision_transformer");
+}
+
 class StateSystemNode : public rclcpp::Node
 {
 public:
@@ -45,6 +59,7 @@ private:
 			setSystemState(Autonav::State::SystemState::SHUTDOWN);
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			rclcpp::shutdown(nullptr, "Autonav display node not found");
+			kill(getpid(), SIGKILL);
 			return;
 		}
 
@@ -53,11 +68,12 @@ private:
 			setSystemState(Autonav::State::SystemState::SHUTDOWN);
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			rclcpp::shutdown(nullptr, "Autonav logging node not found");
+			kill(getpid(), SIGKILL);
 			return;
 		}
 	}
 
-	void setDeviceState(int32_t id, Autonav::State::DeviceState state)
+	void setDeviceState(int64_t id, Autonav::State::DeviceState state)
 	{
 		m_deviceStates[id] = state;
 
@@ -133,12 +149,15 @@ private:
 			return;
 		}
 
-		if (state == Autonav::State::DeviceState::READY && m_forcedState == "autonomous" && device != Autonav::hash("autonav_display"))
+		if (state == Autonav::State::DeviceState::READY && m_forcedState == "autonomous" && !isReadOnlyNode(request->device))
 		{
+			// RCLCPP_INFO(this->get_logger(), "[0] Setting device state for %d to %d", device, Autonav::State::DeviceState::OPERATING);
 			setDeviceState(device, Autonav::State::DeviceState::OPERATING);
 		} else {
+			// RCLCPP_INFO(this->get_logger(), "[1] Setting device state for %d to %d", device, state);
 			setDeviceState(device, state);
 		}
+		response->ok = true;
 		
 		auto sys_msg = autonav_msgs::msg::SystemState();
 		sys_msg.state = (uint8_t)m_systemState;
@@ -168,7 +187,7 @@ private:
 	Autonav::State::SystemState m_systemState;
 	std::string m_forcedState = "";
 	bool m_isSimulator;
-	std::map<int32_t, Autonav::State::DeviceState> m_deviceStates = {};
+	std::map<int64_t, Autonav::State::DeviceState> m_deviceStates = {};
 };
 
 int main(int argc, char **argv)

@@ -280,14 +280,14 @@ namespace Autonav
 		template <>
 		int32_t Conbus::read(std::string device, uint8_t address)
 		{
-			int32_t hash = Autonav::hash(device);
+			int64_t hash = Autonav::hash(device);
 			return static_cast<int32_t>((this->m_registers[hash][address][1] << 24) | (this->m_registers[hash][address][2] << 16) | (this->m_registers[hash][address][3] << 8) | this->m_registers[hash][address][4]);
 		}
 
 		template <>
 		float Conbus::read(std::string device, uint8_t address)
 		{
-			int32_t hash = Autonav::hash(device);
+			int64_t hash = Autonav::hash(device);
 			unsigned char byte_array[] = {
 				this->m_registers[hash][address][1],
 				this->m_registers[hash][address][2],
