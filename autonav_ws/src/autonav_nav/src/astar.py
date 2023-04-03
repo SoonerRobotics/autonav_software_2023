@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from autonav_msgs.msg import Position
-from autonav_libs import AutoNode, Device, DeviceStateEnum
+from autonav_libs import AutoNode, DeviceStateEnum
 from geometry_msgs.msg import PoseStamped, Point, Pose
 from nav_msgs.msg import OccupancyGrid, Path
 import rclpy
@@ -35,7 +35,7 @@ def get_angle_diff(to_angle, from_angle):
 
 class AStarNode(AutoNode):
     def __init__(self):
-        super().__init__(Device.NAV_ASTAR, "autonav_nav_astar")
+        super().__init__("autonav_nav_astar")
 
         self.m_configSpace = None
         self.m_position = None

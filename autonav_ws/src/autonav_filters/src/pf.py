@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from autonav_msgs.msg import MotorFeedback, GPSFeedback, Position
-from autonav_libs import AutoNode, Device, DeviceStateEnum, SystemStateEnum
+from autonav_libs import AutoNode, DeviceStateEnum, SystemStateEnum
 
 import rclpy
 import math
@@ -34,7 +34,7 @@ class Particle:
 
 class ParticleFilterNode(AutoNode):
     def __init__(self):
-        super().__init__(Device.PARTICLE_FILTER, "autonav_filters_pf")
+        super().__init__("autonav_filters")
 
         self.m_pf = ParticleFilter(self)
         self.m_reckoning = DeadReckoningFilter(self)

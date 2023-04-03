@@ -30,7 +30,7 @@ enum Registers
 class JoyNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoyNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_STEAM, "remote_steamcontroller") {}
+	JoyNode() : AutoNode("autonav_manual_steamcontroller") {}
 
 	void setup() override
 	{

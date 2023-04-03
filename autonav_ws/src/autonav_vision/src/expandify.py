@@ -8,7 +8,7 @@ from enum import IntEnum
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point
 from cv_bridge import CvBridge
-from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState
+from autonav_libs import AutoNode, DeviceStateEnum as DeviceState
 
 g_bridge = CvBridge()
 
@@ -36,7 +36,7 @@ class Register(IntEnum):
 
 class Expandifier(AutoNode):
     def __init__(self):
-        super().__init__(Device.EXPANDIFIER, "autonav_vision_expandifier")
+        super().__init__("autonav_vision_expandifier")
 
         self.verticalCameraRange = 2.75
         self.horizontalCameraRange = 3

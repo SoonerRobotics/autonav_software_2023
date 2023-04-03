@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from autonav_msgs.msg import MotorInput, Position
-from autonav_libs import AutoNode, Device, DeviceStateEnum, clamp
+from autonav_libs import AutoNode, DeviceStateEnum, clamp
 from nav_msgs.msg import Path
 from pure_pursuit import PurePursuit
 from pp_viewer import draw_pp
@@ -11,7 +11,7 @@ import rclpy
 
 class PathResolverNode(AutoNode):
     def __init__(self):
-        super().__init__(Device.NAV_RESOLVER, "autonav_nav_resolver")
+        super().__init__("autonav_nav_resolver")
 
         self.m_position = Position()
 

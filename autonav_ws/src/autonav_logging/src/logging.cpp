@@ -71,7 +71,7 @@ void append_to_file(const std::string &name, const std::string &contents)
 class LoggingNode : public Autonav::ROS::AutoNode
 {
 public:
-	LoggingNode() : AutoNode(Autonav::Device::LOGGING, "autonav_logging")
+	LoggingNode() : AutoNode("autonav_logging")
 	{
 		m_steamSubscription = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&LoggingNode::on_log_received, this, _1));
 	}

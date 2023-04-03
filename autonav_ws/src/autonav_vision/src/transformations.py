@@ -8,9 +8,9 @@ from enum import IntEnum
 
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from sensor_msgs.msg import CompressedImage
-from geometry_msgs.msg import Pose, Point
+from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge
-from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState
+from autonav_libs import AutoNode, DeviceStateEnum as DeviceState
 
 g_bridge = CvBridge()
 
@@ -36,7 +36,7 @@ class Register(IntEnum):
 
 class ImageTransformer(AutoNode):
     def __init__(self):
-        super().__init__(Device.IMAGE_TRANSFORMER, "autonav_vision_transformer")
+        super().__init__("autonav_vision_transformer")
         
     def setup(self):
         self.config.writeInt(Register.LOWER_HUE, 0)

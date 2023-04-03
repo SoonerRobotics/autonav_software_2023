@@ -10,7 +10,7 @@ from steamcontroller import SteamControllerInput
 from enum import IntEnum
 from autonav_msgs.msg import SteamInput
 
-from autonav_libs import Device, AutoNode, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
+from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
 
 
 class SCButtons(IntEnum):
@@ -35,7 +35,7 @@ class SCButtons(IntEnum):
 
 class SteamTranslationNode(AutoNode):
     def __init__(self):
-        super().__init__(Device.STEAM_TRANSLATOR, "autonav_steam_translator")
+        super().__init__("autonav_manual_steamtranslator")
 
     def setup(self):
         self.m_steamThread = threading.Thread(

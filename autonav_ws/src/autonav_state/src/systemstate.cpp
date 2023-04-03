@@ -57,12 +57,12 @@ private:
 		}
 	}
 
-	void setDeviceState(Autonav::Device device, Autonav::State::DeviceState state)
+	void setDeviceState(int32_t id, Autonav::State::DeviceState state)
 	{
-		m_deviceStates[device] = state;
+		m_deviceStates[id] = state;
 
 		auto msg = autonav_msgs::msg::DeviceState();
-		msg.device = (uint8_t)device;
+		msg.device = id;
 		msg.state = state;
 		m_deviceStatePublisher->publish(msg);
 	}
@@ -77,99 +77,6 @@ private:
 		m_systemStatePublisher->publish(msg);
 	}
 
-	bool isReadonlyNode(Autonav::Device device)
-	{
-		return device == Autonav::Device::DISPLAY_NODE 
-			|| device == Autonav::Device::LOGGING
-			|| device == Autonav::Device::STEAM_TRANSLATOR
-			|| device == Autonav::Device::CAMERA_TRANSLATOR
-			|| device == Autonav::Device::IMAGE_TRANSFORMER
-			|| device == Autonav::Device::PARTICLE_FILTER
-			|| device == Autonav::Device::LOGGING_COMBINED
-			|| device == Autonav::Device::NAV_RESOLVER
-			|| device == Autonav::Device::NAV_ASTAR;
-	}
-
-	bool trySwitchManual(bool dontSwitch = false)
-	{
-		auto canSwitch = (
-			(m_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY) &&
-			(
-				(m_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY) ||
-				(
-					(m_deviceStates[Autonav::Device::MANUAL_CONTROL_STEAM] >= Autonav::State::DeviceState::READY) &&
-					(m_deviceStates[Autonav::Device::STEAM_TRANSLATOR] >= Autonav::State::DeviceState::READY)
-				)
-			) &&
-			(
-				(m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY) ||
-				this->get_parameter("is_simulator").as_bool()
-			)
-		);
-
-		if (dontSwitch)
-		{
-			return canSwitch;
-		}
-
-		if (!canSwitch)
-		{
-			return false;
-		}
-
-		setSystemState(Autonav::State::SystemState::MANUAL);
-		setDeviceState(Autonav::Device::SERIAL_CAN, Autonav::State::DeviceState::OPERATING);
-		if (m_deviceStates[Autonav::Device::MANUAL_CONTROL_XBOX] >= Autonav::State::DeviceState::READY)
-		{
-			setDeviceState(Autonav::Device::MANUAL_CONTROL_XBOX, Autonav::State::DeviceState::OPERATING);
-			return true;
-		}
-
-		setDeviceState(Autonav::Device::MANUAL_CONTROL_STEAM, Autonav::State::DeviceState::OPERATING);
-		setDeviceState(Autonav::Device::STEAM_TRANSLATOR, Autonav::State::DeviceState::OPERATING);
-		return true;
-	}
-
-	void switchDisabled()
-	{
-		setSystemState(Autonav::State::SystemState::DISABLED);
-		for (auto deviceState : m_deviceStates)
-		{
-			if (deviceState.second == Autonav::State::DeviceState::OPERATING && !isReadonlyNode(deviceState.first))
-			{
-				setDeviceState(deviceState.first, Autonav::State::DeviceState::READY);
-			}
-		}
-	}
-
-	bool trySwitchAutonomous(bool dontSwitch = false)
-	{
-		auto canSwitch = (
-			((m_deviceStates[Autonav::Device::DISPLAY_NODE] >= Autonav::State::DeviceState::READY) &&
-			(m_deviceStates[Autonav::Device::LOGGING] >= Autonav::State::DeviceState::READY) &&
-			(
-				(m_deviceStates[Autonav::Device::SERIAL_CAN] >= Autonav::State::DeviceState::READY) &&
-				(m_deviceStates[Autonav::Device::SERIAL_IMU] >= Autonav::State::DeviceState::READY)
-			)) || this->get_parameter("is_simulator").as_bool()
-		);
-
-		if (dontSwitch)
-		{
-			return canSwitch;
-		}
-
-		if (!canSwitch)
-		{
-			return false;
-		}
-
-		setSystemState(Autonav::State::SystemState::AUTONOMOUS);
-		setDeviceState(Autonav::Device::LOGGING, Autonav::State::DeviceState::OPERATING);
-		setDeviceState(Autonav::Device::SERIAL_CAN, Autonav::State::DeviceState::OPERATING);
-		setDeviceState(Autonav::Device::SERIAL_IMU, Autonav::State::DeviceState::OPERATING);
-		return true;
-	}
-
 	void set_system_state(const std::shared_ptr<autonav_msgs::srv::SetSystemState::Request> request, std::shared_ptr<autonav_msgs::srv::SetSystemState::Response> response)
 	{
 		if (request->state == m_systemState)
@@ -180,13 +87,13 @@ private:
 
 		if (request->state == Autonav::State::SystemState::MANUAL)
 		{
-			response->ok = trySwitchManual();
+			// response->ok = trySwitchManual();
 			return;
 		}
 
 		if (request->state == Autonav::State::SystemState::AUTONOMOUS)
 		{
-			response->ok = trySwitchAutonomous();
+			// response->ok = trySwitchAutonomous();
 			return;
 		}
 
@@ -200,47 +107,55 @@ private:
 		}
 
 		// This is bad, we should also be doing an if statement just incase we add more states later on
-		switchDisabled();
+		// switchDisabled();
 		response->ok = true;
 	}
 
 	void set_device_state(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::Request> request, std::shared_ptr<autonav_msgs::srv::SetDeviceState::Response> response)
 	{
-		auto device = (Autonav::Device)request->device;
+		auto device = request->device;
 		auto state = (Autonav::State::DeviceState)request->state;
 
-		auto displayState = m_deviceStates[Autonav::Device::DISPLAY_NODE];
-		if (displayState != Autonav::State::DeviceState::OPERATING && device != Autonav::Device::DISPLAY_NODE)
+		if (m_deviceStates.find(device) == m_deviceStates.end())
+		{
+			m_deviceStates[device] = Autonav::State::DeviceState::OFF;
+		}
+
+		if (m_deviceStates.find(Autonav::hash("autonav_display")) == m_deviceStates.end())
+		{
+			m_deviceStates[Autonav::hash("autonav_display")] = Autonav::State::DeviceState::OFF;
+		}
+		
+		auto displayState = m_deviceStates[Autonav::hash("autonav_display")];
+		if (displayState != Autonav::State::DeviceState::OPERATING && device != Autonav::hash("autonav_display"))
 		{
 			response->ok = false;
 			return;
 		}
 
-		if (state == Autonav::State::DeviceState::READY && m_forcedState == "autonomous" && !isReadonlyNode(device))
+		if (state == Autonav::State::DeviceState::READY && m_forcedState == "autonomous" && device != Autonav::hash("autonav_display"))
 		{
 			setDeviceState(device, Autonav::State::DeviceState::OPERATING);
 		} else {
 			setDeviceState(device, state);
 		}
-
-		response->ok = true;
 		
 		auto sys_msg = autonav_msgs::msg::SystemState();
 		sys_msg.state = (uint8_t)m_systemState;
 		sys_msg.is_simulator = this->get_parameter("is_simulator").as_bool();
 		m_systemStatePublisher->publish(sys_msg);
 
-		if(m_systemState == Autonav::State::SystemState::MANUAL && !trySwitchManual(true) && m_forcedState != "manual")
-		{
-			switchDisabled();
-			return;
-		}
+		// if(m_systemState == Autonav::State::SystemState::MANUAL && !trySwitchManual(true) && m_forcedState != "manual")
+		// {
+		// 	switchDisabled();
+		// 	return;
+		// }
 
-		if(m_systemState == Autonav::State::SystemState::AUTONOMOUS && !trySwitchAutonomous(true) && m_forcedState != "autonomous")
-		{
-			switchDisabled();
-			return;
-		}	
+		// if(m_systemState == Autonav::State::SystemState::AUTONOMOUS && !trySwitchAutonomous(true) && m_forcedState != "autonomous")
+		// {
+		// 	switchDisabled();
+		// 	return;
+		// }	
 	}
 
 private:
@@ -253,15 +168,7 @@ private:
 	Autonav::State::SystemState m_systemState;
 	std::string m_forcedState = "";
 	bool m_isSimulator;
-	std::map<Autonav::Device, Autonav::State::DeviceState> m_deviceStates = {{
-		{Autonav::Device::DISPLAY_NODE, Autonav::State::DeviceState::OFF},
-		{Autonav::Device::LOGGING, Autonav::State::DeviceState::OFF},
-		{Autonav::Device::MANUAL_CONTROL_STEAM, Autonav::State::DeviceState::OFF},
-		{Autonav::Device::MANUAL_CONTROL_XBOX, Autonav::State::DeviceState::OFF},
-		{Autonav::Device::SERIAL_CAN, Autonav::State::DeviceState::OFF},
-		{Autonav::Device::SERIAL_IMU, Autonav::State::DeviceState::OFF},
-		{Autonav::Device::STEAM_TRANSLATOR, Autonav::State::DeviceState::OFF}
-	}};
+	std::map<int32_t, Autonav::State::DeviceState> m_deviceStates = {};
 };
 
 int main(int argc, char **argv)

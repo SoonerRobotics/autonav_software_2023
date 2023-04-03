@@ -9,7 +9,7 @@ from enum import IntEnum
 from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import GPSFeedback
 
-from autonav_libs import Device, AutoNode, LogLevel, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
+from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
 
 class Registers(IntEnum):
     IMU_READ_RATE = 0
@@ -19,7 +19,7 @@ class Registers(IntEnum):
 
 class IMUNode(AutoNode):
     def __init__(self):
-        super().__init__(Device.SERIAL_IMU, "autonav_serial_imu")
+        super().__init__("autonav_serial_imu")
         
     def setup(self):
         self.m_sensor = VnSensor()

@@ -8,7 +8,7 @@ from enum import Enum
 
 from rclpy.node import Node
 from autonav_msgs.msg import MotorInput, MotorFeedback
-from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState, LogLevel, clamp
+from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, LogLevel, clamp
 
 
 MOTOR_CONTROL_ID = 10
@@ -17,7 +17,7 @@ MOTOR_FEEDBACK_ID = 14
 
 class SerialMotors(AutoNode):
     def __init__(self):
-        super().__init__(Device.SERIAL_CAN, "autonav_serial_can")
+        super().__init__("autonav_serial_can")
 
     def setup(self):
         self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
