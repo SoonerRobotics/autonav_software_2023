@@ -95,7 +95,7 @@ class DeadReckoningFilter:
     def __init__(self, node: ParticleFilterNode):
         self.m_xSum = 0
         self.m_ySum = 0
-        self.m_thetaSum = 0
+        self.m_thetaSum = 0.0
         self.m_lastLat = None
         self.m_lastLong = None
         self.m_node = node
@@ -110,7 +110,7 @@ class DeadReckoningFilter:
     def reset(self):
         self.m_xSum = 0
         self.m_ySum = 0
-        self.m_thetaSum = 0
+        self.m_thetaSum = 0.0
         self.m_lastLat = None
         self.m_lastLong = None
         self.m_firstGPS = None

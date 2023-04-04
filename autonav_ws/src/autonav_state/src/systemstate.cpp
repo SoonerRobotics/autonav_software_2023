@@ -93,6 +93,21 @@ private:
 		m_systemStatePublisher->publish(msg);
 	}
 
+	bool switchToManual()
+	{
+		setSystemState(Autonav::State::SystemState::MANUAL);
+
+		// Switch all devices to operating if their state is ready
+		for (auto& device : m_deviceStates)
+		{
+			if (device.second == Autonav::State::DeviceState::READY)
+			{
+				setDeviceState(device.first, Autonav::State::DeviceState::OPERATING);
+			}
+		}
+		return true;
+	}
+
 	void set_system_state(const std::shared_ptr<autonav_msgs::srv::SetSystemState::Request> request, std::shared_ptr<autonav_msgs::srv::SetSystemState::Response> response)
 	{
 		if (request->state == m_systemState)
@@ -103,7 +118,7 @@ private:
 
 		if (request->state == Autonav::State::SystemState::MANUAL)
 		{
-			// response->ok = trySwitchManual();
+			response->ok = switchToManual();
 			return;
 		}
 

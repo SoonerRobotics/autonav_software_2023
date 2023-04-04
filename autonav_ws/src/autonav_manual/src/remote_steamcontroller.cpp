@@ -104,7 +104,7 @@ public:
 		}
 
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = -clamp(throttle + steering * offset, -maxSpeed, maxSpeed);
+		package.left_motor = clamp(throttle + steering * offset, -maxSpeed, maxSpeed);
 		package.right_motor = clamp(throttle - steering * offset, -maxSpeed, maxSpeed);
 		m_motorPublisher->publish(package);
 	}

@@ -32,6 +32,10 @@ class PathResolverNode(AutoNode):
         if self.m_position.theta < 0:
             self.m_position.theta += 360
 
+        self.m_position.theta = 0.0
+        self.m_position.x = 0.0
+        self.m_position.y = 0.0
+
     def getAngleDifference(self, to_angle, from_angle):
         delta = to_angle - from_angle
         delta = (delta + math.pi) % (2 * math.pi) - math.pi
@@ -61,6 +65,7 @@ class PathResolverNode(AutoNode):
         motor_pkt.left_motor = 0.0
         motor_pkt.right_motor = 0.0
 
+        self.log(f"cur_pos: {cur_pos}, lookahead: {lookahead}")
         if self.m_backCount == -1 and (lookahead is not None and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1):
             # Get heading to to lookahead from current position
             heading_to_lookahead = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
@@ -70,6 +75,7 @@ class PathResolverNode(AutoNode):
             # Get difference in our heading vs heading to lookahead
             # Normalize error to -1 to 1 scale
             error = self.getAngleDifference(heading_to_lookahead, self.m_position.theta) / math.pi
+            self.log(f"error: {error}")
 
             # print(f"am at {cur_pos[0]:0.02f},{cur_pos[1]:0.02f}, want to go to {lookahead[0]:0.02f},{lookahead[1]:0.02f}")
             # print(f"angle delta: {error * 180:0.01f}")

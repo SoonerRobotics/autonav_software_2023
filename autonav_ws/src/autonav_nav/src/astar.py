@@ -24,7 +24,7 @@ verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
 orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
-sim_waypoints = [(35.194840, -97.438550)]
+sim_waypoints = [(35.19488, -97.43862)]
 
 
 def get_angle_diff(to_angle, from_angle):
