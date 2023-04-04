@@ -42,7 +42,7 @@ class SerialMotors(AutoNode):
 
     def onCanMessageReceived(self, msg):
         if msg.arbitration_id == MOTOR_FEEDBACK_ID:
-            deltaTheta, deltaY, deltaX  = struct.unpack("hhh", msg.data)
+            deltaX, deltaY, deltaTheta  = struct.unpack("hhh", msg.data)
             feedback = MotorFeedback()
             feedback.delta_theta = deltaTheta / 10000.0
             feedback.delta_y = deltaY / 10000.0
