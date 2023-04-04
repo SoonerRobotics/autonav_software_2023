@@ -1008,8 +1008,8 @@ private:
 	int m_rawCameraWidth, m_rawCameraHeight;
 
 	// Preferences
-	bool m_showEstimatedPose = false;
-	bool m_showMotorData = false;
+	bool m_showEstimatedPose = true;
+	bool m_showMotorData = true;
 	bool m_showGpsData = false;
 	bool m_showImuData = false;
 };
