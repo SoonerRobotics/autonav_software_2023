@@ -97,9 +97,9 @@ class Expandifier(AutoNode):
         self.m_configPublisher.publish(new_msg)
         
         # Show it using matplotlib
-        plt.imshow(np.array(cfg_space).reshape(80, 80))
-        plt.show(block = False)
-        plt.pause(0.01)
+        # plt.imshow(np.array(cfg_space).reshape(80, 80))
+        # plt.show(block = False)
+        # plt.pause(0.01)
 
 def main():
     rclpy.init()

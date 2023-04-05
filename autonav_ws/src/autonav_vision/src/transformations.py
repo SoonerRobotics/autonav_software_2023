@@ -87,9 +87,9 @@ class ImageTransformer(AutoNode):
         msg = OccupancyGrid(info = g_mapData, data = flat)
         
         # Visualize using plt
-        plt.imshow(datamap, cmap='gray')
-        plt.show(block = False)
-        plt.pause(0.001)
+        # plt.imshow(datamap, cmap='gray')
+        # plt.show(block = False)
+        # plt.pause(0.001)
         
         self.m_laneMapPublisher.publish(msg)
 
