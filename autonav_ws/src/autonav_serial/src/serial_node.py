@@ -51,8 +51,8 @@ class SerialMotors(AutoNode):
             self.m_feedbackPublisher.publish(feedback)  
 
         if msg.arbitration_id == CAN_LOGGING_ID:
-            msg = struct.unpack("s", msg.data)
-            self.log(f"CAN: {msg}")
+            h1, h2, h3, h4 = struct.unpack("hhhh", msg.data)
+            self.log(f"{h1}, {h2}, {h3}, {h4}")
 
     def canWorker(self):
         try:
