@@ -38,8 +38,8 @@ public:
 		m_motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 
 		config.write(Registers::TIMEOUT_DELAY, 500);
-		config.write(Registers::STEERING_DEADZONE, 0.1f);
-		config.write(Registers::THROTTLE_DEADZONE, 0.1f);
+		config.write(Registers::STEERING_DEADZONE, 0.04f);
+		config.write(Registers::THROTTLE_DEADZONE, 0.04f);
 		config.write(Registers::MAX_SPEED, 2.2f);
 		config.write(Registers::SPEED_OFFSET, 0.6f);
 
