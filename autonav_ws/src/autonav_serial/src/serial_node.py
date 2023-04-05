@@ -13,6 +13,7 @@ from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, LogLevel, cla
 
 MOTOR_CONTROL_ID = 10
 MOTOR_FEEDBACK_ID = 14
+CAN_LOGGING_ID = 73
 
 
 class SerialMotors(AutoNode):
@@ -48,6 +49,10 @@ class SerialMotors(AutoNode):
             feedback.delta_y = deltaY / 10000.0
             feedback.delta_x = deltaX / 10000.0
             self.m_feedbackPublisher.publish(feedback)  
+
+        if msg.arbitration_id == CAN_LOGGING_ID:
+            msg = struct.unpack("s", msg.data)
+            self.log(f"CAN: {msg}")
 
     def canWorker(self):
         try:
