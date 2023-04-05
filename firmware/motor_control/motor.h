@@ -6,9 +6,11 @@
 #define ServoMinWidth 1000
 #define ServoMaxWidth 2000
 
+#define CALCON 1.5f
+
 #define MOTOR_UPDATE_RATE 100            // Frequency that motor PID is updated (Hz)
 #define MAX_SPEED 2.2f                   // (m/s)
-#define PULSES_PER_REV (600.0f * 12 * 2 * 24 / 16)  // (revs)
+#define PULSES_PER_REV (600.0f * 60 / 16)  // (revs)
 //#define LINEAR_PER_REV 0.2054f // Wheel radius (m) old
 #define LINEAR_PER_REV 0.2667f  // Wheel radius (m)
 #define MILLIS_TO_FULL 250      // Milliseconds to go from 0 output speed to 1
@@ -116,7 +118,7 @@ public:
 
   void update() {
     //printf("pulses %d", this->pulses);
-    float instantaneousSpeed = this->pulses / (float)PULSES_PER_REV * 2.0 * PI * LINEAR_PER_REV * MOTOR_UPDATE_RATE;
+    float instantaneousSpeed = this->pulses / (float)PULSES_PER_REV * 2.0 * PI * LINEAR_PER_REV * MOTOR_UPDATE_RATE / CALCON;
     if (this->reverse) {
       instantaneousSpeed = -instantaneousSpeed;
     }
@@ -144,8 +146,11 @@ public:
     motorServo.write(servoOut);
   }
   float getDistance() {
-    float temp = this->delta / PULSES_PER_REV * LINEAR_PER_REV * PI * 2.0 * 2.0;
+    float temp = this->delta / (float)PULSES_PER_REV * LINEAR_PER_REV * PI * 2.0 /CALCON;
     this->delta = 0;
+    if(this->reverse){
+      temp = -temp;
+    }
     return temp;
   }
 

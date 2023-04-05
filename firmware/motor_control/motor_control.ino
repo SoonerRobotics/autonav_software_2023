@@ -11,6 +11,7 @@ const int LED0 = 1;
 const int encoderLeftA = 3;
 const int encoderLeftB = 2;
 
+
 const int encoderRightA = 5;
 const int encoderRightB = 4;
 
@@ -38,7 +39,7 @@ distance motorDistances;
 motorCommand motoCommand;
 
 
-motor leftMotor(leftMotorPwmPin, false);
+motor leftMotor(leftMotorPwmPin, true);
 motor rightMotor(rightMotorPwmPin, false);
 
 void configureCan();
@@ -117,6 +118,12 @@ void loop() {
   if (FIFTY_MS_FLAG ) {
     float left_distance = leftMotor.getDistance();
     float right_distance = rightMotor.getDistance();
+
+    Serial.print("Left Dist: ");
+    Serial.println(left_distance);
+
+    Serial.print("Right Dist: ");
+    Serial.println(right_distance);
     
     don = don + (right_distance - left_distance) * DIAMETER_FROM_CENTER_WHEEL / DISTANCE_BETWEEN_WHEELS; //diametrer of center of wheel and diameter between wheel
     dxn = dxn + (left_distance + right_distance) / 2 * cos(don);
@@ -198,22 +205,16 @@ void onCanRecieve() {
       motoCommand = *(motorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
       leftMotor = ((float)motoCommand.setpointLeft)/(float)SPEED_SCALE_FACTOR;
       rightMotor = ((float)motoCommand.setpointRight)/(float)SPEED_SCALE_FACTOR;
-      // leftSpeedSetpoint = (frame.data[0] << 8 & 0xFF00) | frame.data[1];
-      // rightSpeedSetpoint = (frame.data[2] << 8 & 0xFF00) | frame.data[3];
-      
       break;
   }
-  // Serial.print("LEFT: ");
-  // Serial.println(leftSpeedSetpoint);
-  // Serial.print("RIGHT: ");
-  // Serial.println(rightSpeedSetpoint);
-  // printCanMsg(frame);
 }
 
 void sendCanOdomMsgOut(){
   outFrame.id = ODOM_OUT_ID;
   outFrame.len = ODOM_OUT_LEN;
   memcpy(outFrame.data, &motorDistances, ODOM_OUT_LEN );
+
+  //printCanMsg(outFrame);
 
   const bool ok = can.tryToSend (outFrame) ;
 
@@ -243,7 +244,5 @@ void resetDelta(float &dxn, float &dyn, float &don){
   motorDistances.xn = 0;
   motorDistances.yn = 0;
   motorDistances.on = 0;
-}
-void updateMsgData() {
 }
 
