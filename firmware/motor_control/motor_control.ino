@@ -67,7 +67,9 @@ short rightSpeedSetpoint;
 
 TickTwo timer1(setFiveMilliSecFlag, 5);      //TODO: CHANGE 5 ms PLACE HOLDERS
 TickTwo timer2(setTenMilliSecFlag, 10);      //TODO: CHANGE 10 ms PLACE HOLDERS
-TickTwo timer3(setFiftyMilliSecFlag, 50);  //TODO: CHANGE 50 ms PLACE HOLDERS CURRENTLY 1 SEC for debugging
+TickTwo timer3(setFiftyMilliSecFlag, 50);  //TODO: CHANGE 50 ms PLACE HOLDERS 
+TickTwo timer4(setFiveHundMilliSecFlag, 500);  //TODO: CHANGE 500 ms
+
 
 static uint32_t gReceivedFrameCount = 0;
 
@@ -96,6 +98,7 @@ void setup() {
   timer1.start();
   timer2.start();
   timer3.start();
+  timer4.start();
 }
 void loop() {
   updateTimers();
@@ -107,7 +110,22 @@ void loop() {
     leftMotor.update();
     rightMotor.update();
 
+    float left_distance = leftMotor.getDistance();
+    float right_distance = rightMotor.getDistance();
 
+    don = don + (right_distance - left_distance) * DIAMETER_FROM_CENTER_WHEEL / DISTANCE_BETWEEN_WHEELS * 10; //diametrer of center of wheel and diameter between wheel
+    dxn = dxn + (left_distance + right_distance) / 2 * cos(don);
+    dyn = dyn + (left_distance + right_distance) / 2 * sin(don); 
+
+    motorDistances.xn = motorDistances.xn + (short)(dxn * ODOM_SCALE_FACTOR);
+    motorDistances.yn = motorDistances.yn + (short)(dyn * ODOM_SCALE_FACTOR);
+    motorDistances.on = motorDistances.on + (short)(don * ODOM_SCALE_FACTOR);
+
+    // outFrame.id = 73;
+    // outFrame.len = 8;
+    // memcpy(outFrame.data, &motorDistances, 6 );
+    //printCanMsg(outFrame);
+  
     // Serial.println("Right speed");
     // Serial.println(rightMotor.getSpeedEstimate());
     // Serial.println("Left speed");
@@ -116,35 +134,26 @@ void loop() {
     TEN_MS_FLAG = false;
   }
   if (FIFTY_MS_FLAG ) {
-    float left_distance = leftMotor.getDistance();
-    float right_distance = rightMotor.getDistance();
 
-    Serial.print("Left Dist: ");
-    Serial.println(left_distance);
+    // Serial.print("Left Dist: ");
+    // Serial.println(left_distance);
 
-    Serial.print("Right Dist: ");
-    Serial.println(right_distance);
+    // Serial.print("Right Dist: ");
+    // Serial.println(right_distance);
     
-    don = don + (right_distance - left_distance) * DIAMETER_FROM_CENTER_WHEEL / DISTANCE_BETWEEN_WHEELS; //diametrer of center of wheel and diameter between wheel
-    dxn = dxn + (left_distance + right_distance) / 2 * cos(don);
-    dyn = dyn + (left_distance + right_distance) / 2 * sin(don); 
-
-    motorDistances.xn = (short)(dxn * ODOM_SCALE_FACTOR);
-    motorDistances.yn = (short)(dyn * ODOM_SCALE_FACTOR);
-    motorDistances.on = (short)(don * ODOM_SCALE_FACTOR);
-
     sendCanOdomMsgOut();
 
     resetDelta(dxn, dyn, don);
-    
-    blinky = !blinky;
-    digitalWrite(LED0, blinky);
 
     // Serial.print("Right speed: ");
     // Serial.println(right_distance);
     // Serial.print("Left speed: ");
-    // Serial.println(left_distance);
+    // Serial.println(left_distance);    
+
     FIFTY_MS_FLAG = false;
+  }
+  if(FIVE_HUND_MS_FLAG){
+    FIVE_HUND_MS_FLAG = false;
   }
 }
 
@@ -152,6 +161,7 @@ void updateTimers() {
   timer1.update();
   timer2.update();
   timer3.update();
+  timer4.update();
 }
 
 void configureCan() {
@@ -175,8 +185,8 @@ void configureCan() {
 }
 
 void onCanRecieve() {
-  canBlinky = !canBlinky;
-  digitalWrite(CANLED, canBlinky);
+  // canBlinky = !canBlinky;
+  // digitalWrite(CANLED, canBlinky);
 
   can.isr();
   can.receive(frame);  

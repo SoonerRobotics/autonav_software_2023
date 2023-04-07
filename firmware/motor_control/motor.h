@@ -6,7 +6,7 @@
 #define ServoMinWidth 1000
 #define ServoMaxWidth 2000
 
-#define CALCON 1.5f
+#define CALCON 4.0f
 
 #define MOTOR_UPDATE_RATE 100            // Frequency that motor PID is updated (Hz)
 #define MAX_SPEED 2.2f                   // (m/s)
@@ -49,7 +49,7 @@ class motor {
   volatile int delta = 0;
 
   // equations
-  float kp = 0.05f;
+  float kp = 0.1f;
   float ki = 0.0f;
   float kd = 0.0f;
   bool reverse = false;
