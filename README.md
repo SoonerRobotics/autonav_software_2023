@@ -3,17 +3,28 @@
 Software for the 2023 [Intelligent Ground Vehicle Competition](http://www.igvc.org/), AutoNav challenge, the **Weeb Wagon**.  
 We are using [ROS2 Humble](https://docs.ros.org/en/humble/index.html) on [Ubuntu 22.04](https://releases.ubuntu.com/22.04/).
 
-## Contribution
+## Cloning
+When you clone this repository, it is critical you clone with submodules
+```bash
+git clone git@github.com:SoonerRobotics/autonav_software_2023.git --recurse-submodules
+```
 
-See [contribution.md](/docs/contribution.md) for more details.
+## Dependencies
+
+To setup all dependencies, run the following two commands. It is **CRITICAL** you do **NOT** run these commmands as **sudo**
+```bash
+cd setup
+./setup.sh
+```
+
+Additionally, you will need to install OpenCV on your system. **TODO: FILL THIS IN LATER**
 
 ## Building
 
 ```bash
-source /opt/ros/humble/setup.sh
-
+source /opt/ros/humble/setup.bash
 colcon build
-source /install/setup.sh
+source /install/setup.bash
 ```
 
 ## Manual/Remote Control
@@ -23,10 +34,29 @@ Follow the steps in [building](#building) and then run the following command
 ros2 launch autonav_launch managed_manual.xml
 ```
 
+Or, for the steam controller
+```bash
+ros2 launch autonav_launch managed_manual_steam.xml
+```
 ## VSCode
 
-VSCode has a fantastic [extension](https://marketplace.visualstudio.com/items?itemName=ms-iot.vscode-ros) that supports ROS development. On top of this, running code the following way can ensure you are getting the most support.  
-First, follow the [building](#building) steps and then run the following command
-```bash
-code .
+To edit the software with Visual Studio Code, please install the ros extension and open VSCode through the command line via `code` after running all steps under [Building](#building). To get proper intellisense for C++, create the following file: `.vscode/c_cpp_properties.json`
+```json
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/ros/humble/include/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
 ```

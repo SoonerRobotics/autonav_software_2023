@@ -17,13 +17,25 @@ set(msg_files
   "msg/MotorInput.msg"
   "msg/IMUData.msg"
   "msg/SteamInput.msg"
+  "msg/ConBusInstruction.msg"
+  "msg/GPSFeedback.msg"
+  "msg/DeviceState.msg"
+  "msg/SystemState.msg"
+  "msg/Position.msg"
+  "msg/PerfResult.msg"
+  "msg/Waypoint.msg"
+)
+
+set(srv_files
+  "srv/SetSystemState.srv"
+  "srv/SetDeviceState.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
+  ${srv_files}
   DEPENDENCIES builtin_interfaces
 )
 
 ament_export_dependencies(rosidl_default_runtime)
-
 ament_package()

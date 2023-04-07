@@ -1,0 +1,4 @@
+int64 device
+int32 state
+---
+bool ok

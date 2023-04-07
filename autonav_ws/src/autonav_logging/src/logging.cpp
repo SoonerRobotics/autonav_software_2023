@@ -8,17 +8,37 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "autonav_msgs/msg/log.hpp"
+#include "autonav_libs/common.h"
 
 using std::placeholders::_1;
 
 namespace AutonavConstants
 {
-	std::string LOG_PATH = "/home/autonav/logs";
+	std::string LOG_PATH = "/home/{user}/logs/";
 	std::string LOG_FILE_EXT = ".log";
 	std::string TOPIC = "/autonav/logging";
 }
 
 long startup_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+std::string savedPath = "";
+
+std::string get_log_path()
+{
+	if (savedPath != "")
+	{
+		return savedPath;
+	}
+
+	std::string path = AutonavConstants::LOG_PATH;
+	std::string::size_type i = path.find("{user}");
+	if (i != std::string::npos)
+	{
+		path.replace(i, 6, getenv("USER"));
+	}
+
+	savedPath = path;
+	return path;
+}
 
 void ensure_directory_exists(const std::string &path)
 {
@@ -34,8 +54,7 @@ void ensure_file_exists(const std::string &file)
 
 const std::string generateFilePath(const std::string &name)
 {
-	// Create a file path that follows the format: /tmp/autonav/logs/<date>/<name>.log
-	std::string path = AutonavConstants::LOG_PATH + std::to_string(startup_time);
+	std::string path = get_log_path() + std::to_string(startup_time);
 	ensure_directory_exists(path);
 	std::string file = path + "/" + name + AutonavConstants::LOG_FILE_EXT;
 	ensure_file_exists(file);
@@ -49,12 +68,18 @@ void append_to_file(const std::string &name, const std::string &contents)
 	out.close();
 }
 
-class JoySubscriber : public rclcpp::Node
+class LoggingNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoySubscriber() : Node("autonav_logging")
+	LoggingNode() : AutoNode("autonav_logging")
 	{
-		subscription_ = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&JoySubscriber::on_log_received, this, _1));
+		m_steamSubscription = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&LoggingNode::on_log_received, this, _1));
+	}
+
+	void setup() override
+	{
+		this->setDeviceState(Autonav::State::DeviceState::READY);
+		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
 	}
 
 private:
@@ -63,13 +88,13 @@ private:
 		RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.file.c_str(), msg.data.c_str());
 		append_to_file(msg.file, msg.data);
 	}
-	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr subscription_;
+	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr m_steamSubscription;
 };
 
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<JoySubscriber>());
+	rclcpp::spin(std::make_shared<LoggingNode>());
 	rclcpp::shutdown();
 	return 0;
 }

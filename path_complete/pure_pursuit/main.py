@@ -1,6 +1,6 @@
 import pure_pursuit
 import pursuit_test
-
+import rclpy
 import random
 
 # returns a random robot position, random set of waypoints, and random radius

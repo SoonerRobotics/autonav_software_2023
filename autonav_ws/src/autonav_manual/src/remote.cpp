@@ -2,6 +2,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
+#include "autonav_libs/common.h"
 
 #define MAX_SPEED 1.4
 
@@ -16,15 +17,15 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-class JoySubscriber : public rclcpp::Node
+class LoggingNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoySubscriber() : Node("autonav_manual_remote")
-	{
-		subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
-			"/joy", 10, std::bind(&JoySubscriber::on_joy_received, this, _1));
+	LoggingNode() : AutoNode("autonav_manual_xbox") {}
 
-		motor_publisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
+	void setup() override
+	{
+		m_steamSubscription = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 10, std::bind(&LoggingNode::on_joy_received, this, _1));
+		m_motorPublisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
 	}
 
 private:
@@ -48,17 +49,17 @@ private:
 
 		package.left_motor = clamp(throttle - steering * 0.6, -MAX_SPEED, MAX_SPEED);
 		package.right_motor = clamp(throttle + steering * 0.6, -MAX_SPEED, MAX_SPEED);
-		motor_publisher->publish(package);
+		m_motorPublisher->publish(package);
 	}
 
-	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr motor_publisher;
-	rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
+	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr m_motorPublisher;
+	rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr m_steamSubscription;
 };
 
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<JoySubscriber>());
+	rclcpp::spin(std::make_shared<LoggingNode>());
 	rclcpp::shutdown();
 	return 0;
 }

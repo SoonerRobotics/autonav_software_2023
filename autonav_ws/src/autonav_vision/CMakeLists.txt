@@ -14,7 +14,8 @@ ament_python_install_package(${PROJECT_NAME})
 
 # Install Python executables
 install(PROGRAMS
-	src/cv_vision.py
+	src/transformations.py
+	src/expandify.py
 	DESTINATION lib/${PROJECT_NAME}
 	)
 
