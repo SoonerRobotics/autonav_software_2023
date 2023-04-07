@@ -20,7 +20,7 @@ class PathResolverNode(AutoNode):
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
         self.m_purePursuit = PurePursuit()
-        self.m_backCount = -1
+        self.m_idx = 0
         self.m_pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
         self.m_positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
         self.m_motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
@@ -28,13 +28,7 @@ class PathResolverNode(AutoNode):
 
     def onPositionReceived(self, msg):
         self.m_position = msg
-        self.m_position.theta = math.degrees(self.m_position.theta)
-        if self.m_position.theta < 0:
-            self.m_position.theta += 360
-
-        self.m_position.theta = 0.0
-        self.m_position.x = 0.0
-        self.m_position.y = 0.0
+        self.m_position.theta = self.m_position.theta
 
     def getAngleDifference(self, to_angle, from_angle):
         delta = to_angle - from_angle
@@ -51,59 +45,35 @@ class PathResolverNode(AutoNode):
             return
 
         cur_pos = (self.m_position.x, self.m_position.y)
-
-        lookahead = None
-        radius = 0.7 # Starting radius
-
-        while lookahead is None and radius <= 4: # Look until we hit 3 meters max
-            lookahead = self.m_purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
-            radius *= 1.2
-
-        draw_pp(cur_pos, lookahead, self.m_purePursuit.path)
-
+        points = [(3, 0), (3, 3), (0, 3), (0, 0)]
+        lookahead = points[self.m_idx]
         motor_pkt = MotorInput()
         motor_pkt.left_motor = 0.0
         motor_pkt.right_motor = 0.0
 
-        self.log(f"cur_pos: {cur_pos}, lookahead: {lookahead}")
-        if self.m_backCount == -1 and (lookahead is not None and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1):
-            # Get heading to to lookahead from current position
-            heading_to_lookahead = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
+        # If we have a lookahead point, we can calculate the angle difference
+        if lookahead is None:
+            return
+        
+        angle_diff = self.getAngleDifference(math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]), self.m_position.theta)
+        dist = math.sqrt((lookahead[0] - cur_pos[0]) ** 2 + (lookahead[1] - cur_pos[1]) ** 2)
 
-            # print(f"h_2_l: {heading_to_lookahead * 180 / (math.pi)}")
+        if dist < 0.1:
+            self.m_idx += 1
+            if self.m_idx >= len(points):
+                self.m_idx = 0
 
-            # Get difference in our heading vs heading to lookahead
-            # Normalize error to -1 to 1 scale
-            error = self.getAngleDifference(heading_to_lookahead, self.m_position.theta) / math.pi
-            self.log(f"error: {error}")
-
-            # print(f"am at {cur_pos[0]:0.02f},{cur_pos[1]:0.02f}, want to go to {lookahead[0]:0.02f},{lookahead[1]:0.02f}")
-            # print(f"angle delta: {error * 180:0.01f}")
-
-            # print(f"error is {error}")
-            # if abs(error) < 2.0:
-            #     error = 0
-
-            # Base forward velocity for both wheels
-            forward_speed = 0.9 * (1 - abs(error))**5
-
-            # Define wheel linear velocities
-            # Add proprtional error for turning.
-            # TODO: PID instead of just P
-            motor_pkt.left_motor = (forward_speed - clamp(0.5 * error, -0.25, 0.25))
-            motor_pkt.right_motor = (forward_speed + clamp(0.5 * error, -0.25, 0.25))
-
+        # If we're within 5 degrees of the angle, we can go straight
+        if abs(angle_diff) < math.radians(5):
+            motor_pkt.left_motor = 1.0
+            motor_pkt.right_motor = 1.0
         else:
-            # We couldn't find a suitable direction to head, stop the robot.
-            if self.m_backCount == -1:
-                self.m_backCount = 5
-            else:
-                self.m_backCount -= 1
-            
-            motor_pkt.left_motor = -0.35
-            motor_pkt.right_motor = -0.25
+            speed = 0.8 * (1 - abs(angle_diff) / math.pi)
+            motor_pkt.left_motor = (speed - clamp(0.3 * angle_diff, -0.3, 0.3)) * clamp(0 if dist < 0.1 else dist, 0, 1.0)
+            motor_pkt.right_motor = (speed + clamp(0.3 * angle_diff, -0.3, 0.3)) * clamp(0 if dist < 0.1 else dist, 0, 1.0)
 
         self.m_motorPublisher.publish(motor_pkt)
+
 
 def main():
     rclpy.init()

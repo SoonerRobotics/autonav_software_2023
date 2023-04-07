@@ -62,10 +62,11 @@ class ImageTransformer(AutoNode):
         return (blur, blur)
 
     def region_of_interest(self, img, vertices):
-        mask = np.zeros_like(img) * 255
+        mask = np.ones_like(img) * 255
         match_mask_color = 0
         cv2.fillPoly(mask, vertices, match_mask_color)
-        return cv2.bitwise_and(img, mask)
+        masked_image = cv2.bitwise_and(img, mask)
+        return masked_image
     
     def flatten_image(self, img):
         top_left = (int)(img.shape[1] * 0.26), (int)(img.shape[0])
@@ -125,16 +126,13 @@ class ImageTransformer(AutoNode):
         width = img.shape[1]
         region_of_interest_vertices = [
             (0, height),
-            (width / 2, height / 2 + 120),
+            (width / 2, height / 2 + 60),
             (width, height),
         ]
-        
-        map_image = mask
-        if self.config.readBool(Register.APPLY_REGION_OF_INTEREST):
-            map_image = self.region_of_interest(mask, np.array([region_of_interest_vertices], np.int32))
+        mask = self.region_of_interest(mask, np.array([region_of_interest_vertices], np.int32))
         
         if self.config.readBool(Register.APPLY_FLATTENING):
-            map_image = self.flatten_image(mask)
+            mask = self.flatten_image(mask)
         
         # Convert mask to RGB for preview
         preview_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
@@ -144,7 +142,7 @@ class ImageTransformer(AutoNode):
         self.m_lanePreviewPublisher.publish(preview_msg)
         
         # Actually generate the map
-        self.generate_occupancy_map(map_image)
+        self.generate_occupancy_map(mask)
 
 def main():
     rclpy.init()

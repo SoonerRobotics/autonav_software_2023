@@ -558,7 +558,7 @@ public:
 
 	void operate() override
 	{
-		m_renderClock = this->create_wall_timer(std::chrono::milliseconds(1000 / 5), std::bind(&DisplayNode::render, this));
+		m_renderClock = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&DisplayNode::render, this));
 	}
 
 	bool setup_imgui()

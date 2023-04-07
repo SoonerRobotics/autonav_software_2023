@@ -42,6 +42,7 @@ class AStarNode(AutoNode):
         self.m_position = None
 
     def setup(self):
+        global first_waypoints_time
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
@@ -49,6 +50,8 @@ class AStarNode(AutoNode):
         
         self.setDeviceState(DeviceStateEnum.READY)
         self.setDeviceState(DeviceStateEnum.OPERATING)
+
+        first_waypoints_time = time.time()
 
     def onPoseReceived(self, msg: Position):
         self.m_position = msg
@@ -58,8 +61,8 @@ class AStarNode(AutoNode):
         if self.m_position is None or cost_map is None:
             return
         
-        robot_pos = (40, 78)
-        path = self.find_path_to_point(robot_pos, best_pos, cost_map, 80, 80)
+        robot_pos = (0, 0)
+        path = self.find_path_to_point(robot_pos, (2, 0), cost_map, 80, 80)
         
         if path is not None:
             global_path = Path()
