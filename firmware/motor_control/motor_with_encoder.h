@@ -11,8 +11,9 @@ public:
     void setup();
 
     void pulseEncoder();
-    void setOutput(float control);
+    int getPulses();
 
+    void setOutput(float control);
     void setMinOutput(float minControl)
 
 private:
@@ -25,6 +26,7 @@ private:
     const uint8_t pin_EncoderB_;
     const bool reversed_;
 
+    int encoder_pulses_ = 0;
     int previous_Encoder_State_ = 0;
 };
 
@@ -50,6 +52,7 @@ inline void MotorWithEncoder::setOutput(float control) {
     servoController_.write(servoOut);
 }
 
+
 inline void MotorWithEncoder::pulseEncoder() {
     int encoderA = digitalRead(pin_EncoderA_);
     int encoderB = digitalRead(pin_EncoderB_);
@@ -58,14 +61,21 @@ inline void MotorWithEncoder::pulseEncoder() {
 
     //11->00->11->00 is counter clockwise rotation or "forward".
     if ((previous_Encoder_State_ == 0x3 && current_Encoder_State_ == 0x0) || (previous_Encoder_State_ == 0x0 && current_Encoder_State_ == 0x3)) {
-      this->pulses++;
+      encoder_pulses_++;
     }
     //10->01->10->01 is clockwise rotation or "backward".
     else if ((previous_Encoder_State_ == 0x2 && current_Encoder_State_ == 0x1) || (previous_Encoder_State_ == 0x1 && current_Encoder_State_ == 0x2)) {
-      this->pulses--;
+      encoder_pulses_--;
     }
 
     previous_Encoder_State_ = current_Encoder_State_;
 }
+
+inline int MotorWithEncoder::getPulses() {
+    int temp = encoder_pulses_;
+    encoder_pulses_ = 0;
+    return temp;
+}
+
 
 #endif
