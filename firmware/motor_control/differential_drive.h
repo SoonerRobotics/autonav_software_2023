@@ -6,7 +6,7 @@
 class DifferentialDrive {
 
 public:
-    DifferentialDrive(float update_period);
+    DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_rate);
 
     void setOutput(float forward_velocity, float angular_velocity);
 
@@ -56,7 +56,8 @@ private:
     float pulsesToRadians_(int pulses);
 };
 
-inline DifferentialDrive::DifferentialDrive(float update_period) : update_period_(update_period) {}
+inline DifferentialDrive::DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_rate)
+    : update_period_(update_period), left_motor_(left_motor), right_motor_(right_motor) {}
 
 inline void DifferentialDrive::setOutput(float forward_velocity, float angular_velocity) {
     forward_velocity_setpoint_ = forward_velocity;
