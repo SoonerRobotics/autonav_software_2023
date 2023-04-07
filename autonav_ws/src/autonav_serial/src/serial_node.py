@@ -93,7 +93,7 @@ class SerialMotors(AutoNode):
         # leftMotorSpeed = (input.left_motor / WHEEL_RADIUS) - (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
         # rightMotorSpeed = (input.left_motor / WHEEL_RADIUS) + (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
 
-        packed_data = struct.pack("hh", input.left_motor, input.right_motor)
+        packed_data = struct.pack("hh", int(input.left_motor * 1000.0), int(input.right_motor * 1000.0))
         can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
         try:
