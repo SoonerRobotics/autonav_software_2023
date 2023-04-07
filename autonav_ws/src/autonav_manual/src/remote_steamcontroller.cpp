@@ -103,9 +103,16 @@ public:
 			steering = real * maxSpeed;
 		}
 
+		// autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
+		// package.left_motor = clamp(-throttle + steering * offset, -maxSpeed, maxSpeed);
+		// package.right_motor = clamp(-throttle - steering * offset, -maxSpeed, maxSpeed);
+		// m_motorPublisher->publish(package);
+
+		auto forward_speed = clamp(-throttle, -maxSpeed, maxSpeed);
+		auto turn_angle_rads = clamp(steering, -maxSpeed, maxSpeed);
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = clamp(-throttle + steering * offset, -maxSpeed, maxSpeed);
-		package.right_motor = clamp(-throttle - steering * offset, -maxSpeed, maxSpeed);
+		package.left_motor = forward_speed;
+		package.right_motor = turn_angle_rads;
 		m_motorPublisher->publish(package);
 	}
 

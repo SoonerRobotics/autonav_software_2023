@@ -80,9 +80,20 @@ class SerialMotors(AutoNode):
         if self.getDeviceState() != DeviceState.OPERATING:
             return
 
-        left_speed = int(input.left_motor * 1000.0)
-        right_speed = int(input.right_motor * 1000.0)
-        packed_data = struct.pack("hh", left_speed, right_speed)
+        # left_speed = int(input.left_motor * 1000.0)
+        # right_speed = int(input.right_motor * 1000.0)
+        # packed_data = struct.pack("hh", left_speed, right_speed)
+        # can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
+
+        # New Motor System
+        WHEEL_RADIUS = 1
+        DIST_BETWEEN_WHEELS = 1
+        # left motor is forward speed
+        #  right motor is angular angle
+        leftMotorSpeed = (input.left_motor / WHEEL_RADIUS) - (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
+        rightMotorSpeed = (input.left_motor / WHEEL_RADIUS) + (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
+
+        packed_data = struct.pack("hh", leftMotorSpeed, rightMotorSpeed)
         can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
         try:
