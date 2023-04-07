@@ -6,6 +6,7 @@ from enum import IntEnum
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
+import time
 
 from sensor_msgs.msg import CompressedImage
 
@@ -73,8 +74,50 @@ class Circumscriber(Node):
             map_image = self.flatten_image(mask)
         
         # Convert mask to RGB for preview
-        preview_image = cv.cvtColor(mask, cv.COLOR_GRAY2RGB)
+        preview_image = mask
         cv.imshow("preview_image", preview_image)
+        cv.waitKey(5000)
+
+
+        start = time.time()
+        ret, thresh = cv.threshold(preview_image, 150, 255, 0)
+        # split the image into parts
+        h, w = thresh.shape
+        print(f"h = {h} w = {w}")
+
+        # define how many sections of the image you want to search for objects in
+        grid_sections = 4
+        sections = grid_sections // 2
+        fractional_w = w // sections
+        fractional_h = h // sections
+        grid = []
+
+        # for each grid section, find the contours and find the circles
+        # solve the grid problem
+        for i in len(grid_sections):
+            right_displacement = 0
+            left_displacement = 0
+            bottom_displacement = 0
+            top_displacement = 0
+            contours, _ = cv.findContours(thresh[fractional_w * right_displacement: fractional_w * left_displacement, fractional_h * bottom_displacement : fractional_h * top_displacement], cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+
+
+        contours, _ = cv.findContours(thresh[:fractional_w, :fractional_h], cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        print(f"Number of objects detected: {len(contours)}")
+
+        preview_image = cv.cvtColor(preview_image, cv.COLOR_GRAY2RGB)
+        for cnt in contours:
+            [x,y], radius = cv.minEnclosingCircle(cnt)
+            center = (int(x), int(y))
+            radius = int(radius)
+            self.get_logger().info(f"Circle info: center {x, y}, radius {radius}")
+            preview_image = cv.circle(preview_image, center, radius, (0,0,255), 2)
+        
+        end = time.time()
+        self.get_logger().info(f"Time to draw circles: {end - start}")
+        # Display the image
+        cv.imshow("preview_image_with_circles", preview_image)
         cv.waitKey(5000)
         preview_msg = bridge.cv2_to_compressed_imgmsg(preview_image)
         preview_msg.header = image.header
