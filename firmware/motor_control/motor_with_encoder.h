@@ -44,6 +44,10 @@ inline void MotorWithEncoder::setOutput(float control) {
     
     int servoOut = 90; // Default to braked
 
+    if (reversed_) {
+        control = -control;
+    }
+
     // If we are greater than our min control signal, set the servo output
     if ((control > 0 && control > minControl_) || (control < 0 && control < -minControl_)) {
         servoOut = 90 + control * 85;
@@ -74,6 +78,11 @@ inline void MotorWithEncoder::pulseEncoder() {
 inline int MotorWithEncoder::getPulses() {
     int temp = encoder_pulses_;
     encoder_pulses_ = 0;
+
+    if (reversed_) {
+        temp = -temp;
+    }
+
     return temp;
 }
 
