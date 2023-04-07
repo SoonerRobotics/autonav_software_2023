@@ -1,34 +1,39 @@
 #include <Servo.h>
-#include "TickTwo.h"
+#include "time.h"
 #include <ACAN2515.h>
 #include "motor.h"
 #include "common.h"
 
+//LEDs
 const int ledPin = LED_BUILTIN;
 const int CANLED = 0;
 const int LED0 = 1;
 
+//Encoder Pins
 const int encoderLeftA = 3;
 const int encoderLeftB = 2;
-
-
 const int encoderRightA = 5;
 const int encoderRightB = 4;
-
+//Motor PWM pins
 const int leftMotorPwmPin = 16;
 const int rightMotorPwmPin = 14;
 
 const int estopPin = 27;
 
-
+//SPI pins
 static const byte MCP2515_SCK = 10;   // SCK input of MCP2515
 static const byte MCP2515_MOSI = 11;  // SDI input of MCP2515
 static const byte MCP2515_MISO = 8;   // SDO output of MCP2515
-
 static const byte MCP2515_CS = 9;   // CS input of MCP2515
 static const byte MCP2515_INT = 7;  // INT output of MCP2515
 
 ACAN2515 can(MCP2515_CS, SPI1, MCP2515_INT);
+
+TickTwo timer1(setFiveMilliSecFlag, 5);      //TODO: CHANGE 5 ms PLACE HOLDERS
+TickTwo timer2(setTenMilliSecFlag, 10);      //TODO: CHANGE 10 ms PLACE HOLDERS
+TickTwo timer3(setFiftyMilliSecFlag, 50);  //TODO: CHANGE 50 ms PLACE HOLDERS 
+TickTwo timer4(setFiveHundMilliSecFlag, 500);  //TODO: CHANGE 500 ms
+
 static const uint32_t QUARTZ_FREQUENCY = 8UL * 1000UL * 1000UL;  // 8 MHz
 
 CANMessage frame;
@@ -50,43 +55,22 @@ void updateRight();
 void sendCanOdomMsgOut();
 void resetDelta(float& dxn, float& dyn, float& don);
 
-bool ledState;
-int counterUS;
-
 float dxn = 0;
 float dyn = 0;
 float don = 0;
 
-bool blinky = false;
+bool SEND_CAN_ODOM = false;
 bool canBlinky = false;
-
 
 short leftSpeedSetpoint;
 short rightSpeedSetpoint;
 
-
-TickTwo timer1(setFiveMilliSecFlag, 5);      //TODO: CHANGE 5 ms PLACE HOLDERS
-TickTwo timer2(setTenMilliSecFlag, 10);      //TODO: CHANGE 10 ms PLACE HOLDERS
-TickTwo timer3(setFiftyMilliSecFlag, 50);  //TODO: CHANGE 50 ms PLACE HOLDERS 
-TickTwo timer4(setFiveHundMilliSecFlag, 500);  //TODO: CHANGE 500 ms
-
-
-static uint32_t gReceivedFrameCount = 0;
-
-
 void setup() {
-  Serial.begin(9600);
   delay(50);
-
-  // NOTE: SPI 1 must be configured before the PWM is initilized (in this case CAN before left motor setup)
-  configureCan();
 
   leftMotor.setup();
   rightMotor.setup();
 
-  pinMode(LED0, OUTPUT);
-  pinMode(CANLED, OUTPUT);
-  pinMode(estopPin, INPUT);
   pinMode(encoderRightA, INPUT);
   pinMode(encoderRightB, INPUT);
   pinMode(encoderLeftA, INPUT);
@@ -100,12 +84,17 @@ void setup() {
   timer3.start();
   timer4.start();
 }
+void setup1(){
+  Serial.begin(9600);
+  delay(50);
+  configureCan();
+
+  pinMode(LED0, OUTPUT);
+  pinMode(CANLED, OUTPUT);
+  pinMode(estopPin, INPUT);
+}
 void loop() {
   updateTimers();
-  
-  if (FIVE_MS_FLAG) {  //TODO: CHANGE PLACE HOLDERS
-    FIVE_MS_FLAG = false;
-  }
   if (TEN_MS_FLAG) {
     leftMotor.update();
     rightMotor.update();
@@ -121,34 +110,12 @@ void loop() {
     motorDistances.yn = motorDistances.yn + (short)(dyn * ODOM_SCALE_FACTOR);
     motorDistances.on = motorDistances.on + (short)(don * ODOM_SCALE_FACTOR);
 
-    // outFrame.id = 73;
-    // outFrame.len = 8;
-    // memcpy(outFrame.data, &motorDistances, 6 );
-    //printCanMsg(outFrame);
-  
-    // Serial.println("Right speed");
-    // Serial.println(rightMotor.getSpeedEstimate());
-    // Serial.println("Left speed");
-    // Serial.println(leftMotor.getSpeedEstimate());
-
     TEN_MS_FLAG = false;
   }
   if (FIFTY_MS_FLAG ) {
-
-    // Serial.print("Left Dist: ");
-    // Serial.println(left_distance);
-
-    // Serial.print("Right Dist: ");
-    // Serial.println(right_distance);
-    
-    sendCanOdomMsgOut();
+    SEND_CAN_ODOM = true; //flag to send CAN out
 
     resetDelta(dxn, dyn, don);
-
-    // Serial.print("Right speed: ");
-    // Serial.println(right_distance);
-    // Serial.print("Left speed: ");
-    // Serial.println(left_distance);    
 
     FIFTY_MS_FLAG = false;
   }
@@ -156,14 +123,12 @@ void loop() {
     FIVE_HUND_MS_FLAG = false;
   }
 }
-
-void updateTimers() {
-  timer1.update();
-  timer2.update();
-  timer3.update();
-  timer4.update();
+void loop1(){
+  if (SEND_CAN_ODOM) {
+    sendCanOdomMsgOut();
+    SEND_CAN_ODOM = false;
+  }
 }
-
 void configureCan() {
   SPI1.setSCK(MCP2515_SCK);
   SPI1.setTX(MCP2515_MOSI);
@@ -177,55 +142,36 @@ void configureCan() {
   settings.mRequestedMode = ACAN2515Settings::NormalMode ; // Select Normal mode
   const uint16_t errorCode = can.begin(settings, onCanRecieve );
   if (errorCode == 0) {
-    Serial.print("Actual bit rate: ");
-    Serial.print(settings.actualBitRate());
-  } else {
+  }
+  else{
+    Serial.print("Error: ");
     Serial.print(errorCode);
   }
 }
-
 void onCanRecieve() {
-  // canBlinky = !canBlinky;
-  // digitalWrite(CANLED, canBlinky);
-
   can.isr();
   can.receive(frame);  
   switch (frame.id) {
     case 0:
-      roboStatus.eStop = 1;
-      roboStatus.mStop = 1;
-      roboStatus.mStart = 0;
       leftSpeedSetpoint = 0;
       rightSpeedSetpoint = 0;
-
       break;
     case 1:
-      roboStatus.eStop = 1;
-      roboStatus.mStop = 0;
-      roboStatus.mStart = 0;
       leftSpeedSetpoint = 0;
       rightSpeedSetpoint = 0;
-
       break;
 
     case 10:
-      roboStatus.eStop = 0;
-      roboStatus.mStop = 0;
-      roboStatus.mStart = 1;
       motoCommand = *(motorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
       leftMotor = ((float)motoCommand.setpointLeft)/(float)SPEED_SCALE_FACTOR;
       rightMotor = ((float)motoCommand.setpointRight)/(float)SPEED_SCALE_FACTOR;
       break;
   }
 }
-
 void sendCanOdomMsgOut(){
   outFrame.id = ODOM_OUT_ID;
   outFrame.len = ODOM_OUT_LEN;
   memcpy(outFrame.data, &motorDistances, ODOM_OUT_LEN );
-
-  //printCanMsg(outFrame);
-
   const bool ok = can.tryToSend (outFrame) ;
 
 }
@@ -244,7 +190,6 @@ void updateLeft(){
   leftMotor.pulse(digitalRead(encoderLeftA),digitalRead(encoderLeftB));
 }
 void updateRight(){
-  //Serial.printf("Right update \n");
   rightMotor.pulse(digitalRead(encoderRightA),digitalRead(encoderRightB));
 }
 void resetDelta(float &dxn, float &dyn, float &don){
@@ -254,5 +199,11 @@ void resetDelta(float &dxn, float &dyn, float &don){
   motorDistances.xn = 0;
   motorDistances.yn = 0;
   motorDistances.on = 0;
+}
+void updateTimers() {
+  timer1.update();
+  timer2.update();
+  timer3.update();
+  timer4.update();
 }
 

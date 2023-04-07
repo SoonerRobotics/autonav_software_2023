@@ -1,13 +1,4 @@
 
-
-bool FIVE_MS_FLAG = false;   //TODO : flag to keep track of 5 ms flag
-bool TEN_MS_FLAG = false;    //TODO : flag to keep track of 10 ms flag
-bool FIFTY_MS_FLAG = false;  //TODO: flag to keep track of 50 ms flag
-bool FIVE_HUND_MS_FLAG = false;
-
-uint32_t ODOM_OUT_ID = 14; 
-uint32_t ODOM_OUT_LEN = 6;
-
 //in meters
 float DIAMETER_FROM_CENTER_WHEEL = 0.138;
 float DISTANCE_BETWEEN_WHEELS = 0.44;
@@ -16,11 +7,8 @@ uint32_t SPEED_SCALE_FACTOR = 1000;
 uint32_t ODOM_SCALE_FACTOR = 10000;
 
 
-void setFiveMilliSecFlag();
-void setTenMilliSecFlag();
-void setFiftyMilliSecFlag();
-void setFiveHundMilliSecFlag();
-
+uint32_t ODOM_OUT_ID = 14; 
+uint32_t ODOM_OUT_LEN = 6;
 typedef struct{
     unsigned int eStop : 1;
     unsigned int mStop : 1;
@@ -39,19 +27,4 @@ typedef struct{
 
 
 }motorCommand;
-
-void setFiveMilliSecFlag() {
-  FIVE_MS_FLAG = true;
-}
-
-void setTenMilliSecFlag() {
-  TEN_MS_FLAG = true;
-}
-
-void setFiftyMilliSecFlag() {
-  FIFTY_MS_FLAG = true;
-}
-void setFiveHundMilliSecFlag() {
-  FIVE_HUND_MS_FLAG = true;
-}
 
