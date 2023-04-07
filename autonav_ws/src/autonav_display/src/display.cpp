@@ -702,6 +702,8 @@ public:
 					showNodeState(this, "autonav_serial_imu");
 					showNodeState(this, "autonav_serial_camera");
 					showNodeState(this, "autonav_vision_transformer");
+					showNodeState(this, "autonav_nav_resolver");
+					showNodeState(this, "autonav_nav_astar");
 					showNodeState(this, "autonav_filters");
 
 					ImGui::EndTabItem();
