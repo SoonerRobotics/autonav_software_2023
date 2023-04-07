@@ -1,7 +1,7 @@
 #ifndef MOTOR_WITH_ENCODER_H
 #define MOTOR_WITH_ENCODER_H
 
-#include <stdio. h>
+#include <stdio.h>
 
 class MotorWithEncoder {
 
@@ -14,7 +14,7 @@ public:
     int getPulses();
 
     void setOutput(float control);
-    void setMinOutput(float minControl)
+    void setMinOutput(float minControl);
 
 private:
     float minControl_ = 0.01f;
@@ -43,6 +43,14 @@ inline void MotorWithEncoder::setup() {
 inline void MotorWithEncoder::setOutput(float control) {
     
     int servoOut = 90; // Default to braked
+
+    if (control > 1) {
+      control = 1;
+    }
+
+    if (control < -1) {
+      control = -1;
+    }
 
     if (reversed_) {
         control = -control;

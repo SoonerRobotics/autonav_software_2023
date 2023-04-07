@@ -22,9 +22,7 @@ typedef  struct{
 }distance;
 
 typedef struct{
-  short setpointLeft;
-  short setpointRight;
-
-
-}motorCommand;
+  short setpoint_forward_velocity;
+  short setpoint_angular_velocity;
+} MotorCommand;
 

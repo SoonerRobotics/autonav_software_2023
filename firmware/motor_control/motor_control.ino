@@ -1,7 +1,8 @@
 #include <Servo.h>
 #include "time.h"
 #include <ACAN2515.h>
-#include "motor.h"
+#include "differential_drive.h"
+#include "motor_with_encoder.h"
 #include "common.h"
 
 //LEDs
@@ -30,7 +31,7 @@ static const byte MCP2515_INT = 7;  // INT output of MCP2515
 ACAN2515 can(MCP2515_CS, SPI1, MCP2515_INT);
 
 TickTwo timer1(setFiveMilliSecFlag, 5);      //TODO: CHANGE 5 ms PLACE HOLDERS
-TickTwo timer2(setTenMilliSecFlag, 10);      //TODO: CHANGE 10 ms PLACE HOLDERS
+TickTwo timer2(setTwentyMilliSecFlag, 20);      //TODO: CHANGE 10 ms PLACE HOLDERS
 TickTwo timer3(setFiftyMilliSecFlag, 50);  //TODO: CHANGE 50 ms PLACE HOLDERS 
 TickTwo timer4(setFiveHundMilliSecFlag, 500);  //TODO: CHANGE 500 ms
 
@@ -41,11 +42,14 @@ CANMessage outFrame;
 
 robotStatus_t roboStatus;
 distance motorDistances;
-motorCommand motoCommand;
+MotorCommand motorCommand;
 
+// motor leftMotor(leftMotorPwmPin, true);
+// motor rightMotor(rightMotorPwmPin, false);
 
-motor leftMotor(leftMotorPwmPin, true);
-motor rightMotor(rightMotorPwmPin, false);
+MotorWithEncoder leftMotor(leftMotorPwmPin, encoderLeftA, encoderLeftB, true);
+MotorWithEncoder rightMotor(rightMotorPwmPin, encoderRightA, encoderRightB, false);
+DifferentialDrive drivetrain(leftMotor, rightMotor, 0.02);
 
 void configureCan();
 void printCanMsg();
@@ -53,23 +57,19 @@ void updateMsgData();
 void updateLeft();
 void updateRight();
 void sendCanOdomMsgOut();
-void resetDelta(float& dxn, float& dyn, float& don);
-
-float dxn = 0;
-float dyn = 0;
-float don = 0;
+void resetDelta();
 
 bool SEND_CAN_ODOM = false;
 bool canBlinky = false;
 
-short leftSpeedSetpoint;
-short rightSpeedSetpoint;
+float delta_x = 0;
+float delta_y = 0;
+float delta_theta = 0;
 
 void setup() {
   delay(50);
 
-  leftMotor.setup();
-  rightMotor.setup();
+  drivetrain.setup();
 
   pinMode(encoderRightA, INPUT);
   pinMode(encoderRightB, INPUT);
@@ -95,27 +95,14 @@ void setup1(){
 }
 void loop() {
   updateTimers();
-  if (TEN_MS_FLAG) {
-    leftMotor.update();
-    rightMotor.update();
+  if (TWENTY_MS_FLAG) {
 
-    float left_distance = leftMotor.getDistance();
-    float right_distance = rightMotor.getDistance();
+    drivetrain.updateState(delta_x, delta_y, delta_theta);
 
-    don = don + (right_distance - left_distance) * DIAMETER_FROM_CENTER_WHEEL / DISTANCE_BETWEEN_WHEELS * 10; //diametrer of center of wheel and diameter between wheel
-    dxn = dxn + (left_distance + right_distance) / 2 * cos(don);
-    dyn = dyn + (left_distance + right_distance) / 2 * sin(don); 
-
-    motorDistances.xn = motorDistances.xn + (short)(dxn * ODOM_SCALE_FACTOR);
-    motorDistances.yn = motorDistances.yn + (short)(dyn * ODOM_SCALE_FACTOR);
-    motorDistances.on = motorDistances.on + (short)(don * ODOM_SCALE_FACTOR);
-
-    TEN_MS_FLAG = false;
+    TWENTY_MS_FLAG = false;
   }
   if (FIFTY_MS_FLAG ) {
     SEND_CAN_ODOM = true; //flag to send CAN out
-
-    resetDelta(dxn, dyn, don);
 
     FIFTY_MS_FLAG = false;
   }
@@ -126,6 +113,7 @@ void loop() {
 void loop1(){
   if (SEND_CAN_ODOM) {
     sendCanOdomMsgOut();
+    resetDelta();
     SEND_CAN_ODOM = false;
   }
 }
@@ -152,25 +140,20 @@ void onCanRecieve() {
   can.isr();
   can.receive(frame);  
   switch (frame.id) {
-    case 0:
-      leftSpeedSetpoint = 0;
-      rightSpeedSetpoint = 0;
-      break;
-    case 1:
-      leftSpeedSetpoint = 0;
-      rightSpeedSetpoint = 0;
-      break;
-
     case 10:
-      motoCommand = *(motorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
-      leftMotor = ((float)motoCommand.setpointLeft)/(float)SPEED_SCALE_FACTOR;
-      rightMotor = ((float)motoCommand.setpointRight)/(float)SPEED_SCALE_FACTOR;
+      motorCommand = *(MotorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
+      drivetrain.setOutput((float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
       break;
   }
 }
 void sendCanOdomMsgOut(){
   outFrame.id = ODOM_OUT_ID;
   outFrame.len = ODOM_OUT_LEN;
+
+  motorDistances.xn = delta_x * ODOM_SCALE_FACTOR;
+  motorDistances.yn = delta_y * ODOM_SCALE_FACTOR;
+  motorDistances.on = delta_theta * ODOM_SCALE_FACTOR;
+
   memcpy(outFrame.data, &motorDistances, ODOM_OUT_LEN );
   const bool ok = can.tryToSend (outFrame) ;
 
@@ -187,18 +170,18 @@ void printCanMsg(CANMessage frame) {
   Serial.println("");
 }
 void updateLeft(){
-  leftMotor.pulse(digitalRead(encoderLeftA),digitalRead(encoderLeftB));
+  drivetrain.pulseLeftEncoder();
 }
 void updateRight(){
-  rightMotor.pulse(digitalRead(encoderRightA),digitalRead(encoderRightB));
+  drivetrain.pulseRightEncoder();
 }
-void resetDelta(float &dxn, float &dyn, float &don){
-  dxn = 0;
-  dyn = 0;
-  don = 0;
+void resetDelta(){
   motorDistances.xn = 0;
   motorDistances.yn = 0;
   motorDistances.on = 0;
+  delta_x = 0;
+  delta_y = 0;
+  delta_theta = 0;
 }
 void updateTimers() {
   timer1.update();

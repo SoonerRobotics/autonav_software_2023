@@ -6,14 +6,16 @@
 class DifferentialDrive {
 
 public:
-    DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_rate);
+    DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_period);
+
+    void setup();
 
     void setOutput(float forward_velocity, float angular_velocity);
 
     void pulseLeftEncoder();
     void pulseRightEncoder();
 
-    void updateState();
+    void updateState(float& delta_x_out, float& delta_y_out, float& delta_theta_out);
 
     float* getPulsesPerRadian();
     float* getWheelRadius();
@@ -32,23 +34,23 @@ private:
     MotorWithEncoder right_motor_;
 
     float update_period_ = 0.02f;
-    float pulses_per_radian_ = 600f;
-    float wheel_radius_ = 0.1f;
-    float wheelbase_length_ = 0.4f;
+    float pulses_per_radian_ = 600.0f * 60.0f / 16.0f;
+    float wheel_radius_ = 0.135f;
+    float wheelbase_length_ = 0.41f;
 
     float forward_velocity_setpoint_;
     float angular_velocity_setpoint_;
 
     float computeVelocityPID_(float velocity_setpoint, float velocity_current);
-    float velocity_kP_ = 0.01;
-    float velocity_kI_ = 0.01;
+    float velocity_kP_ = 0.2;
+    float velocity_kI_ = 0.8;
     float velocity_kD_ = 0;
     float velocity_integrator_ = 0;
     float velocity_previous_error_ = 0;
 
     float computeAngularPID_(float angular_setpoint, float angular_current);
-    float angular_kP_ = 0.01;
-    float angular_kI_ = 0.01;
+    float angular_kP_ = 0.2;
+    float angular_kI_ = 0.8;
     float angular_kD_ = 0;
     float angular_integrator_ = 0;
     float angular_previous_error_ = 0;
@@ -56,8 +58,13 @@ private:
     float pulsesToRadians_(int pulses);
 };
 
-inline DifferentialDrive::DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_rate)
+inline DifferentialDrive::DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_period)
     : update_period_(update_period), left_motor_(left_motor), right_motor_(right_motor) {}
+
+inline void DifferentialDrive::setup() {
+  left_motor_.setup();
+  right_motor_.setup();
+}
 
 inline void DifferentialDrive::setOutput(float forward_velocity, float angular_velocity) {
     forward_velocity_setpoint_ = forward_velocity;
@@ -76,7 +83,7 @@ inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_ou
     float left_motor_angular_distance = left_motor_.getPulses() / pulses_per_radian_;
     float right_motor_angular_distance = right_motor_.getPulses() / pulses_per_radian_;
 
-    float distance_estimate = (wheel_radius_ / 2f) * (right_motor_angular_distance + left_motor_angular_distance);
+    float distance_estimate = (wheel_radius_ / 2.0f) * (right_motor_angular_distance + left_motor_angular_distance);
     float rotation_estimate = (wheel_radius_ / wheelbase_length_) * (right_motor_angular_distance - left_motor_angular_distance);
 
     float velocity_estimate = distance_estimate / update_period_;
@@ -85,12 +92,20 @@ inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_ou
     float velocity_control = computeVelocityPID_(forward_velocity_setpoint_, velocity_estimate);
     float angular_control = computeAngularPID_(angular_velocity_setpoint_, angular_estimate);
 
-    left_motor_.setOutput(velocity_control - angular_control);
-    right_motor_.setOutput(velocity_control + angular_control);
+    if (abs(forward_velocity_setpoint_) < 0.05 && abs(angular_velocity_setpoint_) < 0.05 && abs(velocity_estimate) < 0.05 && abs(angular_estimate) < 0.05) {
+      // estop fix
+      left_motor_.setOutput(0);
+      right_motor_.setOutput(0);
+      velocity_integrator_ = 0;
+      angular_integrator_ = 0;
+    } else {
+      left_motor_.setOutput(velocity_control - angular_control);
+      right_motor_.setOutput(velocity_control + angular_control);
+    }
 
-    delta_x_out = distance_estimate * cos(rotation_estimate);
-    delta_y_out = distance_estimate * sin(rotation_estimate);
-    delta_theta_out = rotation_estimate;
+    delta_x_out += distance_estimate * cos(delta_theta_out);
+    delta_y_out += distance_estimate * sin(delta_theta_out);
+    delta_theta_out += rotation_estimate;
 }
 
 inline float DifferentialDrive::pulsesToRadians_(int pulses) {
