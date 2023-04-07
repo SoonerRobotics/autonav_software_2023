@@ -34,9 +34,9 @@ private:
     MotorWithEncoder right_motor_;
 
     float update_period_ = 0.02f;
-    float pulses_per_radian_ = 600.0f * 60.0f / 16.0f;
+    float pulses_per_radian_ = 600.0f * 20.0f / 16.8f;
     float wheel_radius_ = 0.135f;
-    float wheelbase_length_ = 0.41f;
+    float wheelbase_length_ = 0.45f;
 
     float forward_velocity_setpoint_;
     float angular_velocity_setpoint_;
