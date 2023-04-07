@@ -90,10 +90,10 @@ class SerialMotors(AutoNode):
         DIST_BETWEEN_WHEELS = 1
         # left motor is forward speed
         #  right motor is angular angle
-        leftMotorSpeed = (input.left_motor / WHEEL_RADIUS) - (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
-        rightMotorSpeed = (input.left_motor / WHEEL_RADIUS) + (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
+        # leftMotorSpeed = (input.left_motor / WHEEL_RADIUS) - (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
+        # rightMotorSpeed = (input.left_motor / WHEEL_RADIUS) + (DIST_BETWEEN_WHEELS/2)(input.right_motor / WHEEL_RADIUS)
 
-        packed_data = struct.pack("hh", leftMotorSpeed, rightMotorSpeed)
+        packed_data = struct.pack("hh", input.left_motor, input.right_motor)
         can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
         try:

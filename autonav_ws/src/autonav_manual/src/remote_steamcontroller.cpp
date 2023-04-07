@@ -112,7 +112,8 @@ public:
 		auto turn_angle_rads = clamp(steering, -maxSpeed, maxSpeed);
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
 		package.left_motor = forward_speed;
-		package.right_motor = turn_angle_rads;
+		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
+		package.right_motor = turn_angle_rads_counter_clockwise;
 		m_motorPublisher->publish(package);
 	}
 
