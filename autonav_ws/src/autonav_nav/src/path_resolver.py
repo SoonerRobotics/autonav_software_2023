@@ -45,7 +45,7 @@ class PathResolverNode(AutoNode):
             return
 
         cur_pos = (self.m_position.x, self.m_position.y)
-        points = [(3, 0), (3, 3), (0, 3), (0, 0)]
+        points = [(2, 0), (0, 0)]
         lookahead = points[self.m_idx]
         motor_pkt = MotorInput()
         motor_pkt.left_motor = 0.0
@@ -64,13 +64,17 @@ class PathResolverNode(AutoNode):
                 self.m_idx = 0
 
         # If we're within 5 degrees of the angle, we can go straight
+        isDirectlyBehind = abs(self.getAngleDifference(self.m_position.theta, math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]))) < math.radians(90)
+        if isDirectlyBehind:
+            motor_pkt.left_motor = -0.5
+            motor_pkt.right_motor = 0
+
         if abs(angle_diff) < math.radians(5):
             motor_pkt.left_motor = 1.0
-            motor_pkt.right_motor = 1.0
+            motor_pkt.right_motor = 0
         else:
-            speed = 0.8 * (1 - abs(angle_diff) / math.pi)
-            motor_pkt.left_motor = (speed - clamp(0.3 * angle_diff, -0.3, 0.3)) * clamp(0 if dist < 0.1 else dist, 0, 1.0)
-            motor_pkt.right_motor = (speed + clamp(0.3 * angle_diff, -0.3, 0.3)) * clamp(0 if dist < 0.1 else dist, 0, 1.0)
+            motor_pkt.left_motor = 0.75
+            motor_pkt.right_motor = -angle_diff
 
         self.m_motorPublisher.publish(motor_pkt)
 
