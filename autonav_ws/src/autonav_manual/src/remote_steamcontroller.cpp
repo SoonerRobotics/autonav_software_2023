@@ -113,7 +113,7 @@ public:
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
 		package.left_motor = forward_speed;
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
-		package.right_motor = turn_angle_rads_counter_clockwise;
+		package.right_motor = turn_angle_rads_counter_clockwise / 2;
 		m_motorPublisher->publish(package);
 	}
 
