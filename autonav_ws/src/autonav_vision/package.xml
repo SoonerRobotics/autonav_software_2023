@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>autonav_vision</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="antoniochappell@protonmail.com">maintainer_name</maintainer>
-  <license>TODO: License declaration</license>
+  <version>1.0.0</version>
+  <description>Computer vision</description>
+  <maintainer email="antoniochappell@protonmail.com">Antonio Chappell</maintainer>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
