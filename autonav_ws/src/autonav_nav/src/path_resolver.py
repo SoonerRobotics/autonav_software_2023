@@ -32,8 +32,7 @@ class PathResolverNode(AutoNode):
 
     def getAngleDifference(self, to_angle, from_angle):
         delta = to_angle - from_angle
-        delta = (delta + math.pi) % (2 * math.pi) - math.pi
-        
+        delta = (delta + math.pi) % (2 * math.pi) - math.pi       
         return delta
 
     def onPathReceived(self, msg: Path):
@@ -63,18 +62,13 @@ class PathResolverNode(AutoNode):
             if self.m_idx >= len(points):
                 self.m_idx = 0
 
-        # If we're within 5 degrees of the angle, we can go straight
-        isDirectlyBehind = abs(self.getAngleDifference(self.m_position.theta, math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]))) < math.radians(90)
-        if isDirectlyBehind:
-            motor_pkt.left_motor = -0.5
-            motor_pkt.right_motor = 0
-
-        if abs(angle_diff) < math.radians(5):
-            motor_pkt.left_motor = 1.0
-            motor_pkt.right_motor = 0
+        # If we are facing the correct direction, we can move forward, else, we need to turn
+        if abs(angle_diff) < 0.2:
+            motor_pkt.left_motor = 1.5 * clamp(dist, 0.0, 1.0)
+            motor_pkt.right_motor = 0.0
         else:
-            motor_pkt.left_motor = 0.75
-            motor_pkt.right_motor = -angle_diff
+            motor_pkt.left_motor = 0.0
+            motor_pkt.right_motor = -clamp(angle_diff * 3.0, -2.0, 2.0)
 
         self.m_motorPublisher.publish(motor_pkt)
 

@@ -686,8 +686,8 @@ public:
 					if(m_showMotorData)
 					{
 						ImGui::SeparatorText("Motor Data");
-						ImGui::Text("Left Motor: %.1f", m_lastMotorMessage.left_motor);
-						ImGui::Text("Right Motor: %.1f", m_lastMotorMessage.right_motor);
+						ImGui::Text("Left Motor: %.3f", m_lastMotorMessage.left_motor);
+						ImGui::Text("Right Motor: %.3f", m_lastMotorMessage.right_motor);
 						ImGui::Text("Delta X, Y, Theta = (%f, %f, %f)", m_lastMotorFeedbackMessage.delta_x, m_lastMotorFeedbackMessage.delta_y, m_lastMotorFeedbackMessage.delta_theta);
 					}
 

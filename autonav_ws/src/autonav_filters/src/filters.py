@@ -2,8 +2,8 @@
 
 from autonav_msgs.msg import MotorFeedback, GPSFeedback, Position
 from autonav_libs import AutoNode, DeviceStateEnum, SystemStateEnum
-from .particlefilter import ParticleFilter
-from .deadrekt import DeadReckoningFilter
+from particlefilter import ParticleFilter
+from deadrekt import DeadReckoningFilter
 from enum import IntEnum
 
 import rclpy
