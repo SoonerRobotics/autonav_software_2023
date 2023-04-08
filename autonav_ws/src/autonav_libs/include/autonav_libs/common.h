@@ -11,23 +11,6 @@
 
 namespace Autonav
 {
-    enum Device : uint8_t
-    {
-        STEAM_TRANSLATOR = 100,
-        MANUAL_CONTROL_STEAM = 101,
-        MANUAL_CONTROL_XBOX = 102,
-        DISPLAY_NODE = 103,
-        SERIAL_IMU = 104,
-        SERIAL_CAN = 105,
-        LOGGING = 106,
-        CAMERA_TRANSLATOR = 107,
-        IMAGE_TRANSFORMER = 108,
-        PARTICLE_FILTER = 109,
-        LOGGING_COMBINED = 110,
-        NAV_RESOLVER = 111,
-        NAV_ASTAR = 112
-    };
-
     namespace State
     {
         enum DeviceState
@@ -47,6 +30,20 @@ namespace Autonav
         };
     }
 
+    int64_t hash(std::string str)
+    {
+        int64_t asd = 5381;
+        int c;
+
+        for (int i = 0; i < str.length(); i++)
+        {
+            c = str[i];
+            asd = ((asd << 5) + asd) + c; /* hash * 33 + c */
+        }
+
+        return asd & 0xFFFFFFFFFFFF;
+    }
+    
     namespace CanBus
     {
         enum MessageID
@@ -63,9 +60,6 @@ namespace Autonav
 
     namespace Configuration
     {
-		const float FLOAT_PRECISION = 10000000.0f;
-		const int MAX_DEVICE_ID = 200;
-
         enum ConbusOpcode
         {
             READ = 0,
@@ -78,42 +72,76 @@ namespace Autonav
         class Conbus
         {
         public:
-            Conbus(Device device, rclcpp::Node* node);
+            Conbus(std::string device, rclcpp::Node* node);
             ~Conbus();
 
         public:
+            /**
+             * @brief Write a vector of bytes to the local configuration
+            */
             void writeBytes(uint8_t registerAddress, std::vector<uint8_t> data);
+            /**
+             * @brief Write a 32-bit integer to the local configuration
+            */
             void write(uint8_t registerAddress, int32_t data);
+            /**
+             * @brief Write a 32-bit float to the local configuration
+            */
             void write(uint8_t registerAddress, float data);
+            /**
+             * @brief Write a boolean to the local configuration
+            */
             void write(uint8_t registerAddress, bool data);
 
-            void writeTo(Device device, uint8_t registerAddress, int32_t data);
-            void writeTo(Device device, uint8_t registerAddress, float data);
-            void writeTo(Device device, uint8_t registerAddress, bool data);
-            void writeTo(Device device, uint8_t registerAddress, std::vector<uint8_t> data);
+            /**
+             * @brief Write a 32-bit integer to a remote configuration
+            */
+            void writeTo(std::string device, uint8_t registerAddress, int32_t data);
+            /**
+             * @brief Write a 32-bit float to a remote configuration
+            */
+            void writeTo(std::string device, uint8_t registerAddress, float data);
+            /**
+             * @brief Write a boolean to a remote configuration
+            */
+            void writeTo(std::string device, uint8_t registerAddress, bool data);
+            /**
+             * @brief Write a vector of bytes to a remote configuration
+            */
+            void writeTo(std::string device, uint8_t registerAddress, std::vector<uint8_t> data);
 
+            /**
+             * @brief Read from the local configuration
+            */
             template <typename T>
             T read(uint8_t registerAddress);
 
+            /**
+             * @brief Read from a remote configuration
+            */
             template <typename T>
-            T read(Device device, uint8_t registerAddress);
+            T read(std::string device, uint8_t registerAddress);
 
-            void requestRemoteRegister(Device device, uint8_t registerAddress);
-            void requestAllRemoteRegistersFrom(Device device);
-            void requestAllRemoteRegisters();
-
-            // Create iterators to read through devices
+            /**
+             * @brief Gets a iterator to the beginning of the local configuration
+            */
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator begin();
+            /**
+             * @brief Gets a iterator to the end of the local configuration
+            */
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator end();
 
-            std::map<uint8_t, std::vector<uint8_t>> getRegistersForDevice(Device device);
+            /**
+             * @brief Returns a map of all the registers for a device
+            */
+            std::map<uint8_t, std::vector<uint8_t>> getRegistersForDevice(std::string device);
         private:
-            void publishWrite(Device device, uint8_t address, std::vector<uint8_t> data);
-            void publishRead(Device device, uint8_t address);
+            void publishWrite(std::string device, uint8_t address, std::vector<uint8_t> data);
+            void publishRead(std::string device, uint8_t address);
             void onConbusInstruction(const autonav_msgs::msg::ConBusInstruction::SharedPtr msg);
 
         private:
-            Device m_device;
+            int64_t m_id;
             std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>> m_registers;
             rclcpp::Publisher<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusPublisher;
             rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusSubscriber;
@@ -125,27 +153,41 @@ namespace Autonav
         class AutoNode : public rclcpp::Node
         {
         public:
-            AutoNode(Autonav::Device device, std::string node_name);
+            AutoNode(std::string node_name);
             ~AutoNode();
 
             bool setSystemState(State::SystemState state);
             bool setDeviceState(State::DeviceState state);
 
             Configuration::Conbus config;
-            Autonav::Device device;
 
+            /**
+             * @brief Called when the node is initialized
+            */
             virtual void setup() {}
+            /**
+             * @brief Called when the node is switched into the operating state
+            */
             virtual void operate() {}
+            /**
+             * @brief Called when the node is switched out of the operating state
+            */
             virtual void deoperate() {}
 
             State::SystemState getSystemState();
             State::DeviceState getDeviceState();
-            State::DeviceState getDeviceState(Autonav::Device device);
+            State::DeviceState getDeviceState(std::string device);
 
         protected:
             virtual void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
             virtual void onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg);
+            /**
+             * @brief Terminates the local node by killing the process
+             * @note This does NOT tell the state manager that its terminating
+            */
+            void terminate();
             bool m_isSimulator;
+            int64_t m_id;
 
         private:
             void onInitializeTimer();
@@ -158,7 +200,7 @@ namespace Autonav
             rclcpp::Client<autonav_msgs::srv::SetSystemState>::SharedPtr m_systemStateClient;
 
             State::SystemState m_systemState;
-            std::map<Autonav::Device, State::DeviceState> m_deviceStates;
+            std::map<int64_t, State::DeviceState> m_deviceStates;
 
             rclcpp::TimerBase::SharedPtr _initializeTimer;
         };

@@ -79,37 +79,6 @@ static ImVec4 deviceStateToColor(Autonav::State::DeviceState state)
 	}
 }
 
-const char *deviceToString(Autonav::Device device)
-{
-	switch (device)
-	{
-	case Autonav::Device::STEAM_TRANSLATOR:
-		return "STEAM_TRANSLATOR";
-	case Autonav::Device::MANUAL_CONTROL_STEAM:
-		return "MANUAL_CONTROL_STEAM";
-	case Autonav::Device::MANUAL_CONTROL_XBOX:
-		return "MANUAL_CONTROL_XBOX";
-	case Autonav::Device::DISPLAY_NODE:
-		return "DISPLAY";
-	case Autonav::Device::SERIAL_IMU:
-		return "IMU_TRANSLATOR";
-	case Autonav::Device::SERIAL_CAN:
-		return "CAN_TRANSLATOR";
-	case Autonav::Device::LOGGING:
-		return "LOGGER";
-	case Autonav::Device::CAMERA_TRANSLATOR:
-		return "CAMERA_TRANSLATOR";
-	case Autonav::Device::IMAGE_TRANSFORMER:
-		return "IMAGE_TRANSFORMER";
-	case Autonav::Device::LOGGING_COMBINED:
-		return "LOGGING_COMBINED";
-	case Autonav::Device::PARTICLE_FILTER:
-		return "FILTERS";
-	default:
-		return "UNKNOWN";
-	}
-}
-
 const char *deviceStateToString(Autonav::State::DeviceState state)
 {
 	switch (state)
@@ -128,7 +97,7 @@ const char *deviceStateToString(Autonav::State::DeviceState state)
 
 void showIMUConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto imu_reg = node->config.getRegistersForDevice(Autonav::Device::SERIAL_IMU);
+	auto imu_reg = node->config.getRegistersForDevice("autonav_serial_imu");
 	if (imu_reg.size() == 0)
 	{
 		return;
@@ -146,12 +115,12 @@ void showIMUConfiguration(Autonav::ROS::AutoNode *node)
 		case 1: // Not Found Retry Time
 		case 2: // Bad Connection Retry
 		{
-			auto data = node->config.read<float>(Autonav::Device::SERIAL_IMU, address);
+			auto data = node->config.read<float>("autonav_serial_imu", address);
 			auto title = address == 0 ? "Read Rate (s)" : address == 1 ? "Not Found Retry (s)"
 																	   : "Bad Connection Retry (s)";
 			if (ImGui::InputFloat(title, &data))
 			{
-				node->config.writeTo(Autonav::Device::SERIAL_IMU, address, data);
+				node->config.writeTo("autonav_serial_imu", address, data);
 			}
 			break;
 		}
@@ -161,7 +130,7 @@ void showIMUConfiguration(Autonav::ROS::AutoNode *node)
 
 void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto steam_reg = node->config.getRegistersForDevice(Autonav::Device::MANUAL_CONTROL_STEAM);
+	auto steam_reg = node->config.getRegistersForDevice("autonav_manual_steamcontroller");
 	if (steam_reg.size() == 0)
 	{
 		return;
@@ -177,10 +146,10 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 		{
 		case 0: // Timeout Delay
 		{
-			auto data = node->config.read<int32_t>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
+			auto data = node->config.read<int32_t>("autonav_manual_steamcontroller", address);
 			if (ImGui::InputInt("Timeout Delay", &data))
 			{
-				node->config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
+				node->config.writeTo("autonav_manual_steamcontroller", address, data);
 			}
 			break;
 		}
@@ -190,13 +159,13 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 		case 3: // Max Speed
 		case 4: // Speed Offset
 		{
-			auto data = node->config.read<float>(Autonav::Device::MANUAL_CONTROL_STEAM, address);
+			auto data = node->config.read<float>("autonav_manual_steamcontroller", address);
 			auto title = address == 1 ? "Steering Deadzone" : address == 2 ? "Throttle Deadzone"
 														  : address == 3   ? "Max Speed"
 																		   : "Speed Offset";
 			if (ImGui::InputFloat(title, &data))
 			{
-				node->config.writeTo(Autonav::Device::MANUAL_CONTROL_STEAM, address, data);
+				node->config.writeTo("autonav_manual_steamcontroller", address, data);
 			}
 			break;
 		}
@@ -206,7 +175,7 @@ void showManualSteamConfiguration(Autonav::ROS::AutoNode *node)
 
 void showCameraConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto camera_reg = node->config.getRegistersForDevice(Autonav::Device::CAMERA_TRANSLATOR);
+	auto camera_reg = node->config.getRegistersForDevice("autonav_serial_camera");
 	if (camera_reg.size() == 0)
 	{
 		return;
@@ -222,10 +191,10 @@ void showCameraConfiguration(Autonav::ROS::AutoNode *node)
 		{
 		case 0: // Refresh Rate
 		{
-			auto data = node->config.read<int32_t>(Autonav::Device::CAMERA_TRANSLATOR, address);
+			auto data = node->config.read<int32_t>("autonav_serial_camera", address);
 			if (ImGui::InputInt("Refresh Rate", &data))
 			{
-				node->config.writeTo(Autonav::Device::CAMERA_TRANSLATOR, address, data);
+				node->config.writeTo("autonav_serial_camera", address, data);
 			}
 			break;
 		}
@@ -235,7 +204,7 @@ void showCameraConfiguration(Autonav::ROS::AutoNode *node)
 
 void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 {
-	auto lanemap_reg = node->config.getRegistersForDevice(Autonav::Device::IMAGE_TRANSFORMER);
+	auto lanemap_reg = node->config.getRegistersForDevice("autonav_vision_transformer");
 	if (lanemap_reg.size() == 0)
 	{
 		return;
@@ -262,10 +231,10 @@ void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 												  : address == 3   ? "Upper Hue"
 												  : address == 4   ? "Upper Sat"
 																   : "Upper Val";
-			auto data = node->config.read<int32_t>(Autonav::Device::IMAGE_TRANSFORMER, address);
+			auto data = node->config.read<int32_t>("autonav_vision_transformer", address);
 			if (ImGui::InputInt(title, &data))
 			{
-				node->config.writeTo(Autonav::Device::IMAGE_TRANSFORMER, address, data);
+				node->config.writeTo("autonav_vision_transformer", address, data);
 			}
 			break;
 		}
@@ -273,10 +242,10 @@ void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 		case 6:
 		{
 			// Blur Kernel Size
-			auto data = node->config.read<int32_t>(Autonav::Device::IMAGE_TRANSFORMER, address);
+			auto data = node->config.read<int32_t>("autonav_vision_transformer", address);
 			if (ImGui::InputInt("Blur Kernel Size", &data))
 			{
-				node->config.writeTo(Autonav::Device::IMAGE_TRANSFORMER, address, data);
+				node->config.writeTo("autonav_vision_transformer", address, data);
 			}
 			break;
 		}
@@ -284,10 +253,10 @@ void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 		case 7:
 		{
 			// Blur Iterations
-			auto data = node->config.read<int32_t>(Autonav::Device::IMAGE_TRANSFORMER, address);
+			auto data = node->config.read<int32_t>("autonav_vision_transformer", address);
 			if (ImGui::InputInt("Blur Iterations", &data))
 			{
-				node->config.writeTo(Autonav::Device::IMAGE_TRANSFORMER, address, data);
+				node->config.writeTo("autonav_vision_transformer", address, data);
 			}
 			break;
 		}
@@ -297,7 +266,7 @@ void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 
 void showCombinedLoggingConfiguration(Autonav::ROS::AutoNode *node)
 {
-	auto lcomb_reg = node->config.getRegistersForDevice(Autonav::Device::LOGGING_COMBINED);
+	auto lcomb_reg = node->config.getRegistersForDevice("autonav_logging_combined");
 	if (lcomb_reg.size() == 0)
 	{
 		return;
@@ -317,10 +286,10 @@ void showCombinedLoggingConfiguration(Autonav::ROS::AutoNode *node)
 		case 2:
 		{
 			auto title = address == 0 ? "Motor Feedback" : address == 1 ? "GPS" : "IMU";
-			auto data = node->config.read<bool>(Autonav::Device::LOGGING_COMBINED, address);
+			auto data = node->config.read<bool>("autonav_logging_combined", address);
 			if (ImGui::Checkbox(title, &data))
 			{
-				node->config.writeTo(Autonav::Device::LOGGING_COMBINED, address, data);
+				node->config.writeTo("autonav_logging_combined", address, data);
 			}
 			break;
 		}
@@ -330,7 +299,7 @@ void showCombinedLoggingConfiguration(Autonav::ROS::AutoNode *node)
 
 void showFiltersConfiguration(Autonav::ROS::AutoNode* node)
 {
-	auto lcomb_reg = node->config.getRegistersForDevice(Autonav::Device::PARTICLE_FILTER);
+	auto lcomb_reg = node->config.getRegistersForDevice("autonav_filters");
 	if (lcomb_reg.size() == 0)
 	{
 		return;
@@ -346,19 +315,19 @@ void showFiltersConfiguration(Autonav::ROS::AutoNode* node)
 		{
 			case 0: // A dropdown box of available filters (particle filter, deadreckoning)
 			{
-				auto data = node->config.read<int32_t>(Autonav::Device::PARTICLE_FILTER, address);
+				auto data = node->config.read<int32_t>("autonav_filters", address);
 				if (ImGui::Combo("Filter", &data, "Dead Reckoning\0Particle Filter\0"))
 				{
-					node->config.writeTo(Autonav::Device::PARTICLE_FILTER, address, data);
+					node->config.writeTo("autonav_filters", address, data);
 				}
 				break;
 			}
 			case 1:
 			{
-				auto data = node->config.read<bool>(Autonav::Device::PARTICLE_FILTER, address);
+				auto data = node->config.read<bool>("autonav_filters", address);
 				if (ImGui::Checkbox("Show Debug Plots", &data))
 				{
-					node->config.writeTo(Autonav::Device::PARTICLE_FILTER, address, data);
+					node->config.writeTo("autonav_filters", address, data);
 				}
 				break;
 			}
@@ -391,52 +360,50 @@ void savePreset(Autonav::ROS::AutoNode *node, std::string file_name)
 		}
 	}
 
-	RCLCPP_INFO(node->get_logger(), "Saved configuration to %s", path.c_str());
-
 	file_stream.close();
 }
 
 void loadPreset(Autonav::ROS::AutoNode *node, std::string file_name)
 {
-	std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs/" + file_name + ".csv";
-	std::ifstream file_stream(path);
-	std::string line;
-	std::vector<std::string> lines;
-	while (std::getline(file_stream, line))
-	{
-		lines.push_back(line);
-	}
+	// std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs/" + file_name + ".csv";
+	// std::ifstream file_stream(path);
+	// std::string line;
+	// std::vector<std::string> lines;
+	// while (std::getline(file_stream, line))
+	// {
+	// 	lines.push_back(line);
+	// }
 
-	// Parse each line
-	for (auto line : lines)
-	{
-		std::vector<std::string> bits;
-		// Split on commas without boost
-		std::stringstream ss(line);
-		std::string bit;
-		while (std::getline(ss, bit, ','))
-		{
-			bits.push_back(bit);
-		}
+	// // Parse each line
+	// for (auto line : lines)
+	// {
+	// 	std::vector<std::string> bits;
+	// 	// Split on commas without boost
+	// 	std::stringstream ss(line);
+	// 	std::string bit;
+	// 	while (std::getline(ss, bit, ','))
+	// 	{
+	// 		bits.push_back(bit);
+	// 	}
 
-		uint8_t device = std::stoi(bits[0]);
-		uint8_t address = std::stoi(bits[1]);
-		std::vector<uint8_t> data;
-		// Split on colons without boost
-		std::stringstream ss2(bits[2]);
-		std::string bit2;
-		while (std::getline(ss2, bit2, ':'))
-		{
-			data.push_back(std::stoi(bit2));
-		}
+	// 	uint8_t device = std::stoi(bits[0]);
+	// 	uint8_t address = std::stoi(bits[1]);
+	// 	std::vector<uint8_t> data;
+	// 	// Split on colons without boost
+	// 	std::stringstream ss2(bits[2]);
+	// 	std::string bit2;
+	// 	while (std::getline(ss2, bit2, ':'))
+	// 	{
+	// 		data.push_back(std::stoi(bit2));
+	// 	}
 
-		auto casted_device = static_cast<Autonav::Device>(device);
-		node->config.writeTo(casted_device, address, data);
-		RCLCPP_INFO(node->get_logger(), "Writing %d bytes to device %d, address %d", data.size(), device, address);
-	}
+	// 	auto casted_device = static_cast<Autonav::Device>(device);
+	// 	node->config.writeTo(casted_device, address, data);
+	// 	RCLCPP_INFO(node->get_logger(), "Writing %d bytes to device %d, address %d", data.size(), device, address);
+	// }
 
-	RCLCPP_INFO(node->get_logger(), "Loaded configuration from %s", path.c_str());
-	activePreset = file_name;
+	// RCLCPP_INFO(node->get_logger(), "Loaded configuration from %s", path.c_str());
+	// activePreset = file_name;
 }
 
 std::string removeFileExtension(const std::string file)
@@ -550,7 +517,7 @@ void showConfigPresetDropdown(Autonav::ROS::AutoNode *node)
 class DisplayNode : public Autonav::ROS::AutoNode
 {
 public:
-	DisplayNode() : Autonav::ROS::AutoNode(Autonav::Device::DISPLAY_NODE, "autonav_display") {}
+	DisplayNode() : Autonav::ROS::AutoNode("autonav_display") {}
 
 	~DisplayNode()
 	{
@@ -565,8 +532,6 @@ public:
 
 	void setup() override
 	{
-		RCLCPP_INFO(this->get_logger(), "Starting Display Node");
-
 		m_gpsSubscriber = this->create_subscription<autonav_msgs::msg::GPSFeedback>("/autonav/gps", 20, std::bind(&DisplayNode::onGPSFeedbackReceived, this, std::placeholders::_1));
 		m_imuSubscriber = this->create_subscription<autonav_msgs::msg::IMUData>("/autonav/imu", 20, std::bind(&DisplayNode::onImuDataReceived, this, std::placeholders::_1));
 		m_motorSubscriber = this->create_subscription<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20, std::bind(&DisplayNode::onMotorDataReceived, this, std::placeholders::_1));
@@ -580,6 +545,7 @@ public:
 		if (!setup_imgui())
 		{
 			RCLCPP_ERROR(this->get_logger(), "Failed to setup ImGUI");
+			this->terminate();
 			return;
 		}
 
@@ -592,8 +558,7 @@ public:
 
 	void operate() override
 	{
-		RCLCPP_INFO(this->get_logger(), "Operating Display Node");
-		m_renderClock = this->create_wall_timer(std::chrono::milliseconds(1000 / 60), std::bind(&DisplayNode::render, this));
+		m_renderClock = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&DisplayNode::render, this));
 	}
 
 	bool setup_imgui()
@@ -648,10 +613,10 @@ public:
 		return true;
 	}
 
-	void showNodeState(Autonav::ROS::AutoNode *node, Autonav::Device device)
+	void showNodeState(Autonav::ROS::AutoNode *node, std::string device)
 	{
 		auto state = getDeviceState(device);
-		ImGui::TextColored(deviceStateToColor(state), "%s: %s", deviceToString(device), deviceStateToString(state));
+		ImGui::TextColored(deviceStateToColor(state), "%s: %s -> %d", device.c_str(), deviceStateToString(state), Autonav::hash(device));
 	}
 
 	void render()
@@ -727,17 +692,17 @@ public:
 					}
 
 					ImGui::SeparatorText("Device States");
-					showNodeState(this, Autonav::Device::DISPLAY_NODE);
-					showNodeState(this, Autonav::Device::LOGGING);
-					showNodeState(this, Autonav::Device::LOGGING_COMBINED);
-					showNodeState(this, Autonav::Device::MANUAL_CONTROL_STEAM);
-					showNodeState(this, Autonav::Device::MANUAL_CONTROL_XBOX);
-					showNodeState(this, Autonav::Device::SERIAL_CAN);
-					showNodeState(this, Autonav::Device::SERIAL_IMU);
-					showNodeState(this, Autonav::Device::STEAM_TRANSLATOR);
-					showNodeState(this, Autonav::Device::CAMERA_TRANSLATOR);
-					showNodeState(this, Autonav::Device::IMAGE_TRANSFORMER);
-					showNodeState(this, Autonav::Device::PARTICLE_FILTER);
+					showNodeState(this, "autonav_display");
+					showNodeState(this, "autonav_logging");
+					showNodeState(this, "autonav_logging_combined");
+					showNodeState(this, "autonav_manual_steamcontroller");
+					showNodeState(this, "autonav_manual_steamtranslator");
+					showNodeState(this, "autonav_manual_xbox");
+					showNodeState(this, "autonav_serial_can");
+					showNodeState(this, "autonav_serial_imu");
+					showNodeState(this, "autonav_serial_camera");
+					showNodeState(this, "autonav_vision_transformer");
+					showNodeState(this, "autonav_filters");
 
 					ImGui::EndTabItem();
 				}
@@ -1032,7 +997,7 @@ private:
 	autonav_msgs::msg::MotorFeedback m_lastMotorFeedbackMessage;
 	autonav_msgs::msg::SteamInput m_lastSteamMessage;
 	autonav_msgs::msg::Position m_lastPose;
-	float m_fontSize = 20.0f;
+	float m_fontSize = 18.0f;
 	std::vector<std::string> m_latestLogs;
 
 	// Images
@@ -1045,8 +1010,8 @@ private:
 	// Preferences
 	bool m_showEstimatedPose = true;
 	bool m_showMotorData = true;
-	bool m_showGpsData = true;
-	bool m_showImuData = true;
+	bool m_showGpsData = false;
+	bool m_showImuData = false;
 };
 
 int main(int, char **)

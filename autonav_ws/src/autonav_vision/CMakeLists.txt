@@ -22,9 +22,6 @@ find_package(sensor_msgs)
   #'path_to_message/message.msg'
 #)
 
-# Inlcude Cpp "include" directory
-include_directories(include)
-
 # Create Cpp executables
 #add_executable(executable_name /path_to_executable/executable.cpp)
 #ament_target_dependencies(executable_name rclcpp other_dependencies)
@@ -46,6 +43,7 @@ install(TARGETS
    #src/path_to_program/program.py
    src/circumscriber.py
    src/transformations.py
+   src/expandify.py
    DESTINATION lib/${PROJECT_NAME}
 )
 

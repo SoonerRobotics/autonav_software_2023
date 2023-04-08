@@ -20,7 +20,7 @@ float clamp(float value, float min, float max)
 class LoggingNode : public Autonav::ROS::AutoNode
 {
 public:
-	LoggingNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_XBOX, "autonav_remote_xbox") {}
+	LoggingNode() : AutoNode("autonav_manual_xbox") {}
 
 	void setup() override
 	{

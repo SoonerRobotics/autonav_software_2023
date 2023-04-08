@@ -5,7 +5,7 @@ import time
 import threading
 import cv2
 
-from autonav_libs import Device, AutoNode, DeviceStateEnum, SystemStateEnum as SystemState, clamp
+from autonav_libs import AutoNode, DeviceStateEnum, SystemStateEnum as SystemState, clamp
 from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge
 
@@ -16,7 +16,7 @@ bridge = CvBridge()
 
 class CameraNode(AutoNode):
     def __init__(self):
-        super().__init__(Device.CAMERA_TRANSLATOR, "autonav_serial_camera")
+        super().__init__("autonav_serial_camera")
 
         self.m_lastDeviceId = 0
 

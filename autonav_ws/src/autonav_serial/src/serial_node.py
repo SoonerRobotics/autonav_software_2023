@@ -8,16 +8,17 @@ from enum import Enum
 
 from rclpy.node import Node
 from autonav_msgs.msg import MotorInput, MotorFeedback
-from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState, LogLevel, clamp
+from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, LogLevel, clamp
 
 
 MOTOR_CONTROL_ID = 10
 MOTOR_FEEDBACK_ID = 14
+CAN_LOGGING_ID = 73
 
 
 class SerialMotors(AutoNode):
     def __init__(self):
-        super().__init__(Device.SERIAL_CAN, "autonav_serial_can")
+        super().__init__("autonav_serial_can")
 
     def setup(self):
         self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
@@ -42,12 +43,16 @@ class SerialMotors(AutoNode):
 
     def onCanMessageReceived(self, msg):
         if msg.arbitration_id == MOTOR_FEEDBACK_ID:
-            deltaTheta, deltaY, deltaX  = struct.unpack("hhh", msg.data)
+            deltaX, deltaY, deltaTheta  = struct.unpack("hhh", msg.data)
             feedback = MotorFeedback()
             feedback.delta_theta = deltaTheta / 10000.0
             feedback.delta_y = deltaY / 10000.0
             feedback.delta_x = deltaX / 10000.0
             self.m_feedbackPublisher.publish(feedback)  
+
+        if msg.arbitration_id == CAN_LOGGING_ID:
+            h1, h2, h3, h4 = struct.unpack("hhhh", msg.data)
+            self.log(f"{h1}, {h2}, {h3}, {h4}")
 
     def canWorker(self):
         try:
