@@ -70,7 +70,7 @@ class PurePursuit:
             
             if valid_intersection_sub:
                 if lookahead == None or abs(new_x_add - p2[0]) > abs(new_x_sub - p2[0]) or abs(new_y_add - p2[1]) > abs(new_y_sub - p2[1]):
-                    lookahead = (new_x_sub + a, new_y_sub + b)
+                    lookahead = [new_x_sub + a, new_y_sub + b]
                 
             if len(self.path) > 0:
                 lastPoint = self.path[len(self.path) - 1]

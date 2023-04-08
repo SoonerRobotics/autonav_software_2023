@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -5,11 +7,11 @@ import tangent_based
 import time
 
 def planning_test(wpoints, obstacles):
-    testcw = tangent_based.PathPlanning()
+    testcw = tangent_based.path_planning()
     testcw.setpath(wpoints)
     testcw.setobstacles(obstacles)
     
-    testccw = tangent_based.PathPlanning()
+    testccw = tangent_based.path_planning()
     testccw.setpath(wpoints)
     testccw.setobstacles(obstacles)
 
@@ -17,7 +19,19 @@ def planning_test(wpoints, obstacles):
     
     start_time = time.time()
     
-    for i in range(10):
+    counter = 0
+    while(testccw.updated == True):
+        if counter < 10:
+            testccw.intersections("ccw")
+            testccw.path_intersections()
+            testccw.delete_inside()
+            counter = counter + 1
+        else:
+            break
+
+    testccw.path_intersections()
+    testccw.delete_inside()
+    """for i in range(10):
         #print("intersections called")
         testcw.intersections("cw")
         testcw.path_intersections()
@@ -25,14 +39,15 @@ def planning_test(wpoints, obstacles):
 
         testccw.intersections("ccw")
         testccw.path_intersections()
-        testccw.delete_inside()
+        testccw.delete_inside()"""
     
     execution_time = time.time() - start_time
     
     
 
     # here
-    print(f"Start test, test.final {testcw.final}")
+    print(f"Start test, testcw.final {testcw.final}")
+    print(f"Start test, testccw.final {testccw.final}")
     obstacle_circles = []
     obstacle_circles_2 = []
     for i in range(len(obstacles)):
@@ -52,8 +67,8 @@ def planning_test(wpoints, obstacles):
         ax2.add_patch(obstacle_circles[i])
 
     original_path = []
-    for i in range(len(testcw.path)):
-        original_path.append(testcw.path[i][0:2])
+    for i in range(len(testccw.path)):
+        original_path.append(testccw.path[i][0:2])
 
     ex, why = zip(*original_path)
     print(f"original_path {original_path}")
@@ -74,9 +89,9 @@ def planning_test(wpoints, obstacles):
     final_path = []
 
 
-    for i in range(len(testcw.final)):
+    for i in range(len(testccw.final)):
         #print(f"test.final[i] {test.final[i]}")
-        final_path.append(testcw.final[i][0:2])
+        final_path.append(testccw.final[i][0:2])
     #print(f"final path in PATH PLANNING TESTER {final_path}")
     x, y = zip(*final_path)
     
@@ -91,6 +106,9 @@ def planning_test(wpoints, obstacles):
     ax2.set(xlabel='After path planning')
 
     print(f"Entire process time: {execution_time}")
+    print(f"counter {counter}")
+    print(f"testccw.updated {testccw.updated}")
     plt.legend()
     plt.show()
+
 

@@ -3,14 +3,27 @@
 <package format="3">
   <name>autonav_vision</name>
   <version>1.0.0</version>
-  <description>Handles vision processing and similar processes</description>
-  <maintainer email="dylan.zemlin@gmail.com">Dylan Zemlin</maintainer>
+  <description>Computer vision</description>
+  <maintainer email="antoniochappell@protonmail.com">Antonio Chappell</maintainer>
   <license>MIT</license>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
-  <exec_depend>ros2launch</exec_depend>
-
+  
+  <depend>rclcpp</depend>
   <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <build_depend>rosidl_default_generators</build_depend>
+  
+  <exec_depend>rosidl_default_runtim</exec_depend>
+  
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
