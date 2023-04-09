@@ -7,6 +7,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 import time
+import math
 
 from sensor_msgs.msg import CompressedImage
 
@@ -76,7 +77,7 @@ class Circumscriber(Node):
         # Convert mask to RGB for preview
         preview_image = mask
         cv.imshow("preview_image", preview_image)
-        cv.waitKey(5000)
+        cv.waitKey(1000)
 
 
         start = time.time()
@@ -86,39 +87,59 @@ class Circumscriber(Node):
         print(f"h = {h} w = {w}")
 
         # define how many sections of the image you want to search for objects in
-        grid_sections = 4
-        sections = grid_sections // 2
-        fractional_w = w // sections
-        fractional_h = h // sections
-        grid = []
+        # grid sizes need to be square numbers
+        
+        sections = 16
+        grid_sections = sections ** 2
+        fractional_w = int(w // sections)
+        fractional_h = int(h // sections)
 
         # for each grid section, find the contours and find the circles
         # solve the grid problem
-        for i in len(grid_sections):
-            right_displacement = 0
-            left_displacement = 0
-            bottom_displacement = 0
-            top_displacement = 0
-            contours, _ = cv.findContours(thresh[fractional_w * right_displacement: fractional_w * left_displacement, fractional_h * bottom_displacement : fractional_h * top_displacement], cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        contour_collections = []
+        for idx in range(grid_sections):
+            right_displacement = int(idx % sections)
+            left_displacement = int(sections - right_displacement - 1)
+            bottom_displacement = int(idx // sections)
+            top_displacement = int(sections - bottom_displacement - 1)
+            self.get_logger().info(f"idx {idx}")
+            self.get_logger().info(f"right, left, bottom, top {right_displacement}, {left_displacement}, {bottom_displacement}, {top_displacement}")
+            self.get_logger().info(f"numpy_array[rows, columns]")
+            self.get_logger().info(f"Finding the contours in this region of the image: thresh[{fractional_h * bottom_displacement} : {h - (fractional_h * top_displacement)}, {fractional_w * right_displacement} : {w - (fractional_w * left_displacement)}]")
+            contours, _ = cv.findContours(thresh[fractional_h * bottom_displacement: h - (fractional_h * top_displacement), fractional_w * right_displacement : w - (fractional_w * left_displacement)], cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+            contour_collections.append(contours)
 
 
-
-        contours, _ = cv.findContours(thresh[:fractional_w, :fractional_h], cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        print(f"Number of objects detected: {len(contours)}")
-
+        obstacles = []
         preview_image = cv.cvtColor(preview_image, cv.COLOR_GRAY2RGB)
-        for cnt in contours:
-            [x,y], radius = cv.minEnclosingCircle(cnt)
-            center = (int(x), int(y))
-            radius = int(radius)
-            self.get_logger().info(f"Circle info: center {x, y}, radius {radius}")
-            preview_image = cv.circle(preview_image, center, radius, (0,0,255), 2)
-        
+        # for the contours found, add them to the image
+        for collections in range(len(contour_collections)):
+            right_displacement = collections % sections
+            left_displacement = sections - right_displacement -1
+            bottom_displacement = collections // sections
+            top_displacement = sections - bottom_displacement - 1
+            self.get_logger().info(f"index: {collections}")
+            self.get_logger().info(f"numpy_array[rows, columns]")
+            self.get_logger().info(f"Placing the circles in these regions: thresh[{fractional_h * bottom_displacement} : {h - (fractional_h * top_displacement)}, {fractional_w * right_displacement} : {w - (fractional_w * left_displacement)}]")
+
+            for cnt in contour_collections[collections]:
+                [x,y], radius = cv.minEnclosingCircle(cnt)
+                center = (int(x) + int(fractional_w * right_displacement), int(y) + int(fractional_h * bottom_displacement))
+                #center = (int(x), int(y))
+                radius = int(radius)
+                self.get_logger().info(f"Circle info: center {center}, radius {radius}")
+                preview_image = cv.circle(preview_image, center, radius, (0,0,255), 2)
+                obstacles.append((center[0], center[1], radius))
+
+        # for testing whole or partial images
         end = time.time()
         self.get_logger().info(f"Time to draw circles: {end - start}")
-        # Display the image
-        cv.imshow("preview_image_with_circles", preview_image)
-        cv.waitKey(5000)
+
+        # display the image 
+        cv.imshow("preview_image after circles", preview_image)
+        cv.waitKey(1000)
+        cv.destroyAllWindows()
+        
         preview_msg = bridge.cv2_to_compressed_imgmsg(preview_image)
         preview_msg.header = image.header
         preview_msg.format = "jpeg"
