@@ -65,8 +65,8 @@ public:
 		}
 
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = 0;
-		package.right_motor = 0;
+		package.forward_velocity = 0;
+		package.angular_velocity = 0;
 		m_motorPublisher->publish(package);
 	}
 
@@ -103,17 +103,12 @@ public:
 			steering = real * maxSpeed;
 		}
 
-		// autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		// package.left_motor = clamp(-throttle + steering * offset, -maxSpeed, maxSpeed);
-		// package.right_motor = clamp(-throttle - steering * offset, -maxSpeed, maxSpeed);
-		// m_motorPublisher->publish(package);
-
 		auto forward_speed = clamp(-throttle, -maxSpeed, maxSpeed);
 		auto turn_angle_rads = clamp(steering, -maxSpeed, maxSpeed);
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = forward_speed;
+		package.forward_velocity = forward_speed;
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
-		package.right_motor = turn_angle_rads_counter_clockwise / 2;
+		package.angular_velocity = turn_angle_rads_counter_clockwise / 2;
 		m_motorPublisher->publish(package);
 	}
 

@@ -4,7 +4,6 @@ from autonav_msgs.msg import MotorInput, Position
 from autonav_libs import AutoNode, DeviceStateEnum, clamp
 from nav_msgs.msg import Path
 from pure_pursuit import PurePursuit
-from pp_viewer import draw_pp
 import math
 import rclpy
 
@@ -44,32 +43,25 @@ class PathResolverNode(AutoNode):
             return
 
         cur_pos = (self.m_position.x, self.m_position.y)
-        points = [(2, 0), (0, 0)]
-        lookahead = points[self.m_idx]
+        lookahead = None
+        radius = 0.7
+        while lookahead is None and radius <= 4.5:
+            lookahead = self.m_purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
+            radius *= 1.2
+        
         motor_pkt = MotorInput()
-        motor_pkt.left_motor = 0.0
-        motor_pkt.right_motor = 0.0
+        motor_pkt.forward_velocity = 0.0
+        motor_pkt.angular_velocity = 0.0
 
-        # If we have a lookahead point, we can calculate the angle difference
         if lookahead is None:
+            self.m_motorPublisher.publish(motor_pkt)
             return
         
         angle_diff = self.getAngleDifference(math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]), self.m_position.theta)
-        dist = math.sqrt((lookahead[0] - cur_pos[0]) ** 2 + (lookahead[1] - cur_pos[1]) ** 2)
 
-        if dist < 0.1:
-            self.m_idx += 1
-            if self.m_idx >= len(points):
-                self.m_idx = 0
-
-        # If we are facing the correct direction, we can move forward, else, we need to turn
-        if abs(angle_diff) < 0.2:
-            motor_pkt.left_motor = 1.5 * clamp(dist, 0.0, 1.0)
-            motor_pkt.right_motor = 0.0
-        else:
-            motor_pkt.left_motor = 0.0
-            motor_pkt.right_motor = -clamp(angle_diff * 3.0, -2.0, 2.0)
-
+        forward_speed = 0.9 * (1 - abs(angle_diff)) ** 5
+        motor_pkt.forward_velocity = forward_speed
+        motor_pkt.angular_velocity = clamp(angle_diff * 2.0, -1.0, 1.0)
         self.m_motorPublisher.publish(motor_pkt)
 
 

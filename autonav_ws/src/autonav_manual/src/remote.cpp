@@ -47,8 +47,8 @@ private:
 		}
 
 
-		package.left_motor = clamp(throttle - steering * 0.6, -MAX_SPEED, MAX_SPEED);
-		package.right_motor = clamp(throttle + steering * 0.6, -MAX_SPEED, MAX_SPEED);
+		package.forward_velocity = throttle;
+		package.angular_velocity = steering;
 		m_motorPublisher->publish(package);
 	}
 
