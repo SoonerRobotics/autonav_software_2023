@@ -19,7 +19,7 @@ class PathResolverNode(AutoNode):
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
         self.m_purePursuit = PurePursuit()
-        self.m_idx = 0
+        self.backCount = -1
         self.m_pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
         self.m_positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
         self.m_motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
@@ -27,7 +27,11 @@ class PathResolverNode(AutoNode):
 
     def onPositionReceived(self, msg):
         self.m_position = msg
-        self.m_position.theta = self.m_position.theta
+        # self.m_position.theta = self.m_position.theta
+        self.m_position.x = 0.0
+        self.m_position.y = 0.0
+        self.m_position.theta = 0.0
+
 
     def getAngleDifference(self, to_angle, from_angle):
         delta = to_angle - from_angle
@@ -45,7 +49,7 @@ class PathResolverNode(AutoNode):
         cur_pos = (self.m_position.x, self.m_position.y)
         lookahead = None
         radius = 0.7
-        while lookahead is None and radius <= 4.5:
+        while lookahead is None and radius <= 4.0:
             lookahead = self.m_purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
             radius *= 1.2
         
@@ -57,11 +61,18 @@ class PathResolverNode(AutoNode):
             self.m_motorPublisher.publish(motor_pkt)
             return
         
-        angle_diff = self.getAngleDifference(math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]), self.m_position.theta)
+        if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:  
+            angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
+            error = self.getAngleDifference(angle_diff, self.m_position.theta) / math.pi
+            forward_speed = 0.7 * (1 - abs(angle_diff)) ** 5
+            motor_pkt.forward_velocity = forward_speed
+            motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)
+        else:
+            if self.backCount == -1:
+                self.backCount = 5
+            else:
+                self.backCount -= -1
 
-        forward_speed = 0.9 * (1 - abs(angle_diff)) ** 5
-        motor_pkt.forward_velocity = forward_speed
-        motor_pkt.angular_velocity = clamp(angle_diff * 2.0, -1.0, 1.0)
         self.m_motorPublisher.publish(motor_pkt)
 
 

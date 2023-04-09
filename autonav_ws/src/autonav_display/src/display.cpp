@@ -225,12 +225,15 @@ void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 		case 3:
 		case 4:
 		case 5:
+		case 10:
 		{
 			auto title = address == 0 ? "Lower Hue" : address == 1 ? "Lower Sat"
 												  : address == 2   ? "Lower Val"
 												  : address == 3   ? "Upper Hue"
 												  : address == 4   ? "Upper Sat"
-																   : "Upper Val";
+												  : address == 5   ? "Upper Val"
+												  : address == 10  ? "ROI Y Offset"
+												  : "Unknown Integer";
 			auto data = node->config.read<int32_t>("autonav_vision_transformer", address);
 			if (ImGui::InputInt(title, &data))
 			{
@@ -538,7 +541,7 @@ public:
 		m_motorFeedbackSubscriber = this->create_subscription<autonav_msgs::msg::MotorFeedback>("/autonav/MotorFeedback", 20, std::bind(&DisplayNode::onMotorFeedbackReceived, this, std::placeholders::_1));
 		m_steamSubscriber = this->create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&DisplayNode::onSteamDataReceived, this, std::placeholders::_1));
 		m_filteredCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/filtered", 20, std::bind(&DisplayNode::onFilteredCameraDataReceived, this, std::placeholders::_1));
-		m_rawCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/igvc/camera/compressed", 20, std::bind(&DisplayNode::onRawCameraDataReceived, this, std::placeholders::_1));
+		m_rawCameraSubscriber = this->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, std::bind(&DisplayNode::onRawCameraDataReceived, this, std::placeholders::_1));
 		m_poseSubscriber = this->create_subscription<autonav_msgs::msg::Position>("/autonav/position", 20, std::bind(&DisplayNode::onPoseReceived, this, std::placeholders::_1));
 		m_logSubscriber = this->create_subscription<autonav_msgs::msg::Log>("/autonav/logging", 20, std::bind(&DisplayNode::onLogReceived, this, std::placeholders::_1));
 

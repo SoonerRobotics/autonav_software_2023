@@ -31,8 +31,7 @@ class Register(IntEnum):
     UPPER_VALUE = 5
     BLUR = 6
     BLUR_ITERATIONS = 7
-    APPLY_FLATTENING = 8
-    APPLY_REGION_OF_INTEREST = 9
+    REGION_OF_INTEREST_TIP = 10
 
 class ImageTransformer(AutoNode):
     def __init__(self):
@@ -44,13 +43,12 @@ class ImageTransformer(AutoNode):
         self.config.writeInt(Register.LOWER_VALUE, 35)
         self.config.writeInt(Register.UPPER_HUE, 255)
         self.config.writeInt(Register.UPPER_SATURATION, 100)
-        self.config.writeInt(Register.UPPER_VALUE, 170)
+        self.config.writeInt(Register.UPPER_VALUE, 160)
         self.config.writeInt(Register.BLUR, 5)
-        self.config.writeInt(Register.BLUR_ITERATIONS, 1)
-        self.config.writeBool(Register.APPLY_FLATTENING, True)
-        self.config.writeBool(Register.APPLY_REGION_OF_INTEREST, True)
+        self.config.writeInt(Register.BLUR_ITERATIONS, 3)
+        self.config.writeInt(Register.REGION_OF_INTEREST_TIP, 120)
 
-        self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/igvc/camera/compressed", self.onImageReceived, 1)
+        self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
         self.m_lanePreviewPublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
         self.setDeviceState(DeviceState.READY)
@@ -125,14 +123,15 @@ class ImageTransformer(AutoNode):
         height = img.shape[0]
         width = img.shape[1]
         region_of_interest_vertices = [
-            (0, height),
-            (width / 2, height / 2 + 60),
-            (width, height),
+            (75, height),
+            (width / 2, height / 2 + self.config.readInt(Register.REGION_OF_INTEREST_TIP)),
+            (width - 75, height),
         ]
         mask = self.region_of_interest(mask, np.array([region_of_interest_vertices], np.int32))
-        
-        if self.config.readBool(Register.APPLY_FLATTENING):
-            mask = self.flatten_image(mask)
+        mask = self.flatten_image(mask)
+
+        # Crop the top by setting it to 0
+        # mask[0:25, :] = 0
         
         # Convert mask to RGB for preview
         preview_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)

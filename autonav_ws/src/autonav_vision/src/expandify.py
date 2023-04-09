@@ -4,6 +4,7 @@ import rclpy
 import numpy as np
 import matplotlib.pyplot as plt
 from enum import IntEnum
+import math
 
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point
@@ -21,19 +22,6 @@ g_mapData.origin.position.x = -10.0
 g_mapData.origin.position.y = -10.0
 
 
-class Register(IntEnum):
-    LOWER_HUE = 0
-    LOWER_SATURATION = 1
-    LOWER_VALUE = 2
-    UPPER_HUE = 3
-    UPPER_SATURATION = 4
-    UPPER_VALUE = 5
-    BLUR = 6
-    BLUR_ITERATIONS = 7
-    APPLY_FLATTENING = 8
-    APPLY_REGION_OF_INTEREST = 9
-
-
 class Expandifier(AutoNode):
     def __init__(self):
         super().__init__("autonav_vision_expandifier")
@@ -41,10 +29,9 @@ class Expandifier(AutoNode):
         self.verticalCameraRange = 2.75
         self.horizontalCameraRange = 3
 
-        self.maxRange = 0.55
-        self.noGoPercent = 0.75
-        self.noGoRange = self.maxRange * self.noGoPercent
-        
+        self.maxRange = 0.65 # meters
+        self.noGoPercent = 0.70
+        self.noGoRange = self.maxRange * self.noGoPercent # meters
         self.maxRange = int(self.maxRange / (self.horizontalCameraRange / 80))
         self.noGoRange = int(self.noGoRange / (self.horizontalCameraRange / 80))
 
@@ -61,12 +48,13 @@ class Expandifier(AutoNode):
         )
 
     def setup(self):
-        pts = list(range(-self.maxRange, self.maxRange + 1))
-        self.circles = [(0, 0, 0)]
-        for x in pts:
-            for y in pts:
-                if self.maxRange * self.noGoPercent <= np.sqrt(x ** 2 + y ** 2) < self.maxRange and (x + y) % 3 == 0:
-                    self.circles.append((x, y, np.sqrt(x ** 2 + y ** 2)))
+        xxxs = list(range(-self.maxRange, self.maxRange + 1))
+        circle_around_indicies = [(0,0,0)]
+        for x in xxxs:
+            for y in xxxs:
+                if self.maxRange * self.noGoPercent <= math.sqrt(x**2 + y**2) < self.maxRange and (x+y)%3==0:
+                    circle_around_indicies.append((x, y, math.sqrt(x**2 + y**2)))
+        self.circles = circle_around_indicies
 
         self.m_rawConfigSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/raw", self.onRawCfgSpaceReceived, 1)
         self.m_configPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/expanded", 1)
@@ -83,8 +71,7 @@ class Expandifier(AutoNode):
 
                             if 0 <= (x + x_i) < 80 and 0 <= (y + y_i) < 80:
                                 val_at_index = cfg_space[index]
-                                linear_t = 100 - ((dist - self.noGoRange) /
-                                                    (self.maxRange - self.noGoRange) * 100)
+                                linear_t = 100 - ((dist - self.noGoRange) / (self.maxRange - self.noGoRange) * 100)
 
                                 if dist <= self.noGoRange:
                                     # obstacle expansion
@@ -97,9 +84,9 @@ class Expandifier(AutoNode):
         self.m_configPublisher.publish(new_msg)
         
         # Show it using matplotlib
-        # plt.imshow(np.array(cfg_space).reshape(80, 80))
-        # plt.show(block = False)
-        # plt.pause(0.01)
+        plt.imshow(np.array(cfg_space).reshape(80, 80))
+        plt.show(block = False)
+        plt.pause(0.01)
 
 def main():
     rclpy.init()

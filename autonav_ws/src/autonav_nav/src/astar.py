@@ -24,13 +24,13 @@ verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
 orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
-sim_waypoints = [(35.19488, -97.43862)]
+# sim_waypoints = [(35.194950, -97.438560), (33.550694, -97.438790)]
+sim_waypoints = []
 
 
 def get_angle_diff(to_angle, from_angle):
     delta = to_angle - from_angle
     delta = (delta + math.pi) % (2 * math.pi) - math.pi
-    
     return delta
 
 
@@ -61,8 +61,8 @@ class AStarNode(AutoNode):
         if self.m_position is None or cost_map is None:
             return
         
-        robot_pos = (0, 0)
-        path = self.find_path_to_point(robot_pos, (2, 0), cost_map, 80, 80)
+        robot_pos = (40, 78)
+        path = self.find_path_to_point(robot_pos, best_pos, cost_map, 80, 80)
         
         if path is not None:
             global_path = Path()
@@ -157,12 +157,10 @@ class AStarNode(AutoNode):
             return
 
         grid_data = msg.data
-        # Replace grid_data with all 0's
-        grid_data = [0 for _ in grid_data]
 
         # Find the best position
         temp_best_pos = (40, 78)
-        best_pos_cost = -1000 
+        best_pos_cost = -1000
         frontier = set()
         frontier.add((40,78))
         explored = set()
@@ -177,9 +175,9 @@ class AStarNode(AutoNode):
             west_to_gps = (self.m_position.longitude - next_waypoint[1]) * 81978.2
             heading_to_gps = math.atan2(west_to_gps,north_to_gps) % (2 * math.pi)
 
-            # print(f"heading_to_gps: {heading_to_gps*180/math.pi:0.01f}")
-
+            self.log(f"heading_to_gps: {heading_to_gps*180/math.pi:0.01f}")
             if north_to_gps**2 + west_to_gps**2 <= 1:
+                self.log(f"Reached waypoint {next_waypoint}")
                 # mobi_start_publisher.publish(Bool(False))
                 waypoints.pop(0)
 
