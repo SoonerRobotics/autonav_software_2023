@@ -40,4 +40,4 @@ class DeadReckoningFilter:
             msg.latitude = self.lastLat
             msg.longitude = self.lastLong
 
-        self.m_node.m_posePublisher.publish(msg)
+        self.node.positionPublisher.publish(msg)
