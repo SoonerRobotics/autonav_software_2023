@@ -18,6 +18,7 @@ public:
 
 private:
     float minControl_ = 0.01f;
+    float maxControl_ = 0.90f;
 
     Servo servoController_;
 
@@ -54,6 +55,10 @@ inline void MotorWithEncoder::setOutput(float control) {
 
     if (reversed_) {
         control = -control;
+    }
+
+    if (abs(control) > maxControl_) { 
+      control = abs(control) / control * maxControl_;
     }
 
     // If we are greater than our min control signal, set the servo output

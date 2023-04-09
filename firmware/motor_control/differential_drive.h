@@ -42,15 +42,15 @@ private:
     float angular_velocity_setpoint_;
 
     float computeVelocityPID_(float velocity_setpoint, float velocity_current);
-    float velocity_kP_ = 0.2;
-    float velocity_kI_ = 0.8;
+    float velocity_kP_ = 0.1;
+    float velocity_kI_ = 1.0;
     float velocity_kD_ = 0;
     float velocity_integrator_ = 0;
     float velocity_previous_error_ = 0;
 
     float computeAngularPID_(float angular_setpoint, float angular_current);
-    float angular_kP_ = 0.2;
-    float angular_kI_ = 0.8;
+    float angular_kP_ = 0.1;
+    float angular_kI_ = 0.4;
     float angular_kD_ = 0;
     float angular_integrator_ = 0;
     float angular_previous_error_ = 0;
