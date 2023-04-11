@@ -62,6 +62,8 @@ void resetDelta();
 bool SEND_CAN_ODOM = false;
 bool canBlinky = false;
 
+short collisonBoxDist = 0.1;
+
 float delta_x = 0;
 float delta_y = 0;
 float delta_theta = 0;
@@ -144,6 +146,12 @@ void onCanRecieve() {
       motorCommand = *(MotorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
       drivetrain.setOutput((float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
       break;
+    case 20:
+      if((frame.data[1] < collisonBoxDist || frame.data[2] < collisonBoxDist || frame.data[3] < collisonBoxDist) & 
+        motorCommand.setpoint_forward_velocity > 0.0){
+        drivetrain.setOutput(0.0, float angular_velocity);
+      }
+    case 
   }
 }
 void sendCanOdomMsgOut(){
