@@ -79,7 +79,8 @@ class path_planning:
             
         for removals in for_removal:
             if removals in self.final:
-                self.final.remove(removals)
+                if removals[3] != 2:
+                    self.final.remove(removals)
 
 
     def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):

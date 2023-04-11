@@ -8,15 +8,18 @@ import rclpy
 from rclpy.node import Node
 from autonav_msgs.msg import Waypoint
 from autonav_msgs.msg import Path
+from autonav_msgs.msg import Obstacle
+from autonav_msgs.msg import Obstacles
 
 class PathPlanner(Node):
     def __init__(self):
         super().__init__("path_planning")
         self.publisher = self.create_publisher(Path, '/autonav/Path', 10)
+        self.subscriber = self.create_subscription(Obstacles, '/autonav/obstacles', self.on_obstacles_received, 10)
         self.timer = self.create_timer(5.0, self.publish_path)
+        self.msg = Path()
 
     def set_path(self, local_path):
-        self.msg = Path()
         for local_waypoints in local_path:
             waypoint = Waypoint()
             waypoint.x, waypoint.y, waypoint.is_generated, waypoint.can_be_deleted = float(local_waypoints[0]), float(local_waypoints[1]), int(local_waypoints[2]), int(local_waypoints[3])
@@ -25,6 +28,15 @@ class PathPlanner(Node):
     def publish_path(self):
         self.publisher.publish(self.msg)
         self.get_logger().info(f"publishing {self.msg} as Path to /autonav/Path")
+        
+    def on_obstacles_received(self, Obstacles):
+        local_obstacles = []
+        obstacles_data = Obstacles.obstacles_data
+        for obstacle in obstacles_data:
+            local_obstacles.append([obstacle.center_x, obstacle.center_y, obstacle.radius])
+        self.get_logger().info(f"I heard {local_obstacles} as the local obstacles")
+        planning_test.planning_test([[0,0,0,2], [100, 0, 0, 2]], local_obstacles)
+
 
 def isInside(circle_x, circle_y, rad, x, y):
     if ((x - circle_x) * (x - circle_x) +
@@ -80,7 +92,7 @@ def main(args=None):
     rclpy.init(args=args)
     path_planner = PathPlanner()
     generated_path = get_random_path_planning_simulation()
-    planning_test.planning_test(generated_path[0], generated_path[1])
+    """planning_test.planning_test(generated_path[0], generated_path[1])
     pathccw = tangent_based.path_planning()
     pathccw.setpath(generated_path[0])
     pathccw.setobstacles(generated_path[1])
@@ -96,10 +108,12 @@ def main(args=None):
             break
 
     pathccw.path_intersections()
-    pathccw.delete_inside() 
+    pathccw.delete_inside()
 
     print(f"PATHCCW.FINAL {pathccw.final}")
-    path_planner.set_path(pathccw.final)
+    path_planner.set_path(pathccw.final)"""
+
+
     rclpy.spin(path_planner)
     path_planner.destroy_node
     rclpy.shutdown

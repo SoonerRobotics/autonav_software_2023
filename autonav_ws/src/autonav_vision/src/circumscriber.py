@@ -10,6 +10,9 @@ import time
 import math
 
 from sensor_msgs.msg import CompressedImage
+from autonav_msgs.msg import Obstacle 
+from autonav_msgs.msg import Obstacles
+
 
 bridge = CvBridge()
 
@@ -31,6 +34,24 @@ class Circumscriber(Node):
         super().__init__("circumscriber")
         self.subscriber = self.create_subscription(CompressedImage, "/igvc/camera/compressed", self.on_image_received, 10)
         self.publisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
+        self.obstacle_publisher = self.create_publisher(Obstacles, "/autonav/obstacles", 1)
+        self.h = None
+        self.w = None
+
+
+    def publish_obstacles(self, local_obstacle_list):
+        msg = Obstacles()
+        for local_obstacles in local_obstacle_list:
+            obstacle = Obstacle()
+            if local_obstacles[1] >= 240:
+                obstacle.center_x, obstacle.center_y, obstacle.radius = local_obstacles[0], local_obstacles[1] - 2 * (local_obstacles[1] - 240), local_obstacles[2]
+            else:
+                obstacle.center_x, obstacle.center_y, obstacle.radius = local_obstacles[0], local_obstacles[1] + 2 * (240 - local_obstacles[1]), local_obstacles[2]
+            
+            msg.obstacles_data.append(obstacle)
+        
+        self.obstacle_publisher.publish(msg)
+        self.get_logger().info(f"publishing {msg} as Obstacles to /autonav/obstacles")
 
     def on_image_received(self, image: CompressedImage):
 
@@ -84,12 +105,13 @@ class Circumscriber(Node):
         ret, thresh = cv.threshold(preview_image, 150, 255, 0)
         # split the image into parts
         h, w = thresh.shape
+        self.h, self.w = h, w
         print(f"h = {h} w = {w}")
 
         # define how many sections of the image you want to search for objects in
         # grid sizes need to be square numbers
         
-        sections = 16
+        sections = 4
         grid_sections = sections ** 2
         fractional_w = int(w // sections)
         fractional_h = int(h // sections)
@@ -102,10 +124,6 @@ class Circumscriber(Node):
             left_displacement = int(sections - right_displacement - 1)
             bottom_displacement = int(idx // sections)
             top_displacement = int(sections - bottom_displacement - 1)
-            self.get_logger().info(f"idx {idx}")
-            self.get_logger().info(f"right, left, bottom, top {right_displacement}, {left_displacement}, {bottom_displacement}, {top_displacement}")
-            self.get_logger().info(f"numpy_array[rows, columns]")
-            self.get_logger().info(f"Finding the contours in this region of the image: thresh[{fractional_h * bottom_displacement} : {h - (fractional_h * top_displacement)}, {fractional_w * right_displacement} : {w - (fractional_w * left_displacement)}]")
             contours, _ = cv.findContours(thresh[fractional_h * bottom_displacement: h - (fractional_h * top_displacement), fractional_w * right_displacement : w - (fractional_w * left_displacement)], cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
             contour_collections.append(contours)
 
@@ -118,16 +136,13 @@ class Circumscriber(Node):
             left_displacement = sections - right_displacement -1
             bottom_displacement = collections // sections
             top_displacement = sections - bottom_displacement - 1
-            self.get_logger().info(f"index: {collections}")
-            self.get_logger().info(f"numpy_array[rows, columns]")
-            self.get_logger().info(f"Placing the circles in these regions: thresh[{fractional_h * bottom_displacement} : {h - (fractional_h * top_displacement)}, {fractional_w * right_displacement} : {w - (fractional_w * left_displacement)}]")
 
             for cnt in contour_collections[collections]:
                 [x,y], radius = cv.minEnclosingCircle(cnt)
                 center = (int(x) + int(fractional_w * right_displacement), int(y) + int(fractional_h * bottom_displacement))
                 #center = (int(x), int(y))
                 radius = int(radius)
-                self.get_logger().info(f"Circle info: center {center}, radius {radius}")
+                obstacles.append([center[0], center[1], radius])
                 preview_image = cv.circle(preview_image, center, radius, (0,0,255), 2)
                 obstacles.append((center[0], center[1], radius))
 
@@ -137,9 +152,12 @@ class Circumscriber(Node):
 
         # display the image 
         cv.imshow("preview_image after circles", preview_image)
-        cv.waitKey(1000)
+        cv.waitKey(5000)
         cv.destroyAllWindows()
         
+        # send the obstacles to the path planner
+        self.publish_obstacles(obstacles)
+
         preview_msg = bridge.cv2_to_compressed_imgmsg(preview_image)
         preview_msg.header = image.header
         preview_msg.format = "jpeg"
