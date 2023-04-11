@@ -62,7 +62,7 @@ void resetDelta();
 bool SEND_CAN_ODOM = false;
 bool canBlinky = false;
 
-short collisonBoxDist = 0.1;
+short collisonBoxDist = 20;
 
 float delta_x = 0;
 float delta_y = 0;
