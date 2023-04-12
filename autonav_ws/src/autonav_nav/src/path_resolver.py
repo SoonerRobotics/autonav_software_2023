@@ -76,6 +76,9 @@ class PathResolverNode(AutoNode):
             motor_pkt.forward_velocity = -0.5
             motor_pkt.angular_velocity = 0.0
 
+        if not self.mobility or self.estop:
+            return
+        
         self.m_motorPublisher.publish(motor_pkt)
 
 

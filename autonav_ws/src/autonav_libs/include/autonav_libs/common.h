@@ -54,7 +54,8 @@ namespace Autonav
             MOBILITY_START = 9,
             WRITE_MOTORS = 10,
             WRITE_SAFETY_LIGHTS = 13,
-            ODOMETRY_FEEDBACK = 14
+            ODOMETRY_FEEDBACK = 14,
+            OBJECT_DETECTION = 20
         };
     }
 
@@ -162,6 +163,8 @@ namespace Autonav
 
             bool setSystemState(State::SystemState state);
             bool setDeviceState(State::DeviceState state);
+            bool setEStop(bool estop);
+            bool setMobility(bool mobility);
 
             Configuration::Conbus config;
 
@@ -191,6 +194,8 @@ namespace Autonav
             */
             void terminate();
             bool m_isSimulator;
+            bool estop;
+            bool mobility;
             int64_t m_id;
 
         private:

@@ -18,11 +18,15 @@ class CameraNode(AutoNode):
     def __init__(self):
         super().__init__("autonav_serial_camera")
 
-        self.m_lastDeviceId = 0
+
 
     def setup(self):
         self.config.writeInt(REFRESH_RATE, 12)
-        self.m_cameraPublisher = self.create_publisher(CompressedImage, "/igvc/camera/compressed", 20)
+
+        self.declare_parameter("device_id", 2)
+        self.deviceId = self.get_parameter("device_id").value
+
+        self.m_cameraPublisher = self.create_publisher(CompressedImage, "/autonav/camera/compressed", 20)
         self.m_cameraThread = threading.Thread(target=self.camera_read)
         self.m_cameraThread.start()
 
@@ -30,7 +34,7 @@ class CameraNode(AutoNode):
         capture = None
         while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
             try:
-                capture = cv2.VideoCapture(2)
+                capture = cv2.VideoCapture(self.deviceId)
                 if capture is None or not capture.isOpened():
                     raise Exception("Could not open video device")
 

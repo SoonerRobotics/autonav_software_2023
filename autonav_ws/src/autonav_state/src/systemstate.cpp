@@ -38,6 +38,8 @@ public:
 		this->declare_parameter("forced_state", "");
 		m_isSimulator = this->get_parameter("is_simulator").as_bool();
 		m_forcedState = this->get_parameter("forced_state").as_string();
+		estop = false;
+		mobility = false;
 
 		if(m_forcedState == "autonomous") {
 			m_systemState = Autonav::State::SystemState::AUTONOMOUS;
@@ -89,6 +91,8 @@ private:
 
 		auto msg = autonav_msgs::msg::SystemState();
 		msg.state = state;
+		msg.estop = estop;
+		msg.mobility = mobility;
 		msg.is_simulator = this->get_parameter("is_simulator").as_bool();
 		m_systemStatePublisher->publish(msg);
 	}
@@ -112,7 +116,10 @@ private:
 	{
 		if (request->state == m_systemState)
 		{
-			response->ok = false;
+			estop = request->estop;
+			mobility = request->mobility;
+			setSystemState(m_systemState);
+			response->ok = true;
 			return;
 		}
 
@@ -202,6 +209,8 @@ private:
 	Autonav::State::SystemState m_systemState;
 	std::string m_forcedState = "";
 	bool m_isSimulator;
+	bool estop;
+	bool mobility;
 	std::map<int64_t, Autonav::State::DeviceState> m_deviceStates = {};
 };
 

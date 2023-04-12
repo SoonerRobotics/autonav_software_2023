@@ -24,6 +24,7 @@ set(msg_files
   "msg/Position.msg"
   "msg/PerfResult.msg"
   "msg/Waypoint.msg"
+  "msg/ObjectDetection.msg"
 )
 
 set(srv_files

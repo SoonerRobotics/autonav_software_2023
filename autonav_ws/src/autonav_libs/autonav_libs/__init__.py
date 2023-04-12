@@ -68,6 +68,8 @@ class AutoNode(Node):
 
         self.m_systemState = SystemStateEnum.DISABLED
         self.m_isSimulator = False
+        self.estop = False
+        self.mobility = False
         self.m_deviceStates = {}
         self.m_deviceStates[self.id] = DeviceStateEnum.OFF
         self.m_initializeTimer = self.create_timer(0.3, self.onInitializeTimer)
@@ -108,8 +110,10 @@ class AutoNode(Node):
         originalState = self.getSystemState()
         self.m_systemState = SystemStateEnum(state.state)
         self.m_isSimulator = state.is_simulator
+        self.estop = state.estop
+        self.mobility = state.mobility
         
-        if self.m_systemState != originalState:
+        if self.m_systemState != originalState or self.m_isSimulator != state.is_simulator or self.estop != state.estop or self.mobility != state.mobility:
             self.onSystemStateUpdated()
 
         if self.m_systemState == SystemStateEnum.SHUTDOWN:
@@ -141,12 +145,22 @@ class AutoNode(Node):
         request.state = state.value
         self.m_deviceStateClient.call_async(request)
         return False
+    
+    def setEStop(self, state: bool):
+        self.estop = state
+        self.setSystemState(self.getSystemState())
+
+    def setMobility(self, state: bool):
+        self.mobility = state
+        self.setSystemState(self.getSystemState())
 
     def setSystemState(self, state: SystemStateEnum):
         if self.m_systemState == state:
             return True
         request = SetSystemState.Request()
         request.state = state.value
+        request.estop = self.estop
+        request.mobility = self.mobility
         self.m_systemStateClient.call_async(request)
         return False
 

@@ -46,10 +46,24 @@ namespace Autonav
 			kill(getpid(), SIGKILL);
 		}
 
+		bool AutoNode::setEStop(bool estop)
+		{
+			this->estop = estop;
+			return setSystemState(m_systemState);
+		}
+
+		bool AutoNode::setMobility(bool mobility)
+		{
+			this->mobility = mobility;
+			return setSystemState(m_systemState);
+		}
+
 		bool AutoNode::setSystemState(State::SystemState state)
 		{
 			auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
 			request->state = static_cast<uint8_t>(state);
+			request->estop = estop;
+			request->mobility = mobility;
 
 			while (!m_systemStateClient->wait_for_service(std::chrono::seconds(1)))
 			{
@@ -91,6 +105,8 @@ namespace Autonav
 		{
 			m_systemState = static_cast<State::SystemState>(msg->state);
 			m_isSimulator = msg->is_simulator;
+			estop = msg->estop;
+			mobility = msg->mobility;
 			
 			if (m_systemState == State::SystemState::SHUTDOWN)
 			{
