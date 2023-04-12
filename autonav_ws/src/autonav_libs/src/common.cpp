@@ -238,6 +238,19 @@ namespace Autonav
 			m_registers[Autonav::hash(device)][address] = data;
 		}
 
+		void Conbus::writeTo(int64_t device, uint8_t address, std::vector<uint8_t> data)
+		{
+			auto msg = autonav_msgs::msg::ConBusInstruction();
+			msg.device = device;
+			msg.address = address;
+			msg.data = data;
+			msg.opcode = ConbusOpcode::WRITE;
+			m_conbusPublisher->publish(msg);
+
+			// Set it lcally
+			m_registers[device][address] = data;
+		}
+
 		void Conbus::writeTo(std::string device, uint8_t address, int32_t data)
 		{
 			auto dataBytes = std::vector<uint8_t>();
@@ -403,12 +416,12 @@ namespace Autonav
 
 		// Iterators
 
-		std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator Conbus::begin()
+		std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator Conbus::begin()
 		{
 			return m_registers.begin();
 		}
 
-		std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator Conbus::end()
+		std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator Conbus::end()
 		{
 			return m_registers.end();
 		}

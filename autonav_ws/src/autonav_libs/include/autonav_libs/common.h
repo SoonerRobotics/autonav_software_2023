@@ -109,6 +109,10 @@ namespace Autonav
              * @brief Write a vector of bytes to a remote configuration
             */
             void writeTo(std::string device, uint8_t registerAddress, std::vector<uint8_t> data);
+            /**
+             * @brief Write a vector of bytes to a remote configuration
+            */
+            void writeTo(int64_t device, uint8_t address, std::vector<uint8_t> data);
 
             /**
              * @brief Read from the local configuration
@@ -125,11 +129,11 @@ namespace Autonav
             /**
              * @brief Gets a iterator to the beginning of the local configuration
             */
-            std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator begin();
+            std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator begin();
             /**
              * @brief Gets a iterator to the end of the local configuration
             */
-            std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator end();
+            std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>>::iterator end();
 
             /**
              * @brief Returns a map of all the registers for a device
@@ -142,7 +146,7 @@ namespace Autonav
 
         private:
             int64_t m_id;
-            std::map<uint8_t, std::map<uint8_t, std::vector<uint8_t>>> m_registers;
+            std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> m_registers;
             rclcpp::Publisher<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusPublisher;
             rclcpp::Subscription<autonav_msgs::msg::ConBusInstruction>::SharedPtr m_conbusSubscriber;
         };

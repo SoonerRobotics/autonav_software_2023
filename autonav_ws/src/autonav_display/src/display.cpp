@@ -368,45 +368,41 @@ void savePreset(Autonav::ROS::AutoNode *node, std::string file_name)
 
 void loadPreset(Autonav::ROS::AutoNode *node, std::string file_name)
 {
-	// std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs/" + file_name + ".csv";
-	// std::ifstream file_stream(path);
-	// std::string line;
-	// std::vector<std::string> lines;
-	// while (std::getline(file_stream, line))
-	// {
-	// 	lines.push_back(line);
-	// }
+	std::string path = std::string(getenv("HOME")) + "/.config/autonav/configs/" + file_name + ".csv";
+	std::ifstream file_stream(path);
+	std::string line;
+	std::vector<std::string> lines;
+	while (std::getline(file_stream, line))
+	{
+		lines.push_back(line);
+	}
 
-	// // Parse each line
-	// for (auto line : lines)
-	// {
-	// 	std::vector<std::string> bits;
-	// 	// Split on commas without boost
-	// 	std::stringstream ss(line);
-	// 	std::string bit;
-	// 	while (std::getline(ss, bit, ','))
-	// 	{
-	// 		bits.push_back(bit);
-	// 	}
+	for (auto line : lines)
+	{
+		std::vector<std::string> bits;
+		std::stringstream ss(line);
+		std::string bit;
+		while (std::getline(ss, bit, ','))
+		{
+			bits.push_back(bit);
+		}
 
-	// 	uint8_t device = std::stoi(bits[0]);
-	// 	uint8_t address = std::stoi(bits[1]);
-	// 	std::vector<uint8_t> data;
-	// 	// Split on colons without boost
-	// 	std::stringstream ss2(bits[2]);
-	// 	std::string bit2;
-	// 	while (std::getline(ss2, bit2, ':'))
-	// 	{
-	// 		data.push_back(std::stoi(bit2));
-	// 	}
+		int64_t device = std::stoi(bits[0]);
+		uint8_t address = std::stoi(bits[1]);
+		std::vector<uint8_t> data;
+		std::stringstream ss2(bits[2]);
+		std::string bit2;
+		while (std::getline(ss2, bit2, ':'))
+		{
+			data.push_back(std::stoi(bit2));
+		}
 
-	// 	auto casted_device = static_cast<Autonav::Device>(device);
-	// 	node->config.writeTo(casted_device, address, data);
-	// 	RCLCPP_INFO(node->get_logger(), "Writing %d bytes to device %d, address %d", data.size(), device, address);
-	// }
+		node->config.writeTo(device, address, data);
+		RCLCPP_INFO(node->get_logger(), "Writing %d bytes to device %d, address %d", data.size(), device, address);
+	}
 
-	// RCLCPP_INFO(node->get_logger(), "Loaded configuration from %s", path.c_str());
-	// activePreset = file_name;
+	RCLCPP_INFO(node->get_logger(), "Loaded configuration from %s", path.c_str());
+	activePreset = file_name;
 }
 
 std::string removeFileExtension(const std::string file)
