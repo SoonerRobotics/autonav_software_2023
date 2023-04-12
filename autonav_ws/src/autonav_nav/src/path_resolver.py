@@ -73,6 +73,9 @@ class PathResolverNode(AutoNode):
             else:
                 self.backCount -= -1
 
+            motor_pkt.forward_velocity = -0.5
+            motor_pkt.angular_velocity = 0.0
+
         self.m_motorPublisher.publish(motor_pkt)
 
 
