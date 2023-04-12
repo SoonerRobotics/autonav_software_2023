@@ -21,7 +21,7 @@ class CameraNode(AutoNode):
         self.m_lastDeviceId = 0
 
     def setup(self):
-        self.config.writeInt(REFRESH_RATE, 1)
+        self.config.writeInt(REFRESH_RATE, 12)
         self.m_cameraPublisher = self.create_publisher(CompressedImage, "/igvc/camera/compressed", 20)
         self.m_cameraThread = threading.Thread(target=self.camera_read)
         self.m_cameraThread.start()
