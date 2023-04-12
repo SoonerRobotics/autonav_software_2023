@@ -96,7 +96,7 @@ class Circumscriber(Node):
             map_image = self.flatten_image(mask)
         
         # Convert mask to RGB for preview
-        preview_image = mask
+        preview_image = map_image
         cv.imshow("preview_image", preview_image)
         cv.waitKey(1000)
 
@@ -152,7 +152,7 @@ class Circumscriber(Node):
 
         # display the image 
         cv.imshow("preview_image after circles", preview_image)
-        cv.waitKey(5000)
+        cv.waitKey(10000)
         cv.destroyAllWindows()
         
         # send the obstacles to the path planner
@@ -177,10 +177,10 @@ class Circumscriber(Node):
         return cv.bitwise_and(img, mask)
 
     def flatten_image(self, img):
-        top_left = (int)(img.shape[1] * 0.26), (int)(img.shape[0])
-        top_right = (int)(img.shape[1] * 0.74), (int)(img.shape[0])
-        bottom_left = 0, 0
-        bottom_right = (int)(img.shape[1]), 0
+        top_left = (int)(img.shape[1] * 0), (int)(img.shape[0] * 1)
+        top_right = (int)(img.shape[1] * 1), (int)(img.shape[0] * 1) 
+        bottom_left = (int)(img.shape[1] * 0), (int)(img.shape[0] * 0)
+        bottom_right = (int)(img.shape[1] * 1), (int)(img.shape[0] * 0)
         
         src = np.float32([top_left, top_right, bottom_left, bottom_right])
         dst = np.float32([[0, img.shape[0]], [img.shape[1], img.shape[0]], [0, 0], [img.shape[1], 0]])

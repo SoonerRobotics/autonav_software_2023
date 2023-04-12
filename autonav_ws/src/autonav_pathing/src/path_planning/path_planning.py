@@ -6,24 +6,29 @@ import random
 import time
 import rclpy
 from rclpy.node import Node
-from autonav_msgs.msg import Waypoint
-from autonav_msgs.msg import Path
-from autonav_msgs.msg import Obstacle
-from autonav_msgs.msg import Obstacles
+from autonav_msgs.msg import Waypoint, Path
+from autonav_msgs.msg import Obstacle, Obstacles
+from autonav_msgs.msg import Position
 
 class PathPlanner(Node):
     def __init__(self):
         super().__init__("path_planning")
         self.publisher = self.create_publisher(Path, '/autonav/Path', 10)
         self.subscriber = self.create_subscription(Obstacles, '/autonav/obstacles', self.on_obstacles_received, 10)
+        self.position_subscriber = self.create_subscription(Position, '/autonav/position', self.on_position_received, 10)
         self.timer = self.create_timer(5.0, self.publish_path)
         self.msg = Path()
+        self.position = 0
 
     def set_path(self, local_path):
         for local_waypoints in local_path:
             waypoint = Waypoint()
             waypoint.x, waypoint.y, waypoint.is_generated, waypoint.can_be_deleted = float(local_waypoints[0]), float(local_waypoints[1]), int(local_waypoints[2]), int(local_waypoints[3])
             self.msg.path_data.append(waypoint)
+
+    def on_position_received(self, Position):
+        self.position = [Position[0], Position[1]]
+        self.get_logger().info(f"Setting the position to {self.position}")
 
     def publish_path(self):
         self.publisher.publish(self.msg)
