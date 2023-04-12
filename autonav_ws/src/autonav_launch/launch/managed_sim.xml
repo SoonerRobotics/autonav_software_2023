@@ -7,7 +7,7 @@
     <node pkg="autonav_logging" exec="logging" />
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify.py" />
-    <node pkg="autonav_filters" exec="pf.py" />
+    <node pkg="autonav_filters" exec="filters.py" />
     <node pkg="autonav_nav" exec="astar.py" />
     <node pkg="autonav_nav" exec="path_resolver.py" />
     <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
