@@ -31,7 +31,7 @@ class Register(IntEnum):
     UPPER_VALUE = 5
     BLUR = 6
     BLUR_ITERATIONS = 7
-    REGION_OF_INTEREST_TIP = 10
+    REGION_OF_DISINTEREST_TIP = 10
 
 class ImageTransformer(AutoNode):
     def __init__(self):
@@ -46,7 +46,7 @@ class ImageTransformer(AutoNode):
         self.config.writeInt(Register.UPPER_VALUE, 160)
         self.config.writeInt(Register.BLUR, 5)
         self.config.writeInt(Register.BLUR_ITERATIONS, 3)
-        self.config.writeInt(Register.REGION_OF_INTEREST_TIP, 120)
+        self.config.writeInt(Register.REGION_OF_DISINTEREST_TIP, 90)
 
         self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
@@ -59,7 +59,7 @@ class ImageTransformer(AutoNode):
         blur = max(1, blur)
         return (blur, blur)
 
-    def region_of_interest(self, img, vertices):
+    def region_of_disinterest(self, img, vertices):
         mask = np.ones_like(img) * 255
         match_mask_color = 0
         cv2.fillPoly(mask, vertices, match_mask_color)
@@ -119,15 +119,15 @@ class ImageTransformer(AutoNode):
         mask = 255 - mask
         mask[mask < 250] = 0
         
-        # Apply region of interest and flattening
+        # Apply region of disinterest and flattening
         height = img.shape[0]
         width = img.shape[1]
-        region_of_interest_vertices = [
+        region_of_disinterest_vertices = [
             (75, height),
-            (width / 2, height / 2 + self.config.readInt(Register.REGION_OF_INTEREST_TIP)),
+            (width / 2, height / 2 + self.config.readInt(Register.REGION_OF_DISINTEREST_TIP)),
             (width - 75, height),
         ]
-        mask = self.region_of_interest(mask, np.array([region_of_interest_vertices], np.int32))
+        mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
         mask = self.flatten_image(mask)
 
         # Crop the top by setting it to 0
