@@ -25,8 +25,7 @@ class Register(IntEnum):
     UPPER_VALUE = 5
     BLUR = 6
     BLUR_ITERATIONS = 7
-    APPLY_FLATTENING = 8
-    APPLY_REGION_OF_INTEREST = 9
+    APPLY_REGION_OF_DISINTEREST_TIP = 10
 
 class Circumscriber(Node):
 
@@ -73,30 +72,26 @@ class Circumscriber(Node):
         upper = (
             255, # UPPER_HUE
             100, # UPPER_SATURATION
-            170, # UPPER_VALUE
+            180, # UPPER_VALUE
         )
         mask = cv.inRange(img, lower, upper)
         mask = 255 - mask
         mask[mask < 250] = 0
         
-        # Apply region of interest and flattening
+        # Apply region of disinterest and flattening
         height = img.shape[0]
         width = img.shape[1]
-        region_of_interest_vertices = [
-            (0, height),
-            (width / 2, height / 2 + 120),
-            (width, height),
+        region_of_disinterest_vertices = [
+            (75, height), # bottom left
+            (width / 8, (height / 2) + 85), #REGION_OF_INTEREST_TIP # top left verticy
+            ((width - (width / 8)), (height / 2) + 85), # top right verticy #REGION_OF_INTEREST_TIP
+            (width - 75, height), # bottom right
         ]
-        
-        map_image = mask
-        if True: # Register.APPLY_FLATTENING
-            map_image = self.region_of_interest(mask, np.array([region_of_interest_vertices], np.int32))
-        
-        if True: # Register.APPLY_REGION_OF_INTEREST
-            map_image = self.flatten_image(mask)
+        mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
+        mask = self.flatten_image(mask)
         
         # Convert mask to RGB for preview
-        preview_image = map_image
+        preview_image = mask
         cv.imshow("preview_image", preview_image)
         cv.waitKey(1000)
 
@@ -170,17 +165,18 @@ class Circumscriber(Node):
         blur = max(1, blur)
         return (blur, blur)
     
-    def region_of_interest(self, img, vertices):
-        mask = np.zeros_like(img) * 255
+    def region_of_disinterest(self, img, vertices):
+        mask = np.ones_like(img) * 255
         match_mask_color = 0
         cv.fillPoly(mask, vertices, match_mask_color)
-        return cv.bitwise_and(img, mask)
+        masked_image = cv.bitwise_and(img, mask)
+        return masked_image
 
     def flatten_image(self, img):
-        top_left = (int)(img.shape[1] * 0), (int)(img.shape[0] * 1)
-        top_right = (int)(img.shape[1] * 1), (int)(img.shape[0] * 1) 
-        bottom_left = (int)(img.shape[1] * 0), (int)(img.shape[0] * 0)
-        bottom_right = (int)(img.shape[1] * 1), (int)(img.shape[0] * 0)
+        top_left = (int)(img.shape[1] * 0.26), (int)(img.shape[0])
+        top_right = (int)(img.shape[1] * 0.74), (int)(img.shape[0])
+        bottom_left = 0, 0
+        bottom_right = (int)(img.shape[1]), 0
         
         src = np.float32([top_left, top_right, bottom_left, bottom_right])
         dst = np.float32([[0, img.shape[0]], [img.shape[1], img.shape[0]], [0, 0], [img.shape[1], 0]])
