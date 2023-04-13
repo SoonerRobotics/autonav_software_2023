@@ -7,21 +7,26 @@ import struct
 from enum import Enum
 
 from rclpy.node import Node
-from autonav_msgs.msg import MotorInput, MotorFeedback
-from autonav_libs import AutoNode, Device, DeviceStateEnum as DeviceState, LogLevel, clamp
+from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection
+from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, LogLevel
 
 
 MOTOR_CONTROL_ID = 10
+ESTOP_ID = 0
+MOBILITY_STOP_ID = 1
+MOBILITY_START_ID = 9
 MOTOR_FEEDBACK_ID = 14
+OBJECT_DETECTION = 20
 
 
 class SerialMotors(AutoNode):
     def __init__(self):
-        super().__init__(Device.SERIAL_CAN, "autonav_serial_can")
+        super().__init__("autonav_serial_can")
 
     def setup(self):
         self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
         self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
+        self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 10)
         self.m_can = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
         self.m_canReadThread = threading.Thread(target = self.canThreadWorker)
@@ -41,13 +46,32 @@ class SerialMotors(AutoNode):
                     self.log(LogLevel.ERROR, "CAN Error")
 
     def onCanMessageReceived(self, msg):
-        if msg.arbitration_id == MOTOR_FEEDBACK_ID:
-            deltaTheta, deltaY, deltaX  = struct.unpack("hhh", msg.data)
+        arb_id = msg.arbitration_id
+        if arb_id == MOTOR_FEEDBACK_ID:
+            deltaX, deltaY, deltaTheta  = struct.unpack("hhh", msg.data)
             feedback = MotorFeedback()
             feedback.delta_theta = deltaTheta / 10000.0
             feedback.delta_y = deltaY / 10000.0
             feedback.delta_x = deltaX / 10000.0
             self.m_feedbackPublisher.publish(feedback)  
+
+        if arb_id == ESTOP_ID:
+            self.setEStop(True)
+
+        if arb_id == MOBILITY_STOP_ID:
+            self.setMobility(False)
+
+        if arb_id == MOBILITY_START_ID:
+            self.setMobility(True)
+
+        if arb_id == OBJECT_DETECTION:
+            r, a, b, c = struct.unpack("bbbb", msg.data)
+            msg = ObjectDetection()
+            msg.sensor_1 = a
+            msg.sensor_2 = b
+            msg.sensor_3 = c
+            self.m_objectPublisher.publish(msg)
+
 
     def canWorker(self):
         try:
@@ -72,12 +96,11 @@ class SerialMotors(AutoNode):
             self.setDeviceState(DeviceState.READY)
 
     def on_motor_input(self, input: MotorInput):
-        if self.getDeviceState() != DeviceState.OPERATING:
+        # If we're not operating, estopped, or not in mobility, don't send motor commands
+        if self.getDeviceState() != DeviceState.OPERATING or self.estop or not self.mobility:
             return
-
-        left_speed = int(input.left_motor * 1000.0)
-        right_speed = int(input.right_motor * 1000.0)
-        packed_data = struct.pack("hh", left_speed, right_speed)
+        
+        packed_data = struct.pack("hh", int(input.forward_velocity * 1000.0), int(input.angular_velocity * 1000.0))
         can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
         try:

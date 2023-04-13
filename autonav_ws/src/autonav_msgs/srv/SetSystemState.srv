@@ -1,3 +1,5 @@
-int32 state
+uint8 state
+bool mobility
+bool estop
 ---
 bool ok

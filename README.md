@@ -14,6 +14,7 @@ git clone git@github.com:SoonerRobotics/autonav_software_2023.git --recurse-subm
 To setup all dependencies, run the following two commands. It is **CRITICAL** you do **NOT** run these commmands as **sudo**
 ```bash
 cd setup
+echo "machine files.dylanzeml.in login <user> password <password>" > vectorsecrets.txt
 ./setup.sh
 ```
 
@@ -27,6 +28,17 @@ colcon build
 source /install/setup.bash
 ```
 
+## Autonomous
+Follow the steps in [building](#building) and then run the following command
+```bash
+ros2 launch autonav_launch autonomous.xml
+```
+
+Or, in the simulator
+```bash
+ros2 launch autonav_launch managed_sim.xml
+```
+
 ## Manual/Remote Control
 
 Follow the steps in [building](#building) and then run the following command
@@ -36,7 +48,7 @@ ros2 launch autonav_launch managed_manual.xml
 
 Or, for the steam controller
 ```bash
-ros2 launch autonav_launch managed_manual_steam.xml
+ros2 launch autonav_launch managed_steam.xml
 ```
 ## VSCode
 

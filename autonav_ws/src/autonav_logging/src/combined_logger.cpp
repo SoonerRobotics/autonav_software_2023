@@ -25,7 +25,7 @@ enum Register
 class LoggingNode : public Autonav::ROS::AutoNode
 {
 public:
-	LoggingNode() : AutoNode(Autonav::Device::LOGGING_COMBINED, "autonav_logging_combined")
+	LoggingNode() : AutoNode("autonav_logging_combined")
 	{
 		m_loggingPublisher = this->create_publisher<autonav_msgs::msg::Log>("/autonav/logging", 10);
 		m_motorFeedbackSubscriber = this->create_subscription<autonav_msgs::msg::MotorFeedback>("/autonav/MotorFeedback", 10, std::bind(&LoggingNode::motorFeedbackCallback, this, _1));

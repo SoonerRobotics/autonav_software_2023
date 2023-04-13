@@ -23,6 +23,12 @@ find_package(autonav_msgs REQUIRED)
   #'path_to_message/message.msg'
 #)
 
+# Install Python executables
+install(PROGRAMS
+	src/transformations.py
+	src/expandify.py
+	DESTINATION lib/${PROJECT_NAME}
+	)
 # Inlcude Cpp "include" directory
 include_directories(include)
 

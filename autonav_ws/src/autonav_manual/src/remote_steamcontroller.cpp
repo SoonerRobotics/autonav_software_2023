@@ -30,7 +30,7 @@ enum Registers
 class JoyNode : public Autonav::ROS::AutoNode
 {
 public:
-	JoyNode() : AutoNode(Autonav::Device::MANUAL_CONTROL_STEAM, "remote_steamcontroller") {}
+	JoyNode() : AutoNode("autonav_manual_steamcontroller") {}
 
 	void setup() override
 	{
@@ -38,8 +38,8 @@ public:
 		m_motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 
 		config.write(Registers::TIMEOUT_DELAY, 500);
-		config.write(Registers::STEERING_DEADZONE, 0.35f);
-		config.write(Registers::THROTTLE_DEADZONE, 0.1f);
+		config.write(Registers::STEERING_DEADZONE, 0.04f);
+		config.write(Registers::THROTTLE_DEADZONE, 0.04f);
 		config.write(Registers::MAX_SPEED, 2.2f);
 		config.write(Registers::SPEED_OFFSET, 0.6f);
 
@@ -65,8 +65,8 @@ public:
 		}
 
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = 0;
-		package.right_motor = 0;
+		package.forward_velocity = 0;
+		package.angular_velocity = 0;
 		m_motorPublisher->publish(package);
 	}
 
@@ -88,8 +88,8 @@ public:
 
 		if (abs(msg.rtrig) > deadzone || abs(msg.ltrig) > deadzone)
 		{
-			throttle = (1 - msg.ltrig) * maxSpeed * 0.8;
-			throttle = throttle - (1 - msg.rtrig) * maxSpeed * 0.8;
+			throttle = (1 - msg.rtrig) * maxSpeed * 0.8;
+			throttle = throttle - (1 - msg.ltrig) * maxSpeed * 0.8;
 		}
 
 		if (abs(msg.lpad_x) > steeringVoid)
@@ -100,12 +100,15 @@ public:
 				real = -real;
 			}
 
-			steering = -real * maxSpeed;
+			steering = real * maxSpeed;
 		}
 
+		auto forward_speed = clamp(-throttle, -maxSpeed, maxSpeed);
+		auto turn_angle_rads = clamp(steering, -maxSpeed, maxSpeed);
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = clamp(-throttle + steering * offset, -maxSpeed, maxSpeed);
-		package.right_motor = clamp(-throttle - steering * offset, -maxSpeed, maxSpeed);
+		package.forward_velocity = forward_speed;
+		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
+		package.angular_velocity = turn_angle_rads_counter_clockwise / 2;
 		m_motorPublisher->publish(package);
 	}
 

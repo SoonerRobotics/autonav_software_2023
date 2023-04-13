@@ -25,6 +25,7 @@ set(msg_files
   "msg/PerfResult.msg"
   "msg/GoalPoint.msg"
   "msg/Waypoint.msg"
+  "msg/ObjectDetection.msg"
   "msg/Path.msg"
   "msg/Obstacle.msg"
   "msg/Obstacles.msg"
