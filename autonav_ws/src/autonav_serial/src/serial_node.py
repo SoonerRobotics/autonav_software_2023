@@ -55,22 +55,22 @@ class SerialMotors(AutoNode):
             feedback.delta_x = deltaX / 10000.0
             self.m_feedbackPublisher.publish(feedback)  
 
-        if arb_id == ESTOP_ID:
-            self.setEStop(True)
+        # if arb_id == ESTOP_ID:
+        #     self.setEStop(True)
 
-        if arb_id == MOBILITY_STOP_ID:
-            self.setMobility(False)
+        # if arb_id == MOBILITY_STOP_ID:
+        #     self.setMobility(False)
 
-        if arb_id == MOBILITY_START_ID:
-            self.setMobility(True)
+        # if arb_id == MOBILITY_START_ID:
+        #     self.setMobility(True)
 
-        if arb_id == OBJECT_DETECTION:
-            r, a, b, c = struct.unpack("bbbb", msg.data)
-            msg = ObjectDetection()
-            msg.sensor_1 = a
-            msg.sensor_2 = b
-            msg.sensor_3 = c
-            self.m_objectPublisher.publish(msg)
+        # if arb_id == OBJECT_DETECTION:
+        #     r, a, b, c = struct.unpack("bbbb", msg.data)
+        #     msg = ObjectDetection()
+        #     msg.sensor_1 = a
+        #     msg.sensor_2 = b
+        #     msg.sensor_3 = c
+        #     self.m_objectPublisher.publish(msg)
 
 
     def canWorker(self):
