@@ -60,7 +60,7 @@ class IMUNode(AutoNode):
                 self.setDeviceState(DeviceState.STANDBY)
                 continue
 
-            if (self.getDeviceState() != DeviceState.READY):
+            if (self.getDeviceState() != DeviceState.READY and self.getDeviceState() != DeviceState.OPERATING):
                 time.sleep(0.5)
                 self.setDeviceState(DeviceState.READY)
                 continue
