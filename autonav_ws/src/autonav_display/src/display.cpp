@@ -219,21 +219,22 @@ void showImageTransformerConfiugration(Autonav::ROS::AutoNode *node)
 
 		switch (address)
 		{
-		// 0 through 5 are lower and upper bounds for the color filter in HSV
 		case 0:
 		case 1:
 		case 2:
 		case 3:
 		case 4:
 		case 5:
-		case 10:
+		case 8:
+		case 9:
 		{
 			auto title = address == 0 ? "Lower Hue" : address == 1 ? "Lower Sat"
 												  : address == 2   ? "Lower Val"
 												  : address == 3   ? "Upper Hue"
 												  : address == 4   ? "Upper Sat"
 												  : address == 5   ? "Upper Val"
-												  : address == 10  ? "ROI Y Offset"
+												  : address == 8   ? "ROI Top Left"
+												  : address == 9   ? "ROI Top Right"
 																   : "Unknown Integer";
 			auto data = node->config.read<int32_t>("autonav_vision_transformer", address);
 			if (ImGui::InputInt(title, &data))

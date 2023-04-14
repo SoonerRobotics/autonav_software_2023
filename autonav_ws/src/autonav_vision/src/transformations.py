@@ -31,7 +31,8 @@ class Register(IntEnum):
     UPPER_VALUE = 5
     BLUR = 6
     BLUR_ITERATIONS = 7
-    REGION_OF_DISINTEREST_TIP = 10
+    REGION_OF_DISINTEREST_TL = 8
+    REGION_OF_DISINTEREST_TR = 9
 
 class ImageTransformer(AutoNode):
     def __init__(self):
@@ -46,7 +47,8 @@ class ImageTransformer(AutoNode):
         self.config.writeInt(Register.UPPER_VALUE, 160)
         self.config.writeInt(Register.BLUR, 5)
         self.config.writeInt(Register.BLUR_ITERATIONS, 3)
-        self.config.writeInt(Register.REGION_OF_DISINTEREST_TIP, 90)
+        self.config.writeInt(Register.REGION_OF_DISINTEREST_TL, 55)
+        self.config.writeInt(Register.REGION_OF_DISINTEREST_TR, 55)
 
         self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
@@ -124,8 +126,9 @@ class ImageTransformer(AutoNode):
         width = img.shape[1]
         region_of_disinterest_vertices = [
             (75, height),
-            (width / 2, height / 2 + self.config.readInt(Register.REGION_OF_DISINTEREST_TIP)),
-            (width - 75, height),
+            (width / 5, (height / 2) + self.config.readInt(Register.REGION_OF_DISINTEREST_TL)),
+            (width - (width / 5), (height / 2) + self.config.readInt(Register.REGION_OF_DISINTEREST_TR)),
+            (width - 75, height)
         ]
         mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
         mask = self.flatten_image(mask)
