@@ -37,6 +37,8 @@ public:
 		this->declare_parameter("is_simulator", false);
 		this->declare_parameter("forced_state", "");
 		this->declare_parameter("required_nodes", std::vector<std::string>());
+		this->declare_parameter("default_mobility", true);
+		this->declare_parameter("default_estop", false);
 		m_isSimulator = this->get_parameter("is_simulator").as_bool();
 		m_forcedState = this->get_parameter("forced_state").as_string();
 		auto requiredNodes = this->get_parameter("required_nodes").as_string_array();
@@ -45,8 +47,8 @@ public:
 			RCLCPP_INFO(this->get_logger(), "Adding required node: %s", node.c_str());
 			m_requiredNodes.push_back(Autonav::hash(node));
 		}
-		estop = false;
-		mobility = false;
+		estop = this->get_parameter("default_estop").as_bool();
+		mobility = this->get_parameter("default_mobility").as_bool();
 
 		if(m_forcedState == "autonomous") {
 			m_systemState = Autonav::State::SystemState::AUTONOMOUS;

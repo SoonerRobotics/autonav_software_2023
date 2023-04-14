@@ -96,8 +96,7 @@ class SerialMotors(AutoNode):
             self.setDeviceState(DeviceState.READY)
 
     def on_motor_input(self, input: MotorInput):
-        # If we're not operating, estopped, or not in mobility, don't send motor commands
-        if self.getDeviceState() != DeviceState.OPERATING or self.estop or not self.mobility:
+        if self.getDeviceState() != DeviceState.OPERATING or self.estop:
             return
         
         packed_data = struct.pack("hh", int(input.forward_velocity * 1000.0), int(input.angular_velocity * 1000.0))
