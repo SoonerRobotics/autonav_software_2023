@@ -72,7 +72,7 @@ class Circumscriber(Node):
         upper = (
             255, # UPPER_HUE
             100, # UPPER_SATURATION
-            180, # UPPER_VALUE
+            150, # UPPER_VALUE
         )
         mask = cv.inRange(img, lower, upper)
         mask = 255 - mask
@@ -83,8 +83,8 @@ class Circumscriber(Node):
         width = img.shape[1]
         region_of_disinterest_vertices = [
             (75, height), # bottom left
-            (width / 8, (height / 2) + 85), #REGION_OF_INTEREST_TIP # top left verticy
-            ((width - (width / 8)), (height / 2) + 85), # top right verticy #REGION_OF_INTEREST_TIP
+            (width / 6, (height / 2) + 55), #REGION_OF_INTEREST_TIP # top left verticy
+            ((width - (width / 6)), (height / 2) + 55), # top right verticy #REGION_OF_INTEREST_TIP
             (width - 75, height), # bottom right
         ]
         mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
