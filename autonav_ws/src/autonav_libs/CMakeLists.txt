@@ -1,43 +1,19 @@
 cmake_minimum_required(VERSION 3.8)
 project(autonav_libs)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclpy REQUIRED)
-find_package(autonav_msgs REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-# C++ Library Garbage
-include_directories(include)
-set(SRCS src/common.cpp)
-add_library(autonav_libs SHARED ${SRCS})
-ament_export_targets(autonav_libs HAS_LIBRARY_TARGET)
-ament_target_dependencies(autonav_libs
-  "rclcpp"
-  "autonav_msgs"
-)
-install(
-  DIRECTORY include/autonav_libs
-  DESTINATION include
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  src/configuration.cpp src/node.cpp
 )
 
-install(
-  TARGETS autonav_libs
-  EXPORT autonav_libs
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
-
-# Install and export python files
-ament_python_install_package(${PROJECT_NAME})
-# install(
-#   PROGRAMS ${PROJECT_NAME}/canbus.py ${PROJECT_NAME}/conbus.py
-#   DESTINATION lib/${PROJECT_NAME}
-# )
-
-ament_package()
+ament_auto_package()

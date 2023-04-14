@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="autonav_state" exec="statemanager" >
+        <param name="required_nodes" value="[autonav_display]" />
+    </node>
+    <node pkg="autonav_display" exec="primary_display" output="screen" />
+</launch>
