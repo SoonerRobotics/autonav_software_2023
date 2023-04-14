@@ -7,8 +7,6 @@ COPY autonav_ws/src /autonav/autonav_ws/src
 COPY setup /autonav/setup
 COPY vectorsecrets.txt /autonav/setup/vectorsecrets.txt
 
-RUN /bin/bash -c "git submodule update --init --recursive"
-
 WORKDIR /autonav/setup
 RUN /bin/bash -c "./setup.sh"
 
