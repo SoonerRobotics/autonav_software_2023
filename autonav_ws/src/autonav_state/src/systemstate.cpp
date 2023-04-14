@@ -36,8 +36,15 @@ public:
 		// Declare is_simulator ros parameter
 		this->declare_parameter("is_simulator", false);
 		this->declare_parameter("forced_state", "");
+		this->declare_parameter("required_nodes", std::vector<std::string>());
 		m_isSimulator = this->get_parameter("is_simulator").as_bool();
 		m_forcedState = this->get_parameter("forced_state").as_string();
+		auto requiredNodes = this->get_parameter("required_nodes").as_string_array();
+		for (auto& node : requiredNodes)
+		{
+			RCLCPP_INFO(this->get_logger(), "Adding required node: %s", node.c_str());
+			m_requiredNodes.push_back(Autonav::hash(node));
+		}
 		estop = false;
 		mobility = false;
 
@@ -159,16 +166,45 @@ private:
 			m_deviceStates[device] = Autonav::State::DeviceState::OFF;
 		}
 
-		if (m_deviceStates.find(Autonav::hash("autonav_display")) == m_deviceStates.end())
+		bool allLoaded = true;
+		for(auto& device : m_requiredNodes)
 		{
-			m_deviceStates[Autonav::hash("autonav_display")] = Autonav::State::DeviceState::OFF;
+			if(m_deviceStates[device] != Autonav::State::DeviceState::READY && m_deviceStates[device] != Autonav::State::DeviceState::OPERATING)
+			{
+				allLoaded = false;
+				break;
+			}
 		}
-		
-		auto displayState = m_deviceStates[Autonav::hash("autonav_display")];
-		if (displayState != Autonav::State::DeviceState::OPERATING && device != Autonav::hash("autonav_display"))
+
+		// Get index in the required nodes array, -1 means not found
+		int index = -1;
+		for (int i = 0; i < m_requiredNodes.size(); i++)
+		{
+			if (m_requiredNodes[i] == device)
+			{
+				index = i;
+				break;
+			}
+		}
+
+		if (!allLoaded && index == -1)
 		{
 			response->ok = false;
 			return;
+		}
+
+		// Go through required nodes, ensure they load in order from 0 to n (n being the last node)
+		if (m_deviceStates[device] == Autonav::State::DeviceState::OFF && !allLoaded)
+		{
+			// Check if all previous nodes are ready
+			for (int i = 0; i < index; i++)
+			{
+				if (m_deviceStates[m_requiredNodes[i]] != Autonav::State::DeviceState::READY)
+				{
+					response->ok = false;
+					return;
+				}
+			}
 		}
 
 		if (state == Autonav::State::DeviceState::READY && m_forcedState == "autonomous" && !isReadOnlyNode(request->device))
@@ -182,7 +218,7 @@ private:
 		response->ok = true;
 		
 		auto sys_msg = autonav_msgs::msg::SystemState();
-		sys_msg.state = (uint8_t)m_systemState;
+		sys_msg.state = allLoaded ? (uint8_t)m_systemState : (uint8_t)Autonav::State::SystemState::DISABLED;
 		sys_msg.is_simulator = this->get_parameter("is_simulator").as_bool();
 		m_systemStatePublisher->publish(sys_msg);
 
@@ -211,6 +247,7 @@ private:
 	bool m_isSimulator;
 	bool estop;
 	bool mobility;
+	std::vector<int64_t> m_requiredNodes;
 	std::map<int64_t, Autonav::State::DeviceState> m_deviceStates = {};
 };
 

@@ -2,7 +2,9 @@
     <node pkg="autonav_state" exec="statemanager" />
     <node pkg="autonav_logging" exec="logging" />
     <node pkg="autonav_logging" exec="combined_logging" />
-    <node pkg="autonav_serial" exec="camera.py" />
+    <node pkg="autonav_serial" exec="camera.py" name="autonav_serial_camera">
+        <param name="device_id" value="2" />
+    </node>
     <node pkg="autonav_serial" exec="imu.py" />
     <node pkg="autonav_serial" exec="serial_node.py" />
     <node pkg="autonav_filters" exec="filters.py" />
