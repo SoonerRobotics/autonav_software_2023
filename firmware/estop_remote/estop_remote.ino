@@ -22,16 +22,18 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 LiquidCrystal_PCF8574 lcd(0x27); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 // Parameters
-float battery_min_voltage = 3.5f;
-float battery_max_voltage = 4.0f;
+float battery_min_voltage = 3.4f;
+float battery_max_voltage = 3.75f;
 int screen_refresh_period_ms = 200;
 int heartbeat_period_ms = 200;
+int handshake_period_ms = 1000;
 int message_resend_period_ms = 500;
 int max_resends = 2;
 
 // Storage variables
 unsigned long last_display_update = 0;
 unsigned long last_heartbeat = 0;
+unsigned long last_handshake_attempt = 0;
 unsigned long last_received_message = 0;
 unsigned long last_sent_message = 0;
 int current_resends = 0;
@@ -46,10 +48,10 @@ volatile int signal_to_send = NONE_SIGNAL;
 RadioPacket outgoing_message;
 
 // Errors
-volatile int error_state = NO_ERROR;
 static const int NO_ERROR = 0;
 static const int ERROR_WRONG_RESPONSE_ID = 1;
 static const int ERROR_WRONG_SIGNAL_RECEIVED = 2;
+volatile int error_state = NO_ERROR;
 
 void estopButtonInterrupt()
 {
@@ -108,7 +110,7 @@ void setup()
   pinMode(MOBSTART_BUTTON_PIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(MOBSTART_BUTTON_PIN), mobilityStartButtonInterrupt, FALLING);
 
-  strncpy(toSend.password, GLOBAL_PASSWORD, sizeof(GLOBAL_PASSWORD));
+  strncpy(outgoing_message.password, GLOBAL_PASSWORD, sizeof(GLOBAL_PASSWORD));
 
 }
 
@@ -133,7 +135,7 @@ void updateBatteryDisplay() {
   if (battery_percentage_smoothed < 0) {
     battery_percentage_smoothed = estimated_battery_percentage;
   } else {
-    battery_percentage_smoothed = 0.5 * battery_percentage_smoothed + 0.5 * estimated_battery_percentage;
+    battery_percentage_smoothed = 0.7 * battery_percentage_smoothed + 0.3 * estimated_battery_percentage;
   }
 
   // Allow space for the "1" in "100"
@@ -203,6 +205,12 @@ void reachedError(int error_type) {
 
 void loop()
 {
+  // Update display regularly, except when we are expecting a response
+  if ((expecting_response_id == MSG_NONE_ID || expecting_response_id == MSG_HANDSHAKE_REPLY_ID) && (millis() - last_display_update) > screen_refresh_period_ms) {
+    last_display_update = millis();
+    updateDisplay();
+  }
+
   if (rf95.available())
   {
     // Blink LED on receive
@@ -229,7 +237,7 @@ void loop()
         } else {
             // Error! Relay responded with wrong response!
             // EStop due to unknown state!
-            reachedError(ERROR_WRONG_RESPONSE_ID)
+            reachedError(ERROR_WRONG_RESPONSE_ID);
         }
 
         // Handshake reply
@@ -244,7 +252,7 @@ void loop()
             } else {
                 // Error! Relay responded with wrong signal!
                 // EStop due to unknown state!
-                reachedError(ERROR_WRONG_SIGNAL_RECEIVED)
+                reachedError(ERROR_WRONG_SIGNAL_RECEIVED);
             }
         }
       }
@@ -297,9 +305,15 @@ void loop()
     expecting_response_id = MSG_HEARTBEAT_REPLY_ID;
   }
 
-  // Update display regularly, except when we are expecting a response
-  if (expecting_response_id == MSG_NONE_ID && (millis() - last_display_update) > screen_refresh_period_ms) {
-    last_display_update = millis();
-    updateDisplay();
+  // Send a hearbeat periodically if we are not connected
+  if (!is_connected && (millis() - last_handshake_attempt) > handshake_period_ms) {
+    last_handshake_attempt = millis();
+    outgoing_message.id = MSG_INIT_HANDSHAKE_ID;
+
+    rf95.send((uint8_t*)&outgoing_message, sizeof(outgoing_message));
+    rf95.waitPacketSent();
+
+    last_sent_message = millis();
+    expecting_response_id = MSG_HANDSHAKE_REPLY_ID;
   }
 }

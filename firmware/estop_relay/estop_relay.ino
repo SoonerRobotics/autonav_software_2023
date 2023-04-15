@@ -141,6 +141,7 @@ void loop() {
               }
 
               toSend.id = MSG_SIGNAL_REPLY_ID;
+              toSend.signal = msg.signal;
               rf95.send((uint8_t*)&toSend, sizeof(toSend));
               rf95.waitPacketSent();
 
