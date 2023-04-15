@@ -25,27 +25,25 @@ LiquidCrystal_PCF8574 lcd(0x27); // set the LCD address to 0x27 for a 16 chars a
 float battery_min_voltage = 3.5f;
 float battery_max_voltage = 4.0f;
 int screen_refresh_period_ms = 200;
-int connection_timeout_ms = 3000;
 int heartbeat_period_ms = 200;
+int message_resend_period_ms = 500;
+int max_resends = 2;
 
 // Storage variables
 unsigned long last_display_update = 0;
 unsigned long last_heartbeat = 0;
 unsigned long last_received_message = 0;
+unsigned long last_sent_message = 0;
+int current_resends = 0;
 
 int led_status = 0;
 float battery_percentage_smoothed = -1.0f;
 uint8_t expecting_response_id = MSG_NONE_ID;
 bool is_connected = false;
 
-RadioPacket outgoing_message;
-
-// Signals
 volatile int signal_to_send = NONE_SIGNAL;
-static const int NONE_SIGNAL = -1;
-static const int ESTOP_SIGNAL = 0;
-static const int MOB_STOP_SIGNAL = 1;
-static const int MOB_START_SIGNAL = 9;
+
+RadioPacket outgoing_message;
 
 // Errors
 volatile int error_state = NO_ERROR;
@@ -181,10 +179,11 @@ void updateDisplay() {
   // Connection status
   if (is_connected) {
     lcd.print("Connected.   ");
-    lcd.setCursor(0, 1);
-    lcd.print("Last ack: ");
-    lcd.print((millis() - lastAck) / 1000.0, 0);
-    lcd.print("s");
+    if (current_resends > 0) {
+        lcd.setCursor(0, 1);
+        lcd.print("Resends: ");
+        lcd.print((float)current_resends, 0);
+    }
   } else {
     lcd.print("Waiting...");
   }
@@ -226,6 +225,7 @@ void loop()
         // Clear expecting response
         if (incoming_message.id == expecting_response_id) {
             expecting_response_id = MSG_NONE_ID;
+            current_resends = 0;
         } else {
             // Error! Relay responded with wrong response!
             // EStop due to unknown state!
@@ -251,9 +251,26 @@ void loop()
     }
   }
 
-  // Mark us as disconnected if we haven't received an ACK in a while
-  if (is_connected && (millis() - last_received_message) > connection_timeout_ms) {
-    is_connected = false;
+//   // Mark us as disconnected if we haven't received an ACK in a while
+//   if (is_connected && (millis() - last_received_message) > connection_timeout_ms) {
+//     is_connected = false;
+//   }
+
+  // Resend messages
+  if (is_connected && expecting_response_id != MSG_NONE_ID && (millis() - last_sent_message) > message_resend_period_ms) {
+    // Disconnect after certain number of tries
+    if (current_resends >= max_resends) {
+        is_connected = false;
+        expecting_response_id = MSG_NONE_ID;
+        signal_to_send = NONE_SIGNAL;
+    }
+
+    current_resends += 1;
+
+    rf95.send((uint8_t*)&outgoing_message, sizeof(outgoing_message));
+    rf95.waitPacketSent();
+
+    last_sent_message = millis();
   }
 
   // Send a signal if we have one waiting
@@ -264,6 +281,7 @@ void loop()
     rf95.send((uint8_t*)&outgoing_message, sizeof(outgoing_message));
     rf95.waitPacketSent();
 
+    last_sent_message = millis();
     expecting_response_id = MSG_SIGNAL_REPLY_ID;
   }
 
@@ -275,6 +293,7 @@ void loop()
     rf95.send((uint8_t*)&outgoing_message, sizeof(outgoing_message));
     rf95.waitPacketSent();
 
+    last_sent_message = millis();
     expecting_response_id = MSG_HEARTBEAT_REPLY_ID;
   }
 
