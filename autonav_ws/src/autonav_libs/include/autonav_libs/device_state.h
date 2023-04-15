@@ -1,3 +1,5 @@
+#pragma once
+
 namespace Autonav
 {
 	enum DeviceState : uint8_t

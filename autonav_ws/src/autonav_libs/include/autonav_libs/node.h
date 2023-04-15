@@ -1,3 +1,5 @@
+#pragma once
+
 #include "autonav_msgs/msg/configuration_instruction.hpp"
 #include "autonav_msgs/srv/set_system_state.hpp"
 #include "autonav_msgs/srv/set_device_state.hpp"

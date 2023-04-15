@@ -1,4 +1,3 @@
-// System Imports
 #include <stdio.h>
 #include <thread>
 #include <memory>
@@ -14,6 +13,7 @@
 #include "std_msgs/msg/header.h"
 #include "sensor_msgs/msg/image.hpp"
 #include "autonav_libs/node.h"
+#include "autonav_display/all.h"
 
 static GLFWwindow *window;
 static void glfw_error_callback(int error, const char *description)
@@ -33,17 +33,10 @@ public:
 		this->declare_parameter("default_preset", "default");
 		this->declare_parameter("fullscreen", false);
 
-		if (!setup_imgui())
-		{
-			RCLCPP_ERROR(this->get_logger(), "Failed to setup ImGUI");
-			return;
-		}
-
 		setDeviceState(Autonav::DeviceState::OPERATING);
 
 		// Create render thread
-		render_thread = std::thread([this]()
-									{ render(); });
+		render_thread = std::thread([this]() { render(); });
 	}
 
 	bool transition(Autonav::DeviceState state) override
@@ -104,6 +97,12 @@ public:
 
 	void render()
 	{
+		if (!setup_imgui())
+		{
+			RCLCPP_ERROR(this->get_logger(), "Failed to setup ImGUI");
+			return;
+		}
+
 		while (!glfwWindowShouldClose(window) && rclcpp::ok())
 		{
 			glfwPollEvents();
@@ -111,22 +110,20 @@ public:
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 
-			ImGui::Begin("Autonav 2023 | The Weeb Wagon");
+			const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoBringToFrontOnFocus;
+			ImGui::Begin("Autonav 2023 | The Weeb Wagon", NULL, flags);
+
+			if (ImGui::BeginTabBar("##primarytabbar", ImGuiTabBarFlags_None))
+			{
+				if (ImGui::BeginTabItem("Dashboard"))
+				{
+					ShowDashboard(this);
+					ImGui::EndTabItem();
+				}
+				ImGui::EndTabBar();
+			}
 			
-			for (auto const &[key, value] : getDeviceStates())
-			{
-				ImGui::Text("%d: %d", key, (uint8_t)value);
-			}
-
-			// Show all nodes and their hashes using get_node_names()
-			for (auto const &key : get_node_names())
-			{
-				auto withoutSlash = key.substr(1);
-				ImGui::Text("%s: %d", withoutSlash.c_str(), Autonav::hash(withoutSlash));
-			}
-
 			ImGui::End();
-
 			ImGui::Render();
 			int display_w, display_h;
 			glfwGetFramebufferSize(window, &display_w, &display_h);

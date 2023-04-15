@@ -76,25 +76,26 @@ install(FILES
   ${IMGUI_DIR}/backends/imgui_impl_glfw.h
   ${IMGUI_DIR}/backends/imgui_impl_opengl3.h
 
-  ${IMGUI_PLOTS_DIR}/implot.h
-  ${IMGUI_PLOTS_DIR}/implot_internal.h
-
   DESTINATION include
 )
 
 install(TARGETS imgui EXPORT export_imgui
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS primary_display
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+target_include_directories(primary_display PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 install(DIRECTORY ${IMGUI_DIR}/misc/fonts DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY fonts DESTINATION share/${PROJECT_NAME})
-
 ament_package()

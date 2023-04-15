@@ -1,3 +1,5 @@
+#pragma once
+
 namespace Autonav
 {
 	enum SystemState : uint8_t

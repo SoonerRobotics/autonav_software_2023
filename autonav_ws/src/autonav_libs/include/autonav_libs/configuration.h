@@ -1,3 +1,5 @@
+#pragma once
+
 #include "autonav_msgs/msg/configuration_instruction.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <stdint.h>

@@ -3,4 +3,5 @@
         <param name="required_nodes" value="[autonav_display]" />
     </node>
     <node pkg="autonav_display" exec="primary_display" output="screen" />
+    <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
 </launch>
