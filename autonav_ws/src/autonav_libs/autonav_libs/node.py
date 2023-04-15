@@ -1,7 +1,7 @@
 from autonav_msgs.srv import SetDeviceState, SetSystemState
 from autonav_msgs.msg import DeviceState, SystemState
 from autonav_libs.configuration import Configuration
-from autonav_libs.state import DeviceStateEnum
+from autonav_libs.state import DeviceStateEnum, SystemStateEnum
 from rclpy.node import Node
 
 
@@ -44,11 +44,13 @@ class AutoNode(Node):
         self.deviceStateClient.call_async(request)
 
     def onSystemState(self, state: SystemState):
+        old = self.state
         self.state = state
+        self.transition(old, state)
 
     def onDeviceState(self, state: DeviceState):
+        self.deviceStates[state.device] = state.state
         if state.device != self.id:
-            self.deviceStates[state.device] = state.state
             return
         
         if state.state == DeviceStateEnum.STANDBY:
@@ -57,11 +59,17 @@ class AutoNode(Node):
             self.deviceStates[state.device] = state.state
             return
 
-        if self.transition(state.state):
-            self.deviceStates[state.device] = state.state
-
-    def transition(self, _: SystemState):
-        return True
+    def transition(self, old: SystemState, updated: SystemState):
+        if updated.state == SystemStateEnum.OFF:
+            return
+        
+        if updated.state == SystemStateEnum.DISABLED and self.getDeviceState() == DeviceStateEnum.OPERATING:
+            self.setDeviceState(DeviceStateEnum.READY)
+            return
+        
+        if (updated.state == SystemStateEnum.MANUAL or updated.state == SystemStateEnum.AUTONOMOUS) and self.getDeviceState() == DeviceStateEnum.READY:
+            self.setDeviceState(DeviceStateEnum.OPERATING)
+            return
 
     def getSystemState(self) -> SystemState:
         return self.state

@@ -48,15 +48,17 @@ namespace Autonav
 	}
 
 	void AutoNode::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
-	{	
+	{
+		auto old = state;
 		state = *msg;
+		transition(old, state);
 	}
 
 	void AutoNode::onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg)
 	{
+		deviceStates[msg->device] = static_cast<DeviceState>(msg->state);
 		if (msg->device != getDeviceID())
 		{
-			deviceStates[msg->device] = static_cast<DeviceState>(msg->state);
 			return;
 		}
 
@@ -64,20 +66,30 @@ namespace Autonav
 		{
 			config.recache();
 			configure();
-			deviceStates[msg->device] = static_cast<DeviceState>(msg->state);
 			return;
-		}
-
-		if (transition(static_cast<DeviceState>(msg->state)))
-		{
-			deviceStates[msg->device] = static_cast<DeviceState>(msg->state, true);
 		}
 	}
 
-	bool AutoNode::transition(DeviceState state)
+	void AutoNode::transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated)
 	{
-		UNUSED(state);
-		return true;
+		switch(updated.state)
+		{
+			case SystemState::SHUTDOWN:
+				break;
+			case SystemState::DISABLED:
+				if (getDeviceState() == DeviceState::OPERATING)
+				{
+					setDeviceState(DeviceState::READY);
+				}
+				break;
+			case SystemState::MANUAL:
+			case SystemState::AUTONOMOUS:
+				if (getDeviceState() == DeviceState::READY)
+				{
+					setDeviceState(DeviceState::OPERATING);
+				}
+				break;
+		}
 	}
 
 	autonav_msgs::msg::SystemState AutoNode::getSystemState()

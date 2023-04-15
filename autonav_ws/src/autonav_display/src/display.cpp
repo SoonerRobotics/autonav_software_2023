@@ -39,16 +39,15 @@ public:
 		render_thread = std::thread([this]() { render(); });
 	}
 
-	bool transition(Autonav::DeviceState state) override
+	void transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated) override
 	{
-		switch (state)
+		switch(updated.state)
 		{
-		case Autonav::DeviceState::READY:
-		case Autonav::DeviceState::OFF:
-			return false;
-		case Autonav::DeviceState::OPERATING:
-		default:
-			return true;
+			case Autonav::SystemState::SHUTDOWN:
+			case Autonav::SystemState::DISABLED:
+			case Autonav::SystemState::MANUAL:
+			case Autonav::SystemState::AUTONOMOUS:
+				break;
 		}
 	}
 

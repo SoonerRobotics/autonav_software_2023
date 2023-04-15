@@ -35,7 +35,7 @@ namespace Autonav
 
 	protected:
 		virtual void configure() = 0;
-		virtual bool transition(DeviceState state) = 0;
+		virtual void transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated) = 0;
 		std::map<int64_t, DeviceState> getDeviceStates();
 
 	private:
