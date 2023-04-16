@@ -31,11 +31,31 @@ namespace Autonav
 		return id;
 	}
 
+	void AutoNode::setEStop(bool state)
+	{
+		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
+		request->state = this->state.state;
+		request->estop = state;
+		request->mobility = this->state.mobility;
+		systemStateClient->async_send_request(request);
+	}
+
+	void AutoNode::setMobility(bool state)
+	{
+		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
+		request->state = this->state.state;
+		request->estop = this->state.estop;
+		request->mobility = state;
+		systemStateClient->async_send_request(request);
+	}
+
 	void AutoNode::setSystemState(SystemState state)
 	{
 		// Send a system state client request
 		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
 		request->state = static_cast<uint8_t>(state);
+		request->estop = this->state.estop;
+		request->mobility = this->state.mobility;
 		systemStateClient->async_send_request(request);
 	}
 
@@ -72,6 +92,7 @@ namespace Autonav
 
 	void AutoNode::transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated)
 	{
+		UNUSED(old);
 		switch(updated.state)
 		{
 			case SystemState::SHUTDOWN:

@@ -5,11 +5,10 @@ import time
 import threading
 from vnpy import *
 from enum import IntEnum
-
 from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import GPSFeedback
-
-from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
+from autonav_libs.node import AutoNode
+from autonav_libs.state import DeviceStateEnum, SystemStateEnum
 
 class Registers(IntEnum):
     IMU_READ_RATE = 0
@@ -21,7 +20,7 @@ class IMUNode(AutoNode):
     def __init__(self):
         super().__init__("autonav_serial_imu")
         
-    def setup(self):
+    def configure(self):
         self.m_sensor = VnSensor()
         self.m_hasPublishedHeaders = False
 
@@ -35,11 +34,8 @@ class IMUNode(AutoNode):
         self.m_imuThread = threading.Thread(target=self.imuWorker)
         self.m_imuThread.start()
 
-    def shutdown(self):
-        self.m_imuThread.join()
-
     def imuWorker(self):
-        while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
+        while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
             if (not self.m_hasPublishedHeaders):
                 self.m_hasPublishedHeaders = True
                 continue
@@ -51,21 +47,21 @@ class IMUNode(AutoNode):
                     
                     self.m_sensor.connect("/dev/autonav-imu-200", 115200)
                 except:
-                    self.setDeviceState(DeviceState.STANDBY)
+                    self.setDeviceState(DeviceStateEnum.STANDBY)
                     time.sleep(self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value))
                     continue
 
             if (not self.m_sensor.is_connected):
                 time.sleep(self.config.readFloat(Registers.IMU_BADCONNECT_RETRY.value))
-                self.setDeviceState(DeviceState.STANDBY)
+                self.setDeviceState(DeviceStateEnum.STANDBY)
                 continue
 
-            if (self.getDeviceState() != DeviceState.READY and self.getDeviceState() != DeviceState.OPERATING):
+            if (self.getDeviceState() != DeviceStateEnum.READY and self.getDeviceState() != DeviceStateEnum.OPERATING):
                 time.sleep(0.5)
-                self.setDeviceState(DeviceState.READY)
+                self.setDeviceState(DeviceStateEnum.READY)
                 continue
 
-            if self.getDeviceState() != DeviceState.OPERATING:
+            if self.getDeviceState() != DeviceStateEnum.OPERATING:
                 continue
 
             acceleration = self.m_sensor.read_acceleration_measurements()

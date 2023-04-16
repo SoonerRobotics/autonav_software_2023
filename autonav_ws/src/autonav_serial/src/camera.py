@@ -4,11 +4,10 @@ import rclpy
 import time
 import threading
 import cv2
-
-from autonav_libs import AutoNode, DeviceStateEnum, SystemStateEnum as SystemState, clamp
 from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge
-
+from autonav_libs.node import AutoNode
+from autonav_libs.state import DeviceStateEnum, SystemStateEnum
 
 REFRESH_RATE = 0
 bridge = CvBridge()
@@ -18,9 +17,7 @@ class CameraNode(AutoNode):
     def __init__(self):
         super().__init__("autonav_serial_camera")
 
-
-
-    def setup(self):
+    def configure(self):
         self.config.writeInt(REFRESH_RATE, 12)
 
         self.declare_parameter("device_id", 2)
@@ -32,7 +29,7 @@ class CameraNode(AutoNode):
 
     def camera_read(self):
         capture = None
-        while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
+        while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
             try:
                 capture = cv2.VideoCapture(self.deviceId)
                 if capture is None or not capture.isOpened():
@@ -48,7 +45,7 @@ class CameraNode(AutoNode):
                 continue
                 
 
-            while rclpy.ok() and self.getSystemState() != SystemState.SHUTDOWN:
+            while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
                 if self.getDeviceState() != DeviceStateEnum.OPERATING:
                     continue
 

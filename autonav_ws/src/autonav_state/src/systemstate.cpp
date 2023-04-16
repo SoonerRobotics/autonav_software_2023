@@ -33,22 +33,17 @@ public:
 
 	bool shouldIgnoreNode(std::string node)
 	{
-		if (node.find("ros") != std::string::npos)
+		if (node.find("autonav_state_system") != std::string::npos)
 		{
 			return true;
 		}
 
-		if (node.find("rcl") != std::string::npos)
+		if (node.find("autonav") != std::string::npos)
 		{
-			return true;
+			return false;
 		}
 
-		if (strcmp(node.c_str(), "/autonav_state_system") == 0)
-		{
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 
 	void onStateTick()
@@ -59,7 +54,17 @@ public:
 			return;
 		}
 
-		auto nodes = this->get_node_names();
+		auto rawNodes = this->get_node_names();
+		std::vector<std::string> nodes;
+		for (auto node : rawNodes)
+		{
+			if (node.length() == 0 || node[0] != '/')
+			{
+				continue;
+			}
+			nodes.push_back(node.substr(1));
+		}
+
 		for (auto node : nodes)
 		{
 			if(shouldIgnoreNode(node))
@@ -67,13 +72,7 @@ public:
 				continue;
 			}
 
-			// If it starts with a /, remove it
-			if (node[0] == '/')
-			{
-				node = node.substr(1);
-			}
-
-			if (std::find(trackedNodes.begin(), trackedNodes.end(), node) == trackedNodes.end())
+			if (std::find(trackedNodes.begin(), trackedNodes.end(), node) == trackedNodes.end() || node.length() == 0)
 			{
 				trackedNodes.push_back(node);
 				RCLCPP_INFO(this->get_logger(), "Node added: %s", node.c_str());
@@ -81,14 +80,20 @@ public:
 			}
 		}
 
+		std::vector<std::string> removedNodes;
 		for (auto node : trackedNodes)
 		{
-			node = node.substr(1);
 			if (std::find(nodes.begin(), nodes.end(), node) == nodes.end())
 			{
-				onNodeRemoved(node);
-				trackedNodes.erase(std::remove(trackedNodes.begin(), trackedNodes.end(), node), trackedNodes.end());
+				removedNodes.push_back(node);
 			}
+		}
+
+		for (auto node : removedNodes)
+		{
+			RCLCPP_INFO(this->get_logger(), "Node removed: %s", node.c_str());
+			trackedNodes.erase(std::remove(trackedNodes.begin(), trackedNodes.end(), node), trackedNodes.end());
+			onNodeRemoved(node);
 		}
 
 		if (waitingQueue.size() > 0 && areRequiredNodesRunning())

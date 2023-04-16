@@ -15,6 +15,8 @@
 #include "autonav_libs/node.h"
 #include "autonav_display/all.h"
 
+#define UNUSED(x) (void)(x)
+
 static GLFWwindow *window;
 static void glfw_error_callback(int error, const char *description)
 {
@@ -41,6 +43,7 @@ public:
 
 	void transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated) override
 	{
+		UNUSED(old);
 		switch(updated.state)
 		{
 			case Autonav::SystemState::SHUTDOWN:
@@ -64,15 +67,14 @@ public:
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		window = glfwCreateWindow(1920, 1080, "Autonav 2023 | The Weeb Wagon", NULL, NULL);
 		if (window == nullptr)
 		{
 			return false;
 		}
 
-		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		glfwSetWindowPos(window, (mode->width - 1920) / 2, (mode->height - 1080) / 2);
-
+		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
 
@@ -102,6 +104,7 @@ public:
 			return;
 		}
 
+		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		while (!glfwWindowShouldClose(window) && rclcpp::ok())
 		{
 			glfwPollEvents();
@@ -111,12 +114,19 @@ public:
 
 			const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoBringToFrontOnFocus;
 			ImGui::Begin("Autonav 2023 | The Weeb Wagon", NULL, flags);
+			ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+			ImGui::SetWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Always);
 
 			if (ImGui::BeginTabBar("##primarytabbar", ImGuiTabBarFlags_None))
 			{
 				if (ImGui::BeginTabItem("Dashboard"))
 				{
 					ShowDashboard(this);
+					ImGui::EndTabItem();
+				}
+				if (ImGui::BeginTabItem("Vision"))
+				{
+					ShowVision(this);
 					ImGui::EndTabItem();
 				}
 				ImGui::EndTabBar();

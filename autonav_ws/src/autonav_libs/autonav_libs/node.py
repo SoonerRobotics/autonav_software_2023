@@ -32,9 +32,11 @@ class AutoNode(Node):
     def getDeviceID(self) -> int:
         return self.id
 
-    def setSystemState(self, state: SystemState):
+    def setSystemStateInternal(self, state: SystemState):
         request = SetSystemState.Request()
-        request.state = state
+        request.state = state.state
+        request.estop = state.estop
+        request.mobility = state.mobility
         self.systemStateClient.call_async(request)
 
     def setDeviceState(self, state: DeviceStateEnum):
@@ -42,6 +44,27 @@ class AutoNode(Node):
         request.state = state
         request.device = self.id
         self.deviceStateClient.call_async(request)
+
+    def setSystemState(self, state: SystemStateEnum):
+        self.setSystemStateInternal(SystemState(
+            state = state,
+            estop = self.state.estop,
+            mobility = self.state.mobility
+        ))
+    
+    def setEStop(self, state: bool):
+        self.setSystemStateInternal(SystemState(
+            state = self.state.state,
+            estop = state,
+            mobility = self.state.mobility
+        ))
+
+    def setMobility(self, state: bool):
+        self.setSystemStateInternal(SystemState(
+            state = self.state.state,
+            estop = self.state.estop,
+            mobility = state
+        ))
 
     def onSystemState(self, state: SystemState):
         old = self.state
@@ -59,8 +82,8 @@ class AutoNode(Node):
             self.deviceStates[state.device] = state.state
             return
 
-    def transition(self, old: SystemState, updated: SystemState):
-        if updated.state == SystemStateEnum.OFF:
+    def transition(self, _: SystemState, updated: SystemState):
+        if updated.state == SystemStateEnum.DISABLED:
             return
         
         if updated.state == SystemStateEnum.DISABLED and self.getDeviceState() == DeviceStateEnum.OPERATING:
@@ -76,3 +99,6 @@ class AutoNode(Node):
 
     def getDeviceState(self, id: int = None) -> DeviceStateEnum:
         return self.deviceStates[id] if id else self.deviceStates[self.id]
+    
+    def getDeviceStates(self):
+        return self.deviceStates

@@ -3,5 +3,10 @@
         <param name="required_nodes" value="[autonav_display]" />
     </node>
     <node pkg="autonav_display" exec="primary_display" output="screen" />
+    <node pkg="autonav_serial" exec="camera.py" name="autonav_serial_camera">
+        <param name="device_id" value="2" />
+    </node>
+    <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" />
+    <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial_core" />
     <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
 </launch>

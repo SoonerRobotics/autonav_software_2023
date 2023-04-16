@@ -16,4 +16,5 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   src/configuration.cpp src/node.cpp
 )
 
+ament_python_install_package(${PROJECT_NAME})
 ament_auto_package()

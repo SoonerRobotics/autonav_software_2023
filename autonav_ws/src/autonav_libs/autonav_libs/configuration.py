@@ -14,10 +14,8 @@ class Opcode(IntEnum):
 class Configuration:
     def __init__(self, id, node: Node):
         self.id = id
-        self.subscriber = node.create_subscription(
-            ConfigurationInstruction, "/autonav/configuration", self.onConfigurationUpdated, 10)
-        self.publisher = node.create_publisher(
-            ConfigurationInstruction, "/autonav/configuration", 10)
+        self.subscriber = node.create_subscription(ConfigurationInstruction, "/autonav/configuration", self.onConfigurationInstruction, 10)
+        self.publisher = node.create_publisher(ConfigurationInstruction, "/autonav/configuration", 10)
 
         # a map of key to map of key to byte array
         self.cache = {}
@@ -77,7 +75,7 @@ class Configuration:
         self.publisher.publish(instruction)
 
     def onConfigurationInstruction(self, instruction: ConfigurationInstruction):
-        amTarget = instruction.target == self.id
+        amTarget = instruction.device == self.id
 
         if instruction.opcode == Opcode.GET and amTarget:
             response = ConfigurationInstruction()

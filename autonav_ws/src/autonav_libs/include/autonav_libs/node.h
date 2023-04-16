@@ -24,6 +24,8 @@ namespace Autonav
 
 		void setSystemState(SystemState state);
 		void setDeviceState(DeviceState state);
+		void setEStop(bool state);
+		void setMobility(bool state);
 
 		Configuration config;
 
@@ -32,11 +34,11 @@ namespace Autonav
 		autonav_msgs::msg::SystemState getSystemState();
 
 		int64_t getDeviceID();
+		std::map<int64_t, DeviceState> getDeviceStates();
 
 	protected:
 		virtual void configure() = 0;
 		virtual void transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated) = 0;
-		std::map<int64_t, DeviceState> getDeviceStates();
 
 	private:
 		void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);
