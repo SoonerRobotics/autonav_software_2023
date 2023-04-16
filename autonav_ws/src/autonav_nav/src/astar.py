@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import Position
-from autonav_libs import AutoNode, DeviceStateEnum
-from geometry_msgs.msg import PoseStamped, Point, Pose
+from autonav_msgs.msg import Position, SystemState
+from autonav_libs.node import AutoNode
+from autonav_libs.state import DeviceStateEnum
+from geometry_msgs.msg import PoseStamped, Point
 from nav_msgs.msg import OccupancyGrid, Path
 import rclpy
 import math
@@ -41,17 +42,18 @@ class AStarNode(AutoNode):
         self.m_configSpace = None
         self.m_position = None
 
-    def setup(self):
+    def configure(self):
         global first_waypoints_time
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
         self.m_mapTimer = self.create_timer(0.3, self.makeMap)
         
-        self.setDeviceState(DeviceStateEnum.READY)
+        first_waypoints_time = time.time()
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
-        first_waypoints_time = time.time()
+    def transition(self, _: SystemState, updated: SystemState):
+        return
 
     def onPoseReceived(self, msg: Position):
         self.m_position = msg
@@ -167,7 +169,7 @@ class AStarNode(AutoNode):
 
         if first_waypoints_time > 0 and time.time() > first_waypoints_time:
             first_waypoints_time = -2
-            waypoints = [pt for pt in (sim_waypoints if self.m_isSimulator else orig_waypoints)]
+            waypoints = [pt for pt in (sim_waypoints if self.getSystemState().is_simulator else orig_waypoints)]
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]

@@ -109,27 +109,27 @@ class ImageTransformer(AutoNode):
 
         # Blur it up
         for _ in range(self.config.getInt(BLUR_ITERATIONS)):
-            cv_image=cv2.blur(cv_image, self.getBlur())
+            cv_image = cv2.blur(cv_image, self.getBlur())
 
         # Apply filter and return a mask
-        img=cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-        lower=(
+        img = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
+        lower = (
             self.config.getInt(LOWER_HUE),
             self.config.getInt(LOWER_SATURATION),
             self.config.getInt(LOWER_VALUE)
         )
-        upper=(
+        upper = (
             self.config.getInt(UPPER_HUE),
             self.config.getInt(UPPER_SATURATION),
             self.config.getInt(UPPER_VALUE)
         )
-        mask=cv2.inRange(img, lower, upper)
-        mask=255 - mask
-        mask[mask < 250]=0
+        mask = cv2.inRange(img, lower, upper)
+        mask = 255 - mask
+        mask[mask < 250] = 0
 
         # Apply region of disinterest and flattening
-        height=img.shape[0]
-        width=img.shape[1]
+        height = img.shape[0]
+        width = img.shape[1]
         # region_of_disinterest_vertices=[
         #     (75, height),
         #     (width / 5, (height / 2) + \
@@ -140,20 +140,21 @@ class ImageTransformer(AutoNode):
         # ]
         # mask=self.region_of_disinterest(mask, np.array(
         #     [region_of_disinterest_vertices], np.int32))
-        mask=self.flatten_image(mask)
+        mask = self.flatten_image(mask)
 
         # Crop the top by setting it to 0
         # mask[0:25, :] = 0
 
         # Convert mask to RGB for preview
-        preview_image=cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
-        preview_msg=g_bridge.cv2_to_compressed_imgmsg(preview_image)
-        preview_msg.header=image.header
-        preview_msg.format="jpeg"
+        preview_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+        preview_msg = g_bridge.cv2_to_compressed_imgmsg(preview_image)
+        preview_msg.header = image.header
+        preview_msg.format = "jpeg"
         self.m_lanePreviewPublisher.publish(preview_msg)
 
         # Actually generate the map
         self.generate_occupancy_map(mask)
+
 
 def main():
     rclpy.init()

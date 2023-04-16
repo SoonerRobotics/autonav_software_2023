@@ -31,7 +31,7 @@ class DeadReckoningFilter:
     def estimate(self):
         msg = Position()
         offset = 1
-        if self.node.m_isSimulator:
+        if self.node.getSystemState().is_simulator:
             offset = 10
         msg.x = self.xSum / offset
         msg.y = self.ySum / offset

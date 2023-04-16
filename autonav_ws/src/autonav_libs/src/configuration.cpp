@@ -35,6 +35,33 @@ namespace Autonav
 	}
 
 	template <>
+	float Configuration::get(uint8_t address)
+	{
+		unsigned char byte_array[] = {cache[id][address][0], cache[id][address][1], cache[id][address][2], cache[id][address][3]};
+		float value;
+		std::copy(
+			reinterpret_cast<const char*>(&byte_array[0]),
+			reinterpret_cast<const char*>(&byte_array[4]),
+			reinterpret_cast<char*>(&value)
+		);
+		return value;
+	}
+
+	template <>
+	float Configuration::get(int64_t device, uint8_t address)
+	{
+		auto bytes = cache[device][address];
+		unsigned char byte_array[] = {bytes[0], bytes[1], bytes[2], bytes[3]};
+		float value;
+		std::copy(
+			reinterpret_cast<const char*>(&byte_array[0]),
+			reinterpret_cast<const char*>(&byte_array[4]),
+			reinterpret_cast<char*>(&value)
+		);
+		return value;
+	}
+
+	template <>
 	void Configuration::set(uint8_t address, int value)
 	{
 		std::vector<uint8_t> bytes;
@@ -68,6 +95,30 @@ namespace Autonav
 		configPublisher->publish(instruction);
 	}
 
+	template<>
+	void Configuration::set(uint8_t address, float value)
+	{
+		unsigned const char *p = reinterpret_cast<unsigned const char *>(&value);
+		autonav_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = id;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = std::vector<uint8_t>(p, p + sizeof(float));
+		configPublisher->publish(instruction);
+	}
+
+	template<>
+	void Configuration::set(int64_t device, uint8_t address, float value)
+	{
+		unsigned const char *p = reinterpret_cast<unsigned const char *>(&value);
+		autonav_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = device;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = std::vector<uint8_t>(p, p + sizeof(float));
+		configPublisher->publish(instruction);
+	}
+
 	void Configuration::recache()
 	{
 		cache.clear();
@@ -86,8 +137,6 @@ namespace Autonav
 	void Configuration::onConfigurationInstruction(const autonav_msgs::msg::ConfigurationInstruction::SharedPtr instruction)
 	{
 		const bool amTarget = instruction->device == id;
-
-		RCLCPP_INFO(rclcpp::get_logger("Configuration"), "Received configuration instruction: %d %d %d", instruction->device, instruction->opcode, instruction->address);
 
 		if (instruction->opcode == Opcode::GET && amTarget)
 		{

@@ -3,13 +3,15 @@
 import rclpy
 import numpy as np
 import matplotlib.pyplot as plt
-from enum import IntEnum
 import math
 
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point
+from autonav_msgs.msg import SystemState
 from cv_bridge import CvBridge
-from autonav_libs import AutoNode, DeviceStateEnum as DeviceState
+
+from autonav_libs.node import AutoNode
+from autonav_libs.state import DeviceStateEnum
 
 g_bridge = CvBridge()
 
@@ -29,11 +31,12 @@ class Expandifier(AutoNode):
         self.verticalCameraRange = 2.75
         self.horizontalCameraRange = 3
 
-        self.maxRange = 0.65 # meters
+        self.maxRange = 0.65  # meters
         self.noGoPercent = 0.70
-        self.noGoRange = self.maxRange * self.noGoPercent # meters
+        self.noGoRange = self.maxRange * self.noGoPercent  # meters
         self.maxRange = int(self.maxRange / (self.horizontalCameraRange / 80))
-        self.noGoRange = int(self.noGoRange / (self.horizontalCameraRange / 80))
+        self.noGoRange = int(
+            self.noGoRange / (self.horizontalCameraRange / 80))
 
         self.metaData = MapMetaData(
             width=100,
@@ -47,46 +50,54 @@ class Expandifier(AutoNode):
             )
         )
 
-    def setup(self):
+    def configure(self):
         xxxs = list(range(-self.maxRange, self.maxRange + 1))
-        circle_around_indicies = [(0,0,0)]
+        circle_around_indicies = [(0, 0, 0)]
         for x in xxxs:
             for y in xxxs:
-                if self.maxRange * self.noGoPercent <= math.sqrt(x**2 + y**2) < self.maxRange and (x+y)%3==0:
-                    circle_around_indicies.append((x, y, math.sqrt(x**2 + y**2)))
+                if self.maxRange * self.noGoPercent <= math.sqrt(x**2 + y**2) < self.maxRange and (x+y) % 3 == 0:
+                    circle_around_indicies.append(
+                        (x, y, math.sqrt(x**2 + y**2)))
         self.circles = circle_around_indicies
 
-        self.m_rawConfigSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/raw", self.onRawCfgSpaceReceived, 1)
-        self.m_configPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/expanded", 1)
-        self.setDeviceState(DeviceState.READY)
-        self.setDeviceState(DeviceState.OPERATING)
-        
+        self.m_rawConfigSubscriber = self.create_subscription(
+            OccupancyGrid, "/autonav/cfg_space/raw", self.onRawCfgSpaceReceived, 1)
+        self.m_configPublisher = self.create_publisher(
+            OccupancyGrid, "/autonav/cfg_space/expanded", 1)
+        self.setDeviceState(DeviceStateEnum.OPERATING)
+
+    def transition(self, _: SystemState, updated: SystemState):
+        return
+
     def onRawCfgSpaceReceived(self, grid: OccupancyGrid):
         cfg_space = [0] * (80 * 80)
         for x in range(80):
             for y in range(1, 80):
                 if grid.data[x + y * 80] > 0:
                     for x_i, y_i, dist in self.circles:
-                            index = (x + x_i) + 80 * (y + y_i)
+                        index = (x + x_i) + 80 * (y + y_i)
 
-                            if 0 <= (x + x_i) < 80 and 0 <= (y + y_i) < 80:
-                                val_at_index = cfg_space[index]
-                                linear_t = 100 - ((dist - self.noGoRange) / (self.maxRange - self.noGoRange) * 100)
+                        if 0 <= (x + x_i) < 80 and 0 <= (y + y_i) < 80:
+                            val_at_index = cfg_space[index]
+                            linear_t = 100 - \
+                                ((dist - self.noGoRange) /
+                                 (self.maxRange - self.noGoRange) * 100)
 
-                                if dist <= self.noGoRange:
-                                    # obstacle expansion
-                                    cfg_space[index] = 100
-                                elif dist <= 100 and val_at_index <= linear_t:
-                                    # linearly decay
-                                    cfg_space[index] = int(linear_t)
+                            if dist <= self.noGoRange:
+                                # obstacle expansion
+                                cfg_space[index] = 100
+                            elif dist <= 100 and val_at_index <= linear_t:
+                                # linearly decay
+                                cfg_space[index] = int(linear_t)
 
         new_msg = OccupancyGrid(data=cfg_space, info=self.metaData)
         self.m_configPublisher.publish(new_msg)
-        
+
         # Show it using matplotlib
         plt.imshow(np.array(cfg_space).reshape(80, 80))
-        plt.show(block = False)
+        plt.show(block=False)
         plt.pause(0.01)
+
 
 def main():
     rclpy.init()

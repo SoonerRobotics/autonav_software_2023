@@ -19,6 +19,7 @@ public:
 		systemStatePublisher = this->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
 		stateTimer = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&StateSystemNode::onStateTick, this));
 
+		declare_parameter("forced_state", "");
 		declare_parameter("required_nodes", std::vector<std::string>());
 		declare_parameter("use_simulator", false);
 		declare_parameter("override_mobility", true);
@@ -29,6 +30,25 @@ public:
 		state.is_simulator = get_parameter("use_simulator").as_bool();
 		state.estop = false;
 		state.mobility = get_parameter("override_mobility").as_bool();
+
+		auto forcedState = get_parameter("forced_state").as_string();
+		if (forcedState == "disabled")
+		{
+			state.state = Autonav::SystemState::DISABLED;
+		}
+		else if (forcedState == "autonomous")
+		{
+			state.state = Autonav::SystemState::AUTONOMOUS;
+		}
+		else if (forcedState == "manual")
+		{
+			state.state = Autonav::SystemState::MANUAL;
+		}
+		
+		else if (forcedState == "shutdown")
+		{
+			state.state = Autonav::SystemState::SHUTDOWN;
+		}
 	}
 
 	bool shouldIgnoreNode(std::string node)
