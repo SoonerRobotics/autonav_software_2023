@@ -24,9 +24,9 @@ LiquidCrystal_PCF8574 lcd(0x27); // set the LCD address to 0x27 for a 16 chars a
 // Parameters
 float battery_min_voltage = 3.4f;
 float battery_max_voltage = 3.75f;
-int screen_refresh_period_ms = 200;
-int heartbeat_period_ms = 200;
-int handshake_period_ms = 1000;
+int screen_refresh_period_ms = 250;
+int heartbeat_period_ms = 250;
+int handshake_period_ms = 500;
 int message_resend_period_ms = 500;
 int max_resends = 2;
 
@@ -139,7 +139,7 @@ void updateBatteryDisplay() {
   }
 
   // Allow space for the "1" in "100"
-  if (battery_percentage_smoothed < 100) {
+  if (battery_percentage_smoothed < 99.5) {
     lcd.setCursor(13, 0);
   } else {
     lcd.setCursor(12, 0);
@@ -205,11 +205,6 @@ void reachedError(int error_type) {
 
 void loop()
 {
-  // Update display regularly, except when we are expecting a response
-  if ((expecting_response_id == MSG_NONE_ID || expecting_response_id == MSG_HANDSHAKE_REPLY_ID) && (millis() - last_display_update) > screen_refresh_period_ms) {
-    last_display_update = millis();
-    updateDisplay();
-  }
 
   if (rf95.available())
   {
@@ -259,6 +254,12 @@ void loop()
     }
   }
 
+  // Update display regularly, except when we are expecting a response
+  if ((expecting_response_id == MSG_NONE_ID || expecting_response_id == MSG_HANDSHAKE_REPLY_ID) && (millis() - last_display_update) > screen_refresh_period_ms) {
+    last_display_update = millis();
+    updateDisplay();
+  }
+
 //   // Mark us as disconnected if we haven't received an ACK in a while
 //   if (is_connected && (millis() - last_received_message) > connection_timeout_ms) {
 //     is_connected = false;
@@ -274,6 +275,9 @@ void loop()
     }
 
     current_resends += 1;
+
+    // Update the display to reflect resend
+    updateDisplay();
 
     rf95.send((uint8_t*)&outgoing_message, sizeof(outgoing_message));
     rf95.waitPacketSent();
