@@ -9,8 +9,9 @@
 #include "autonav_libs/node.h"
 #include "imgui.h"
 
-void BindCompressedImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg, GLuint *image_id, int *width, int *height)
+void ShowImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
 {
+    // Decompress using cv_bridge
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
@@ -23,42 +24,48 @@ void BindCompressedImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg,
     }
 
     auto mat = cv_ptr->image;
-    if (*image_id == 0)
-    {
-        glGenTextures(1, image_id);
-    }
+    auto width = mat.cols;
+    auto height = mat.rows;
 
-    *width = mat.cols;
-    *height = mat.rows;
-
-    glBindTexture(GL_TEXTURE_2D, *image_id);
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mat.cols, mat.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, mat.data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, mat.data);
     glGenerateMipmap(GL_TEXTURE_2D);
+        
+    // Render
+    ImGui::Image((void *)(intptr_t)texture, ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1));
 }
 
 void ShowVision(Autonav::AutoNode *node)
 {
     static rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr rawImageSubscriber = nullptr;
-    static sensor_msgs::msg::CompressedImage rawImage;
-    static GLuint rawImageId = -1;
-    static int rawImageHeight = 0;
-    static int rawImageWidth = 0;
+    static sensor_msgs::msg::CompressedImage::SharedPtr rawImage =  nullptr;
+
+    static rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr filteredImageSubscriber = nullptr;
+    static sensor_msgs::msg::CompressedImage::SharedPtr filteredImage =  nullptr;
 
     if (rawImageSubscriber == nullptr)
     {
-        rawImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>(
-            "igvc/camera/compressed", 20, [&](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
-                rawImage = *msg;
-                BindCompressedImage(msg, &rawImageId, &rawImageWidth, &rawImageHeight);
-            }
-        );
+        rawImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, [](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
+            rawImage = msg;
+        });
+
+        filteredImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/filtered", 20, [](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
+            filteredImage = msg;
+        });
     }
 
-    if (rawImageId != 0)
+    if (rawImage != nullptr)
     {
-        ImGui::Image((void *)(intptr_t)rawImageId, ImVec2(rawImageWidth, rawImageHeight), ImVec2(0, 0), ImVec2(1, 1));
+        ShowImage(rawImage);
+    }
+
+    if (filteredImage != nullptr)
+    {
+        ShowImage(filteredImage);
     }
 }

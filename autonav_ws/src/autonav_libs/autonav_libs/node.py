@@ -1,8 +1,11 @@
+from autonav_libs.state import DeviceStateEnum, SystemStateEnum
 from autonav_msgs.srv import SetDeviceState, SetSystemState
 from autonav_msgs.msg import DeviceState, SystemState
 from autonav_libs.configuration import Configuration
-from autonav_libs.state import DeviceStateEnum, SystemStateEnum
+from autonav_libs import hash
 from rclpy.node import Node
+import os
+import signal
 
 
 class AutoNode(Node):
@@ -67,6 +70,9 @@ class AutoNode(Node):
         ))
 
     def onSystemState(self, state: SystemState):
+        if state.state == SystemStateEnum.SHUTDOWN:
+            os.kill(os.getpid(), signal.SIGINT)
+
         old = self.state
         self.state = state
         self.transition(old, state)
@@ -79,7 +85,6 @@ class AutoNode(Node):
         if state.state == DeviceStateEnum.STANDBY:
             self.config.recache()
             self.configure()
-            self.deviceStates[state.device] = state.state
             return
 
     def transition(self, _: SystemState, updated: SystemState):

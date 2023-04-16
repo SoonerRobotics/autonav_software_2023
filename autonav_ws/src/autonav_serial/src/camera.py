@@ -18,7 +18,7 @@ class CameraNode(AutoNode):
         super().__init__("autonav_serial_camera")
 
     def configure(self):
-        self.config.writeInt(REFRESH_RATE, 12)
+        self.config.set(REFRESH_RATE, 15)
 
         self.declare_parameter("device_id", 2)
         self.deviceId = self.get_parameter("device_id").value

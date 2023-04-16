@@ -69,6 +69,11 @@ namespace Autonav
 
 	void AutoNode::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
 	{
+		if(msg->state == SystemState::SHUTDOWN)
+		{
+			kill(getpid(), SIGINT);
+		}
+
 		auto old = state;
 		state = *msg;
 		transition(old, state);

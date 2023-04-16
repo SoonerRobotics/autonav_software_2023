@@ -1,6 +1,7 @@
 from autonav_msgs.msg import ConfigurationInstruction
 from rclpy.node import Node
 from enum import IntEnum
+import struct
 
 
 class Opcode(IntEnum):
@@ -14,57 +15,73 @@ class Opcode(IntEnum):
 class Configuration:
     def __init__(self, id, node: Node):
         self.id = id
-        self.subscriber = node.create_subscription(ConfigurationInstruction, "/autonav/configuration", self.onConfigurationInstruction, 10)
-        self.publisher = node.create_publisher(ConfigurationInstruction, "/autonav/configuration", 10)
+        self.node = node
+        self.subscriber = node.create_subscription(ConfigurationInstruction, "/autonav/configuration", self.onConfigurationInstruction, 20)
+        self.publisher = node.create_publisher(ConfigurationInstruction, "/autonav/configuration", 20)
 
         # a map of key to map of key to byte array
         self.cache = {}
+        self.cache[self.id] = {}
 
-    def fromBytes(self, value: bytes, type: type):
-        if type == int:
-            return int.from_bytes(value, byteorder='big')
-        if type == float:
-            return float.from_bytes(value, byteorder='big')
-        if type == str:
-            return value.decode('utf-8')
-        if type == bytes:
-            return value
-        if type == bool:
-            return value[0] != 0
-        return None
+    def getInt(self, address):
+        return self.getIntFrom(self.id, address)
+    
+    def getIntFrom(self, device, address):
+        return int.from_bytes(self.cache[device][address], byteorder='big', signed=True)
+    
+    def setInt(self, address, value: int):
+        self.setIntTo(self.id, address, value)
 
-    def toBytes(self, value: type):
-        if type == int:
-            return value.to_bytes(4, byteorder='big')
-        if type == float:
-            return value.to_bytes(4, byteorder='big')
-        if type == str:
-            return value.encode('utf-8')
-        if type == bytes:
-            return value
-        if type == bool:
-            return bytes([1 if value else 0])
-        return None
+    def setIntTo(self, device, address, value: int):
+        if device not in self.cache:
+            self.cache[device] = {}
+        self.cache[device][address] = value.to_bytes(4, byteorder='big', signed=True)
+        instruction = ConfigurationInstruction()
+        instruction.device = device
+        instruction.opcode = Opcode.SET_ACK
+        instruction.address = address
+        instruction.data = self.cache[device][address]
+        self.publisher.publish(instruction)
 
-    def get(self, address: int, type: type):
-        return self.get(self.id, address, type, None)
+    def getFloat(self, address):
+        return self.getFloatFrom(self.id, address)
+    
+    def getFloatFrom(self, device, address):
+        return struct.unpack('f', self.cache[device][address])[0]
+    
+    def setFloat(self, address, value: float):
+        self.setFloatTo(self.id, address, value)
 
-    def get(self, address: int, type: type, default: type):
-        return self.get(self.id, address, type, default)
+    def setFloatTo(self, device, address, value: float):
+        if device not in self.cache:
+            self.cache[device] = {}
+        self.cache[device][address] = bytearray(struct.pack('f', value))
+        instruction = ConfigurationInstruction()
+        instruction.device = device
+        instruction.opcode = Opcode.SET_ACK
+        instruction.address = address
+        instruction.data = self.cache[device][address]
+        self.publisher.publish(instruction)
 
-    def get(self, device, address: int, type: type):
-        return self.get(device, address, type, None)
+    def getBool(self, address):
+        return self.getBoolFrom(self.id, address)
+    
+    def getBoolFrom(self, device, address):
+        return bool.from_bytes(self.cache[device][address], byteorder='big')
+    
+    def setBool(self, address, value: bool):
+        self.setBoolTo(self.id, address, value)
 
-    def get(self, device, address: int, type: type, default: type):
-        if device in self.cache and address in self.cache[device]:
-            return self.fromBytes(self.cache[device][address], type)
-        return default
-
-    def set(self, address: int, value: type):
-        self.set(self.id, address, value)
-
-    def set(self, device, address: int, value: type):
-        self.cache[device][address] = self.toBytes(value)
+    def setBoolTo(self, device, address, value: bool):
+        if device not in self.cache:
+            self.cache[device] = {}
+        self.cache[device][address] = bytes([value])
+        instruction = ConfigurationInstruction()
+        instruction.device = device
+        instruction.opcode = Opcode.SET_ACK
+        instruction.address = address
+        instruction.data = self.cache[device][address]
+        self.publisher.publish(instruction)
 
     def recache(self):
         self.cache = {}
@@ -95,14 +112,15 @@ class Configuration:
             self.publisher.publish(response)
 
         if instruction.opcode == Opcode.SET_ACK or instruction.opcode == Opcode.GET_ACK:
+            if instruction.device not in self.cache:
+                self.cache[instruction.device] = {}
             self.cache[instruction.device][instruction.address] = instruction.data
 
-        if instruction.opcode == Opcode.GET_ALL and not amTarget:
-            for device in self.cache:
-                for address in self.cache[device]:
-                    response = ConfigurationInstruction()
-                    response.device = self.id
-                    response.opcode = Opcode.GET_ACK
-                    response.address = address
-                    response.data = self.cache[device][address]
-                    self.publisher.publish(response)
+        if instruction.opcode == Opcode.GET_ALL and not amTarget and self.id in self.cache:
+            for address in self.cache[self.id]:
+                response = ConfigurationInstruction()
+                response.device = self.id
+                response.opcode = Opcode.GET_ACK
+                response.address = address
+                response.data = self.cache[self.id][address]
+                self.publisher.publish(response)

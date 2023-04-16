@@ -19,13 +19,7 @@ namespace Autonav
             T get(uint8_t address);
 
             template <typename T>
-            T get(uint8_t address, T default_value);
-
-            template <typename T>
             T get(int64_t device, uint8_t address);
-
-            template <typename T>
-            T get(int64_t device, uint8_t address, T default_value);
 
             template <typename T>
             void set(uint8_t address, T value);
@@ -35,6 +29,8 @@ namespace Autonav
 
             void recache();
 			void onConfigurationInstruction(const autonav_msgs::msg::ConfigurationInstruction::SharedPtr msg);
+
+            std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> getCache();
 
         private:
             int64_t id;

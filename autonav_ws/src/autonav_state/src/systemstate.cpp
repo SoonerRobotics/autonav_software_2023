@@ -50,7 +50,7 @@ public:
 	{
 		if (state.state == Autonav::SystemState::SHUTDOWN)
 		{
-			// Need to shut ourselves down
+			kill(getpid(), SIGINT);
 			return;
 		}
 
@@ -72,7 +72,7 @@ public:
 				continue;
 			}
 
-			if (std::find(trackedNodes.begin(), trackedNodes.end(), node) == trackedNodes.end() || node.length() == 0)
+			if (std::find(trackedNodes.begin(), trackedNodes.end(), node) == trackedNodes.end())
 			{
 				trackedNodes.push_back(node);
 				RCLCPP_INFO(this->get_logger(), "Node added: %s", node.c_str());

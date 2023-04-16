@@ -62,21 +62,25 @@ public:
 			return false;
 		}
 
-		const char *glsl_version = "#version 150";
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
+		const char *glsl_version = "#version 130";
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		window = glfwCreateWindow(1920, 1080, "Autonav 2023 | The Weeb Wagon", NULL, NULL);
+		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | The Weeb Wagon", NULL, NULL);
 		if (window == nullptr)
 		{
 			return false;
 		}
 
-		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
+		bool err = glewInit() != GLEW_OK;
+		if (err)
+		{
+			fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+			return false;
+		}
 
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
@@ -129,6 +133,11 @@ public:
 					ShowVision(this);
 					ImGui::EndTabItem();
 				}
+				if (ImGui::BeginTabItem("Configuration"))
+				{
+					ShowConfiguration(this);
+					ImGui::EndTabItem();
+				}	
 				ImGui::EndTabBar();
 			}
 			
@@ -140,7 +149,6 @@ public:
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-			glfwMakeContextCurrent(window);
 			glfwSwapBuffers(window);
 		}
 
@@ -152,7 +160,7 @@ public:
 		glfwDestroyWindow(window);
 		glfwTerminate();
 
-		render_thread.join();
+		rclcpp::shutdown();
 	}
 
 private:

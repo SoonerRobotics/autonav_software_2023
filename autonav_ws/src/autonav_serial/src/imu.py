@@ -4,32 +4,32 @@ import rclpy
 import time
 import threading
 from vnpy import *
-from enum import IntEnum
 from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import GPSFeedback
 from autonav_libs.node import AutoNode
 from autonav_libs.state import DeviceStateEnum, SystemStateEnum
 
-class Registers(IntEnum):
-    IMU_READ_RATE = 0
-    IMU_NOTFOUND_RETRY = 1
-    IMU_BADCONNECT_RETRY = 2
+IMU_READ_RATE = 0
+IMU_NOTFOUND_RETRY = 1
+IMU_BADCONNECT_RETRY = 2
 
 
 class IMUNode(AutoNode):
     def __init__(self):
         super().__init__("autonav_serial_imu")
-        
+
     def configure(self):
         self.m_sensor = VnSensor()
         self.m_hasPublishedHeaders = False
 
-        self.config.writeFloat(Registers.IMU_READ_RATE, 0.1)
-        self.config.writeFloat(Registers.IMU_NOTFOUND_RETRY, 5.0)
-        self.config.writeFloat(Registers.IMU_BADCONNECT_RETRY, 5.0)
+        self.config.setLocal(IMU_READ_RATE, 0.1)
+        self.config.setLocal(IMU_NOTFOUND_RETRY, 5.0)
+        self.config.setLocal(IMU_BADCONNECT_RETRY, 5.0)
 
-        self.m_imuPublisher = self.create_publisher(IMUData, "/autonav/imu", 20)
-        self.m_gpsPublisher = self.create_publisher(GPSFeedback, "/autonav/gps", 20)
+        self.m_imuPublisher = self.create_publisher(
+            IMUData, "/autonav/imu", 20)
+        self.m_gpsPublisher = self.create_publisher(
+            GPSFeedback, "/autonav/gps", 20)
 
         self.m_imuThread = threading.Thread(target=self.imuWorker)
         self.m_imuThread.start()
@@ -44,15 +44,17 @@ class IMUNode(AutoNode):
                 try:
                     with open("/dev/autonav-imu-200", "r") as f:
                         pass
-                    
+
                     self.m_sensor.connect("/dev/autonav-imu-200", 115200)
                 except:
                     self.setDeviceState(DeviceStateEnum.STANDBY)
-                    time.sleep(self.config.readFloat(Registers.IMU_NOTFOUND_RETRY.value))
+                    time.sleep(self.config.readFloat(
+                        Registers.IMU_NOTFOUND_RETRY.value))
                     continue
 
             if (not self.m_sensor.is_connected):
-                time.sleep(self.config.readFloat(Registers.IMU_BADCONNECT_RETRY.value))
+                time.sleep(self.config.readFloat(
+                    Registers.IMU_BADCONNECT_RETRY.value))
                 self.setDeviceState(DeviceStateEnum.STANDBY)
                 continue
 
@@ -96,6 +98,7 @@ def main():
     rclpy.init()
     rclpy.spin(IMUNode())
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
