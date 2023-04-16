@@ -1,6 +1,7 @@
 <launch>
     <node pkg="autonav_state" exec="statemanager" >
         <param name="use_simulator" value="true" />
+        <param name="override_mobility" value="true" />
         <param name="forced_state" value="autonomous" />
         <param name="required_nodes" value="[autonav_display]" />
     </node>

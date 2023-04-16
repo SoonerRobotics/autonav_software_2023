@@ -1,7 +1,10 @@
+#include "autonav_msgs/msg/motor_feedback.hpp"
 #include "autonav_msgs/msg/gps_feedback.hpp"
+#include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/position.hpp"
-#include "autonav_libs/utils.h"
+#include "autonav_msgs/msg/imu_data.hpp"
 #include "autonav_libs/device_state.h"
+#include "autonav_libs/utils.h"
 #include "autonav_libs/node.h"
 #include "imgui.h"
 
@@ -31,12 +34,23 @@ void ShowStates(Autonav::AutoNode *node)
     }
 }
 
+float thetaToHeading(float theta)
+{
+    return fmod(360.0 + (theta * 180 / M_PI), 360.0);
+}
+
 void ShowDashboard(Autonav::AutoNode *node)
 {
     static rclcpp::Subscription<autonav_msgs::msg::Position>::SharedPtr positionSubscriber = nullptr;
     static rclcpp::Subscription<autonav_msgs::msg::GPSFeedback>::SharedPtr gpsSubscriber = nullptr;
+    static rclcpp::Subscription<autonav_msgs::msg::IMUData>::SharedPtr imuSubscriber = nullptr;
+    static rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr motorInputSubscriber = nullptr;
+    static rclcpp::Subscription<autonav_msgs::msg::MotorFeedback>::SharedPtr motorFeedbackSubscriber = nullptr;
     static autonav_msgs::msg::Position position;
     static autonav_msgs::msg::GPSFeedback gps;
+    static autonav_msgs::msg::IMUData imu;
+    static autonav_msgs::msg::MotorInput motorInput;
+    static autonav_msgs::msg::MotorFeedback motorFeedback;
 
     if (positionSubscriber == nullptr)
     {
@@ -51,10 +65,49 @@ void ShowDashboard(Autonav::AutoNode *node)
                 gps = *msg;
             }
         );
+
+        imuSubscriber = node->create_subscription<autonav_msgs::msg::IMUData>(
+            "autonav/imu", 20, [&](const autonav_msgs::msg::IMUData::SharedPtr msg) {
+                imu = *msg;
+            }
+        );
+
+        motorInputSubscriber = node->create_subscription<autonav_msgs::msg::MotorInput>(
+            "autonav/MotorInput", 20, [&](const autonav_msgs::msg::MotorInput::SharedPtr msg) {
+                motorInput = *msg;
+            }
+        );
+
+        motorFeedbackSubscriber = node->create_subscription<autonav_msgs::msg::MotorFeedback>(
+            "autonav/MotorFeedback", 20, [&](const autonav_msgs::msg::MotorFeedback::SharedPtr msg) {
+                motorFeedback = *msg;
+            }
+        );
     }
 
-    ImGui::Text("Estimated Position: (%.5f, %.5f, %.5f)", position.x, position.y, position.theta);
+    ImGui::Text("State: %s", toString(static_cast<Autonav::SystemState>(node->getSystemState().state)).c_str());
+    ImGui::Text("Is Simulator: %s", node->getSystemState().is_simulator ? "Yes" : "No");
+    ImGui::Text("Mobility: %s", node->getSystemState().mobility ? "Enabled" : "Disabled");
+    ImGui::Text("EStop: %s", node->getSystemState().estop ? "Yes" : "No");
+
+    ImGui::SeparatorText("Motors");
+    ImGui::Text("Forward/Angular Velocity (%.3f, %.3f)", motorInput.forward_velocity, motorInput.angular_velocity);
+    ImGui::Text("Delta X/Y/Theta (%.3f, %.3f, %.3f)", motorFeedback.delta_x, motorFeedback.delta_y, motorFeedback.delta_theta);
+
+    ImGui::SeparatorText("Estimated Position");
+    ImGui::Text("Estimated Position: (%.5f, %.5f, %.5f)", position.x, position.y, thetaToHeading(position.theta));
+    ImGui::Text("Estimated GPS: (%.5f, %.5f)", position.latitude, position.longitude);
+    
+    ImGui::SeparatorText("GPS");
     ImGui::Text("GPS: (%.5f, %.5f, %.5f)", gps.latitude, gps.longitude, gps.altitude);
+    ImGui::Text("Current Fix: %d", gps.gps_fix);
+    ImGui::Text("Is Fixed: %s", (gps.gps_fix > 0 || gps.is_locked > 0 ? "Yes" : "No"));
+    ImGui::Text("Satellites: %d", gps.satellites);
+
+    ImGui::SeparatorText("IMU");
+    ImGui::Text("Pitch/Roll/Yaw: (%.5f, %.5f, %.5f)", imu.pitch, imu.roll, imu.yaw);
+    ImGui::Text("Acceleration: (%.5f, %.5f, %.5f)", imu.accel_x, imu.accel_y, imu.accel_z);
+    ImGui::Text("Angular Velocity: (%.5f, %.5f, %.5f)", imu.angular_x, imu.angular_y, imu.angular_z);
 
     ShowStates(node);
 }

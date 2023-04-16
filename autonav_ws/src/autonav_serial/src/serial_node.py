@@ -22,22 +22,25 @@ class SerialMotors(AutoNode):
         super().__init__("autonav_serial_can")
 
     def setup(self):
-        self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
-        self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
-        self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 10)
+        self.m_motorSubscriber = self.create_subscription(
+            MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
+        self.m_feedbackPublisher = self.create_publisher(
+            MotorFeedback, "/autonav/MotorFeedback", 10)
+        self.m_objectPublisher = self.create_publisher(
+            ObjectDetection, "/autonav/ObjectDetection", 10)
         self.m_can = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
-        self.m_canReadThread = threading.Thread(target = self.canThreadWorker)
+        self.m_canReadThread = threading.Thread(target=self.canThreadWorker)
         self.m_canReadThread.daemon = True
         self.m_canReadThread.start()
-    
+
     def canThreadWorker(self):
         while rclpy.ok():
             if self.getDeviceState() != DeviceStateEnum.READY and self.getDeviceState() != DeviceStateEnum.OPERATING:
                 continue
             if self.m_can is not None:
                 try:
-                    msg = self.m_can.recv(timeout = 1)
+                    msg = self.m_can.recv(timeout=1)
                     if msg is not None:
                         self.onCanMessageReceived(msg)
                 except can.CanError:
@@ -46,12 +49,12 @@ class SerialMotors(AutoNode):
     def onCanMessageReceived(self, msg):
         arb_id = msg.arbitration_id
         if arb_id == MOTOR_FEEDBACK_ID:
-            deltaX, deltaY, deltaTheta  = struct.unpack("hhh", msg.data)
+            deltaX, deltaY, deltaTheta = struct.unpack("hhh", msg.data)
             feedback = MotorFeedback()
             feedback.delta_theta = deltaTheta / 10000.0
             feedback.delta_y = deltaY / 10000.0
             feedback.delta_x = deltaX / 10000.0
-            self.m_feedbackPublisher.publish(feedback)  
+            self.m_feedbackPublisher.publish(feedback)
 
         if arb_id == ESTOP_ID:
             self.setEStop(True)
@@ -62,7 +65,6 @@ class SerialMotors(AutoNode):
         if arb_id == MOBILITY_START_ID:
             self.setMobility(True)
 
-
     def canWorker(self):
         try:
             with open("/dev/autonav-can-835", "r") as f:
@@ -71,7 +73,8 @@ class SerialMotors(AutoNode):
             if self.m_can is not None:
                 return
 
-            self.m_can = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
+            self.m_can = can.ThreadSafeBus(
+                bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
             self.setDeviceState(DeviceStateEnum.READY)
             self.log("found cannable")
         except:
@@ -88,9 +91,11 @@ class SerialMotors(AutoNode):
     def on_motor_input(self, input: MotorInput):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
             return
-        
-        packed_data = struct.pack("hh", int(input.forward_velocity * 1000.0), int(input.angular_velocity * 1000.0))
-        can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
+
+        packed_data = struct.pack("hh", int(
+            input.forward_velocity * 1000.0), int(input.angular_velocity * 1000.0))
+        can_msg = can.Message(
+            arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
         try:
             self.m_can.send(can_msg)

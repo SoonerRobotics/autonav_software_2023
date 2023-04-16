@@ -22,14 +22,12 @@ class IMUNode(AutoNode):
         self.m_sensor = VnSensor()
         self.m_hasPublishedHeaders = False
 
-        self.config.setLocal(IMU_READ_RATE, 0.1)
-        self.config.setLocal(IMU_NOTFOUND_RETRY, 5.0)
-        self.config.setLocal(IMU_BADCONNECT_RETRY, 5.0)
+        self.config.setFloat(IMU_READ_RATE, 0.1)
+        self.config.setFloat(IMU_NOTFOUND_RETRY, 5.0)
+        self.config.setFloat(IMU_BADCONNECT_RETRY, 5.0)
 
-        self.m_imuPublisher = self.create_publisher(
-            IMUData, "/autonav/imu", 20)
-        self.m_gpsPublisher = self.create_publisher(
-            GPSFeedback, "/autonav/gps", 20)
+        self.m_imuPublisher = self.create_publisher(IMUData, "/autonav/imu", 20)
+        self.m_gpsPublisher = self.create_publisher(GPSFeedback, "/autonav/gps", 20)
 
         self.m_imuThread = threading.Thread(target=self.imuWorker)
         self.m_imuThread.start()
@@ -48,13 +46,11 @@ class IMUNode(AutoNode):
                     self.m_sensor.connect("/dev/autonav-imu-200", 115200)
                 except:
                     self.setDeviceState(DeviceStateEnum.STANDBY)
-                    time.sleep(self.config.readFloat(
-                        Registers.IMU_NOTFOUND_RETRY.value))
+                    time.sleep(self.config.getFloat(IMU_NOTFOUND_RETRY))
                     continue
 
             if (not self.m_sensor.is_connected):
-                time.sleep(self.config.readFloat(
-                    Registers.IMU_BADCONNECT_RETRY.value))
+                time.sleep(self.config.getFloat(IMU_BADCONNECT_RETRY))
                 self.setDeviceState(DeviceStateEnum.STANDBY)
                 continue
 
@@ -88,10 +84,11 @@ class IMUNode(AutoNode):
             gps.longitude = sensor_register.lla.y
             gps.altitude = sensor_register.lla.z
             gps.gps_fix = sensor_register.gps_fix
+            gps.satellites = sensor_register.num_satellites
             self.m_gpsPublisher.publish(gps)
 
             # Get lat/long if the sensor has GPS fix
-            time.sleep(self.config.readFloat(Registers.IMU_READ_RATE.value))
+            time.sleep(self.config.getFloat(IMU_READ_RATE))
 
 
 def main():

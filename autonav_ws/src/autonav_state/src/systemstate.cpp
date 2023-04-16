@@ -22,7 +22,7 @@ public:
 		declare_parameter("forced_state", "");
 		declare_parameter("required_nodes", std::vector<std::string>());
 		declare_parameter("use_simulator", false);
-		declare_parameter("override_mobility", true);
+		declare_parameter("override_mobility", false);
 		requiredNodes = get_parameter("required_nodes").as_string_array();
 
 		state = autonav_msgs::msg::SystemState();
