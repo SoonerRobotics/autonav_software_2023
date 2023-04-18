@@ -26,6 +26,10 @@ namespace SCR
 	{
 	}
 
+	void Node::configure()
+	{
+	}
+
 	int64_t Node::getDeviceID()
 	{
 		return id;
