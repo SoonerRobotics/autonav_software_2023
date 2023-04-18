@@ -1,5 +1,5 @@
 from scr_msgs.msg import ConfigurationInstruction
-from scr_core.node import Node
+from rclpy.node import Node
 import struct
 
 
