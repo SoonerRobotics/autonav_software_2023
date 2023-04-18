@@ -3,12 +3,12 @@
 #include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/position.hpp"
 #include "autonav_msgs/msg/imu_data.hpp"
-#include "autonav_libs/device_state.h"
-#include "autonav_libs/utils.h"
-#include "autonav_libs/node.h"
+#include "scr_core/device_state.h"
+#include "scr_core/utils.h"
+#include "scr_core/node.h"
 #include "imgui.h"
 
-void ShowStates(Autonav::AutoNode *node)
+void ShowStates(SCR::Node *node)
 {
     ImGui::SeparatorText("States");
     auto nodes = node->get_node_names();
@@ -39,7 +39,7 @@ float thetaToHeading(float theta)
     return fmod(360.0 + (theta * 180 / M_PI), 360.0);
 }
 
-void ShowDashboard(Autonav::AutoNode *node)
+void ShowDashboard(SCR::Node *node)
 {
     static rclcpp::Subscription<autonav_msgs::msg::Position>::SharedPtr positionSubscriber = nullptr;
     static rclcpp::Subscription<autonav_msgs::msg::GPSFeedback>::SharedPtr gpsSubscriber = nullptr;
@@ -85,7 +85,7 @@ void ShowDashboard(Autonav::AutoNode *node)
         );
     }
 
-    ImGui::Text("State: %s", toString(static_cast<Autonav::SystemState>(node->getSystemState().state)).c_str());
+    ImGui::Text("State: %s", toString(static_cast<SCR::SystemState>(node->getSystemState().state)).c_str());
     ImGui::Text("Is Simulator: %s", node->getSystemState().is_simulator ? "Yes" : "No");
     ImGui::Text("Mobility: %s", node->getSystemState().mobility ? "Enabled" : "Disabled");
     ImGui::Text("EStop: %s", node->getSystemState().estop ? "Yes" : "No");

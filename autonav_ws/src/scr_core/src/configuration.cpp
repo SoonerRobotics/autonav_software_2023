@@ -1,9 +1,9 @@
 #include "autonav_msgs/msg/configuration_instruction.hpp"
-#include "autonav_libs/configuration.h"
+#include "scr_core/configuration.h"
 #include "rclcpp/rclcpp.hpp"
 #include <unistd.h>
 
-namespace Autonav
+namespace SCR
 {
 	Configuration::Configuration()
 	{

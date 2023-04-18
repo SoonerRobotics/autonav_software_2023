@@ -8,7 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(autonav_msgs REQUIRED)
-find_package(autonav_libs REQUIRED)
+find_package(scr_core REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
@@ -52,7 +52,7 @@ ament_export_targets(export_imgui HAS_LIBRARY_TARGET)
 add_executable(primary_display src/display.cpp)
 ament_target_dependencies(primary_display
   autonav_msgs
-  autonav_libs
+  scr_core
   rclcpp
   cv_bridge
   image_transport

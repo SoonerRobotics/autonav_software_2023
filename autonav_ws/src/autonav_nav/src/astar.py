@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 from autonav_msgs.msg import Position, SystemState
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum
 from geometry_msgs.msg import PoseStamped, Point
 from nav_msgs.msg import OccupancyGrid, Path
 import rclpy
@@ -35,7 +35,7 @@ def get_angle_diff(to_angle, from_angle):
     return delta
 
 
-class AStarNode(AutoNode):
+class AStarNode(Node):
     def __init__(self):
         super().__init__("autonav_nav_astar")
 

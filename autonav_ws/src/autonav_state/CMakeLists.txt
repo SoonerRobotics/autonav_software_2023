@@ -9,10 +9,10 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(autonav_msgs REQUIRED)
-find_package(autonav_libs REQUIRED)
+find_package(scr_core REQUIRED)
 
 add_executable(statemanager src/systemstate.cpp)
-ament_target_dependencies(statemanager rclcpp autonav_msgs autonav_libs)
+ament_target_dependencies(statemanager rclcpp autonav_msgs scr_core)
 
 install(TARGETS
   statemanager

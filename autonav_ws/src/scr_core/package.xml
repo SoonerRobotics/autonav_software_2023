@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>autonav_libs</name>
-  <version>0.0.0</version>
-  <description>Provides various libraries and constants</description>
+  <name>scr_core</name>
+  <version>1.0.0</version>
+  <description>Core files and utiltiies for all SCR robots</description>
   <maintainer email="dylan.zemlin@gmail.com">Dylan Zemlin</maintainer>
   <license>MIT</license>
 

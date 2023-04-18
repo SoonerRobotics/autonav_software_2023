@@ -1,19 +1,23 @@
+#include "ament_index_cpp/get_package_share_directory.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include "std_msgs/msg/header.h"
+#include "rclcpp/rclcpp.hpp"
+#include "scr_core/node.h"
+
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#include "implot.h"
+#include "imgui.h"
+
+#include "autonav_display/all.h"
+
 #include <stdio.h>
 #include <thread>
 #include <memory>
 #include <string>
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-#include "implot.h"
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include "rclcpp/rclcpp.hpp"
-#include "ament_index_cpp/get_package_share_directory.hpp"
-#include "std_msgs/msg/header.h"
-#include "sensor_msgs/msg/image.hpp"
-#include "autonav_libs/node.h"
-#include "autonav_display/all.h"
 
 #define UNUSED(x) (void)(x)
 
@@ -23,10 +27,10 @@ static void glfw_error_callback(int error, const char *description)
 	fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-class DisplayNode : public Autonav::AutoNode
+class DisplayNode : public SCR::Node
 {
 public:
-	DisplayNode() : Autonav::AutoNode("autonav_display") {}
+	DisplayNode() : SCR::Node("autonav_display") {}
 
 	~DisplayNode() {}
 
@@ -35,7 +39,7 @@ public:
 		this->declare_parameter("default_preset", "default");
 		this->declare_parameter("fullscreen", false);
 
-		setDeviceState(Autonav::DeviceState::OPERATING);
+		setDeviceState(SCR::DeviceState::OPERATING);
 
 		// Create render thread
 		render_thread = std::thread([this]() { render(); });
@@ -46,10 +50,10 @@ public:
 		UNUSED(old);
 		switch(updated.state)
 		{
-			case Autonav::SystemState::SHUTDOWN:
-			case Autonav::SystemState::DISABLED:
-			case Autonav::SystemState::MANUAL:
-			case Autonav::SystemState::AUTONOMOUS:
+			case SCR::SystemState::SHUTDOWN:
+			case SCR::SystemState::DISABLED:
+			case SCR::SystemState::MANUAL:
+			case SCR::SystemState::AUTONOMOUS:
 				break;
 		}
 	}

@@ -3,7 +3,7 @@
 #include <string>
 #include <stdint.h>
 
-namespace Autonav
+namespace SCR
 {
     int64_t hash(std::string str)
     {

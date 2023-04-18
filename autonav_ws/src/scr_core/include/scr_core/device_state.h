@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Autonav
+namespace SCR
 {
 	enum DeviceState : uint8_t
 	{

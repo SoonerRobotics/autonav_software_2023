@@ -10,7 +10,7 @@
 	<buildtool_depend>ament_cmake</buildtool_depend>
 	<depend>rclcpp</depend>
 	<depend>autonav_msgs</depend>
-	<depend>autonav_libs</depend>
+	<depend>scr_core</depend>
 
 	<export>
 		<build_type>ament_cmake</build_type>

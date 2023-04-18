@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Autonav
+namespace SCR
 {
 	enum SystemState : uint8_t
 	{

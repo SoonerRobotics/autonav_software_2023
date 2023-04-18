@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import rclpy
-import cv2
 import time
 import threading
 from steamcontroller import SteamController
@@ -10,7 +9,8 @@ from steamcontroller import SteamControllerInput
 from enum import IntEnum
 from autonav_msgs.msg import SteamInput
 
-from autonav_libs import AutoNode, DeviceStateEnum as DeviceState, SystemStateEnum as SystemState
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum, SystemStateEnum
 
 
 class SCButtons(IntEnum):
@@ -33,13 +33,12 @@ class SCButtons(IntEnum):
     RT =        0b00000000000000000000000100000000
 
 
-class SteamTranslationNode(AutoNode):
+class SteamTranslationNode(Node):
     def __init__(self):
         super().__init__("autonav_manual_steamtranslator")
 
-    def setup(self):
-        self.m_steamThread = threading.Thread(
-            target=self.start_steam_controller)
+    def configure(self):
+        self.m_steamThread = threading.Thread(target=self.start_steam_controller)
         self.m_steamThread.daemon = True
         self.m_steamThread.start()
         self.m_Buttons = {}
@@ -52,26 +51,21 @@ class SteamTranslationNode(AutoNode):
             "SHUTDOWN": False
         }
         self.m_debounce["MANUAL"] = False
-        self.m_joyPublisher = self.create_publisher(
-            SteamInput, "/autonav/joy/steam", 20)
-        
-    def shutdown(self):
-        self.sc._close()
-        self.m_steamThread.join()
+        self.m_joyPublisher = self.create_publisher(SteamInput, "/autonav/joy/steam", 20)
 
     def start_steam_controller(self):
         try:
             self.sc = SteamController(callback=self.on_callback)
             if self.sc._handle:
-                self.setDeviceState(DeviceState.OPERATING)
+                self.setDeviceState(DeviceStateEnum.OPERATING)
             self.sc.run()
         except KeyboardInterrupt:
-            self.setDeviceState(DeviceState.OFF)
+            self.setDeviceState(DeviceStateEnum.OFF)
             self.sc.close()
             pass
         finally:
             time.sleep(5)
-            self.setDeviceState(DeviceState.STANDBY)
+            self.setDeviceState(DeviceStateEnum.STANDBY)
             self.start_steam_controller()
 
     def allButtonsPressed(self):
@@ -81,7 +75,7 @@ class SteamTranslationNode(AutoNode):
         return True
 
     def on_callback(self, _, sci: SteamControllerInput):
-        if self.getDeviceState() != DeviceState.OPERATING:
+        if self.getDeviceState() != DeviceStateEnum.OPERATING:
             return
         
         if self.allButtonsPressed():
@@ -108,22 +102,22 @@ class SteamTranslationNode(AutoNode):
 
         if (time.time() * 1000) - self.m_Buttons[SCButtons.START] > 1250 and self.m_Buttons[SCButtons.START] != 0 and self.m_debounce["MANUAL"] == False:
             self.m_debounce["MANUAL"] = True
-            self.setSystemState(SystemState.MANUAL)
+            self.setSystemState(SystemStateEnum.MANUAL)
             return
 
         if (time.time() * 1000) - self.m_Buttons[SCButtons.STEAM] > 1250 and self.m_Buttons[SCButtons.STEAM] != 0 and self.m_debounce["AUTONOMOUS"] == False:
             self.m_debounce["AUTONOMOUS"] = True
-            self.setSystemState(SystemState.AUTONOMOUS)
+            self.setSystemState(SystemStateEnum.AUTONOMOUS)
             return
 
         if (time.time() * 1000) - self.m_Buttons[SCButtons.BACK] >= 1250 and self.m_Buttons[SCButtons.BACK] != 0 and self.m_debounce["DISABLED"] == False:
             self.m_debounce["DISABLED"] = True
-            self.setSystemState(SystemState.DISABLED)
+            self.setSystemState(SystemStateEnum.DISABLED)
             return
 
         if (time.time() * 1000) - self.m_Buttons[SCButtons.B] >= 2500 and self.m_Buttons[SCButtons.B] != 0 and self.m_debounce["SHUTDOWN"] == False:
             self.m_debounce["SHUTDOWN"] = True
-            self.setSystemState(SystemState.SHUTDOWN)
+            self.setSystemState(SystemStateEnum.SHUTDOWN)
             return
 
         msg.ltrig = float(sci.ltrig) / 255

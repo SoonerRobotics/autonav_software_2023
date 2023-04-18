@@ -2,9 +2,9 @@
 #include "autonav_msgs/srv/set_system_state.hpp"
 #include "autonav_msgs/msg/device_state.hpp"
 #include "autonav_msgs/msg/system_state.hpp"
-#include "autonav_libs/system_state.h"
-#include "autonav_libs/device_state.h"
-#include "autonav_libs/utils.h"
+#include "scr_core/system_state.h"
+#include "scr_core/device_state.h"
+#include "scr_core/utils.h"
 #include "rclcpp/rclcpp.hpp"
 #include <chrono>
 
@@ -26,7 +26,7 @@ public:
 		requiredNodes = get_parameter("required_nodes").as_string_array();
 
 		state = autonav_msgs::msg::SystemState();
-		state.state = Autonav::SystemState::DISABLED;
+		state.state = SCR::SystemState::DISABLED;
 		state.is_simulator = get_parameter("use_simulator").as_bool();
 		state.estop = false;
 		state.mobility = get_parameter("override_mobility").as_bool();
@@ -34,20 +34,20 @@ public:
 		auto forcedState = get_parameter("forced_state").as_string();
 		if (forcedState == "disabled")
 		{
-			state.state = Autonav::SystemState::DISABLED;
+			state.state = SCR::SystemState::DISABLED;
 		}
 		else if (forcedState == "autonomous")
 		{
-			state.state = Autonav::SystemState::AUTONOMOUS;
+			state.state = SCR::SystemState::AUTONOMOUS;
 		}
 		else if (forcedState == "manual")
 		{
-			state.state = Autonav::SystemState::MANUAL;
+			state.state = SCR::SystemState::MANUAL;
 		}
 		
 		else if (forcedState == "shutdown")
 		{
-			state.state = Autonav::SystemState::SHUTDOWN;
+			state.state = SCR::SystemState::SHUTDOWN;
 		}
 	}
 
@@ -68,7 +68,7 @@ public:
 
 	void onStateTick()
 	{
-		if (state.state == Autonav::SystemState::SHUTDOWN)
+		if (state.state == SCR::SystemState::SHUTDOWN)
 		{
 			kill(getpid(), SIGINT);
 			return;
@@ -145,8 +145,8 @@ public:
 		for (auto node : waitingQueue)
 		{
 			auto deviceState = autonav_msgs::msg::DeviceState();
-			deviceState.device = Autonav::hash(node);
-			deviceState.state = Autonav::DeviceState::STANDBY;
+			deviceState.device = SCR::hash(node);
+			deviceState.state = SCR::DeviceState::STANDBY;
 			deviceStatePublisher->publish(deviceState);
 		}
 
@@ -164,8 +164,8 @@ public:
 
 		publishState();
 		auto deviceState = autonav_msgs::msg::DeviceState();
-		deviceState.device = Autonav::hash(node);
-		deviceState.state = Autonav::DeviceState::STANDBY;
+		deviceState.device = SCR::hash(node);
+		deviceState.state = SCR::DeviceState::STANDBY;
 		deviceStatePublisher->publish(deviceState);
 	}
 
@@ -173,14 +173,14 @@ public:
 	{
 		// Publish a new device state of standby for them
 		auto deviceState = autonav_msgs::msg::DeviceState();
-		deviceState.device = Autonav::hash(node);
-		deviceState.state = Autonav::DeviceState::OFF;
+		deviceState.device = SCR::hash(node);
+		deviceState.state = SCR::DeviceState::OFF;
 		deviceStatePublisher->publish(deviceState);
 
 		auto wasRequired = std::find(requiredNodes.begin(), requiredNodes.end(), node) != requiredNodes.end();
 		if (wasRequired)
 		{
-			state.state = Autonav::SystemState::SHUTDOWN;
+			state.state = SCR::SystemState::SHUTDOWN;
 			publishState();
 		}
 	}

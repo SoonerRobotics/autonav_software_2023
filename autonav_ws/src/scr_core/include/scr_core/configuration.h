@@ -1,12 +1,13 @@
 #pragma once
 
 #include "autonav_msgs/msg/configuration_instruction.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/subscription.hpp"
+#include "rclcpp/publisher.hpp"
 #include <stdint.h>
 #include <string.h>
 #include <map>
 
-namespace Autonav
+namespace SCR
 {
     class Configuration
     {

@@ -1,14 +1,20 @@
-from autonav_libs.state import DeviceStateEnum, SystemStateEnum
 from autonav_msgs.srv import SetDeviceState, SetSystemState
+from scr_core.state import DeviceStateEnum, SystemStateEnum
 from autonav_msgs.msg import DeviceState, SystemState
-from autonav_libs.configuration import Configuration
-from autonav_libs import hash
-from rclpy.node import Node
+from scr_core.configuration import Configuration
+from rclpy.node import Node as ROSNode
+from scr_core import hash
 import os
 import signal
 
 
-class AutoNode(Node):
+class Node(ROSNode):
+    """
+    A Node in the ROS graph.
+
+    Specialized for SCR (Sooner Competitive Robotics), includes systems for state and configuration.
+    """
+
     def __init__(self, node_name):
         super().__init__(node_name)
         self.id = hash(node_name)

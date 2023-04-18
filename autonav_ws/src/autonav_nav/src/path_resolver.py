@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 from autonav_msgs.msg import MotorInput, Position, SystemState
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum
-from autonav_libs import clamp
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum
+from scr_core import clamp
 from nav_msgs.msg import Path
 from pure_pursuit import PurePursuit
 import math
 import rclpy
 
 
-class PathResolverNode(AutoNode):
+class PathResolverNode(Node):
     def __init__(self):
         super().__init__("autonav_nav_resolver")
         self.m_position = Position()

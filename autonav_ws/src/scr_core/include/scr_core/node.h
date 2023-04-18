@@ -14,13 +14,13 @@
 #include "utils.h"
 #include <map>
 
-namespace Autonav
+namespace SCR
 {
-	class AutoNode : public rclcpp::Node
+	class Node : public rclcpp::Node
 	{
 	public:
-		AutoNode(std::string node_name);
-		~AutoNode();
+		Node(std::string node_name);
+		~Node();
 
 		void setSystemState(SystemState state);
 		void setDeviceState(DeviceState state);
@@ -37,8 +37,8 @@ namespace Autonav
 		std::map<int64_t, DeviceState> getDeviceStates();
 
 	protected:
-		virtual void configure() = 0;
-		virtual void transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated) = 0;
+		virtual void configure();
+		virtual void transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated);
 
 	private:
 		void onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg);

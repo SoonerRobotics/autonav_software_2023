@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 from autonav_msgs.msg import MotorFeedback, GPSFeedback, Position, SystemState
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum, SystemStateEnum
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum, SystemStateEnum
 from particlefilter import ParticleFilter
 from deadrekt import DeadReckoningFilter
 from enum import IntEnum
@@ -13,7 +13,7 @@ class FilterType(IntEnum):
     DEAD_RECKONING = 0,
     PARTICLE_FILTER = 1
 
-class ParticleFilterNode(AutoNode):
+class ParticleFilterNode(Node):
     def __init__(self):
         super().__init__("autonav_filters")
 

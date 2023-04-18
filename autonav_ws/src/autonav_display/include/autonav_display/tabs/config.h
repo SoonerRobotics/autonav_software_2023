@@ -1,9 +1,9 @@
-#include "autonav_libs/node.h"
-#include "autonav_libs/configuration.h"
-#include "autonav_libs/utils.h"
+#include "scr_core/configuration.h"
+#include "scr_core/utils.h"
+#include "scr_core/node.h"
 #include "imgui.h"
 
-void ShowIntOption(Autonav::Configuration *config, std::string name, int64_t device, uint8_t address, int min, int max)
+void ShowIntOption(SCR::Configuration *config, std::string name, int64_t device, uint8_t address, int min, int max)
 {
     int value = config->get<int>(device, address);
     if (ImGui::InputInt(name.c_str(), &value, 1, 10))
@@ -16,10 +16,10 @@ void ShowIntOption(Autonav::Configuration *config, std::string name, int64_t dev
     }
 }
 
-void ShowVisionConfig(Autonav::Configuration *config)
+void ShowVisionConfig(SCR::Configuration *config)
 {
     ImGui::SeparatorText("Vision Transformations");
-    auto hash = Autonav::hash("autonav_vision_transformer");
+    auto hash = SCR::hash("autonav_vision_transformer");
     ShowIntOption(config, "Hue Lower", hash, 0, 0, 255);
     ShowIntOption(config, "Saturation Lower", hash, 1, 0, 255);
     ShowIntOption(config, "Value Lower", hash, 2, 0, 255);
@@ -32,7 +32,7 @@ void ShowVisionConfig(Autonav::Configuration *config)
     ShowIntOption(config, "Trapezoid TLY", hash, 9, 0, 1000);
 }
 
-void ShowConfiguration(Autonav::AutoNode *node)
+void ShowConfiguration(SCR::Node *node)
 {
     ShowVisionConfig(&node->config);
 }

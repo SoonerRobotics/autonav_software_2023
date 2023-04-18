@@ -4,9 +4,9 @@
 #include <image_transport/image_transport.hpp>
 #include "opencv4/opencv2/opencv.hpp"
 
-#include "autonav_libs/utils.h"
-#include "autonav_libs/device_state.h"
-#include "autonav_libs/node.h"
+#include "scr_core/utils.h"
+#include "scr_core/device_state.h"
+#include "scr_core/node.h"
 #include "imgui.h"
 
 void ShowImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
@@ -40,7 +40,7 @@ void ShowImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
     ImGui::Image((void *)(intptr_t)texture, ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1));
 }
 
-void ShowVision(Autonav::AutoNode *node)
+void ShowVision(SCR::Node *node)
 {
     static rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr rawImageSubscriber = nullptr;
     static sensor_msgs::msg::CompressedImage::SharedPtr rawImage =  nullptr;

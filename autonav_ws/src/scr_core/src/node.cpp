@@ -1,18 +1,18 @@
-#include "autonav_libs/node.h"
+#include "scr_core/node.h"
 #include <unistd.h>
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
-namespace Autonav
+namespace SCR
 {
-	AutoNode::AutoNode(std::string node_name) : Node(node_name)
+	Node::Node(std::string node_name) : rclcpp::Node(node_name)
 	{
-		id = Autonav::hash(node_name);
+		id = SCR::hash(node_name);
 
 		// State System
 		deviceStates[getDeviceID()] = DeviceState::OFF;
-		systemStateSubscriber = this->create_subscription<autonav_msgs::msg::SystemState>("/autonav/state/system", 10, std::bind(&AutoNode::onSystemState, this, std::placeholders::_1));
-		deviceStateSubscriber = this->create_subscription<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10, std::bind(&AutoNode::onDeviceState, this, std::placeholders::_1));
+		systemStateSubscriber = this->create_subscription<autonav_msgs::msg::SystemState>("/autonav/state/system", 10, std::bind(&Node::onSystemState, this, std::placeholders::_1));
+		deviceStateSubscriber = this->create_subscription<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10, std::bind(&Node::onDeviceState, this, std::placeholders::_1));
 		deviceStateClient = this->create_client<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state");
 		systemStateClient = this->create_client<autonav_msgs::srv::SetSystemState>("/autonav/state/set_system_state");
 
@@ -22,16 +22,16 @@ namespace Autonav
 		config = Configuration(id, configurationSubscriber, configurationPublisher);
 	}
 
-	AutoNode::~AutoNode()
+	Node::~Node()
 	{
 	}
 
-	int64_t AutoNode::getDeviceID()
+	int64_t Node::getDeviceID()
 	{
 		return id;
 	}
 
-	void AutoNode::setEStop(bool state)
+	void Node::setEStop(bool state)
 	{
 		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
 		request->state = this->state.state;
@@ -40,7 +40,7 @@ namespace Autonav
 		systemStateClient->async_send_request(request);
 	}
 
-	void AutoNode::setMobility(bool state)
+	void Node::setMobility(bool state)
 	{
 		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
 		request->state = this->state.state;
@@ -49,7 +49,7 @@ namespace Autonav
 		systemStateClient->async_send_request(request);
 	}
 
-	void AutoNode::setSystemState(SystemState state)
+	void Node::setSystemState(SystemState state)
 	{
 		// Send a system state client request
 		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
@@ -59,7 +59,7 @@ namespace Autonav
 		systemStateClient->async_send_request(request);
 	}
 
-	void AutoNode::setDeviceState(DeviceState state)
+	void Node::setDeviceState(DeviceState state)
 	{
 		auto request = std::make_shared<autonav_msgs::srv::SetDeviceState::Request>();
 		request->device = getDeviceID();
@@ -67,7 +67,7 @@ namespace Autonav
 		deviceStateClient->async_send_request(request);
 	}
 
-	void AutoNode::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
+	void Node::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
 	{
 		if(msg->state == SystemState::SHUTDOWN)
 		{
@@ -79,7 +79,7 @@ namespace Autonav
 		transition(old, state);
 	}
 
-	void AutoNode::onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg)
+	void Node::onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg)
 	{
 		deviceStates[msg->device] = static_cast<DeviceState>(msg->state);
 		if (msg->device != getDeviceID())
@@ -95,7 +95,7 @@ namespace Autonav
 		}
 	}
 
-	void AutoNode::transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated)
+	void Node::transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated)
 	{
 		UNUSED(old);
 		switch(updated.state)
@@ -118,22 +118,22 @@ namespace Autonav
 		}
 	}
 
-	autonav_msgs::msg::SystemState AutoNode::getSystemState()
+	autonav_msgs::msg::SystemState Node::getSystemState()
 	{
 		return state;
 	}
 
-	DeviceState AutoNode::getDeviceState()
+	DeviceState Node::getDeviceState()
 	{
 		return deviceStates[getDeviceID()];
 	}
 
-	DeviceState AutoNode::getDeviceState(std::string id)
+	DeviceState Node::getDeviceState(std::string id)
 	{
-		return deviceStates[Autonav::hash(id)];
+		return deviceStates[SCR::hash(id)];
 	}
 
-	std::map<int64_t, DeviceState> AutoNode::getDeviceStates()
+	std::map<int64_t, DeviceState> Node::getDeviceStates()
 	{
 		return deviceStates;
 	}
