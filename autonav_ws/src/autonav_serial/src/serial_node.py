@@ -70,15 +70,12 @@ class SerialMotors(Node):
             if self.m_can is not None:
                 return
 
-            self.m_can = can.ThreadSafeBus(
-                bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
+            self.m_can = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
             self.setDeviceState(DeviceStateEnum.READY)
-            self.log("found cannable")
         except:
             if self.m_can is not None:
                 self.m_can = None
 
-            self.log("Failed to find cannable")
             if self.getDeviceState() != DeviceStateEnum.STANDBY:
                 self.setDeviceState(DeviceStateEnum.STANDBY)
 

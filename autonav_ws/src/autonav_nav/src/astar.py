@@ -178,9 +178,7 @@ class AStarNode(Node):
             west_to_gps = (self.m_position.longitude - next_waypoint[1]) * 81978.2
             heading_to_gps = math.atan2(west_to_gps,north_to_gps) % (2 * math.pi)
 
-            self.log(f"heading_to_gps: {heading_to_gps*180/math.pi:0.01f}")
             if north_to_gps**2 + west_to_gps**2 <= 1:
-                self.log(f"Reached waypoint {next_waypoint}")
                 # mobi_start_publisher.publish(Bool(False))
                 waypoints.pop(0)
 
