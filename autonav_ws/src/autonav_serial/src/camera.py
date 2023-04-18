@@ -8,6 +8,7 @@ from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
+import os
 
 REFRESH_RATE = 0
 bridge = CvBridge()
@@ -31,9 +32,13 @@ class CameraNode(Node):
         capture = None
         while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
             try:
+                # Check if /dev/videoX exists
+                if not os.path.exists("/dev/video" + str(self.deviceId)):
+                    continue
+
                 capture = cv2.VideoCapture(self.deviceId)
                 if capture is None or not capture.isOpened():
-                    raise Exception("Could not open video device")
+                    continue
 
                 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
                 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
