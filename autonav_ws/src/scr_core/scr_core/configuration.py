@@ -1,4 +1,4 @@
-from autonav_msgs.msg import ConfigurationInstruction
+from scr_msgs.msg import ConfigurationInstruction
 from scr_core.node import Node
 import struct
 
@@ -14,10 +14,8 @@ class Configuration:
     def __init__(self, id, node: Node):
         self.id = id
         self.node = node
-        self.subscriber = node.create_subscription(
-            ConfigurationInstruction, "/autonav/configuration", self.onConfigurationInstruction, 20)
-        self.publisher = node.create_publisher(
-            ConfigurationInstruction, "/autonav/configuration", 20)
+        self.subscriber = node.create_subscription(ConfigurationInstruction, "/scr/configuration", self.onConfigurationInstruction, 20)
+        self.publisher = node.create_publisher(ConfigurationInstruction, "/scr/configuration", 20)
 
         # a map of key to map of key to byte array
         self.cache = {}

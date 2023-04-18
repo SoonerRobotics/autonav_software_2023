@@ -7,16 +7,16 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "autonav_msgs/msg/log.hpp"
-#include "autonav_libs/common.h"
+
+#include "scr_core/node.h"
+#include "scr_msgs/msg/log.hpp"
 
 using std::placeholders::_1;
 
-namespace AutonavConstants
+namespace Constants
 {
 	std::string LOG_PATH = "/home/{user}/logs/";
 	std::string LOG_FILE_EXT = ".log";
-	std::string TOPIC = "/autonav/logging";
 }
 
 long startup_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -29,7 +29,7 @@ std::string get_log_path()
 		return savedPath;
 	}
 
-	std::string path = AutonavConstants::LOG_PATH;
+	std::string path = Constants::LOG_PATH;
 	std::string::size_type i = path.find("{user}");
 	if (i != std::string::npos)
 	{
@@ -52,43 +52,43 @@ void ensure_file_exists(const std::string &file)
 	out.close();
 }
 
-const std::string generateFilePath(const std::string &name)
+const std::string generateFilePath(const std::string &node)
 {
 	std::string path = get_log_path() + std::to_string(startup_time);
 	ensure_directory_exists(path);
-	std::string file = path + "/" + name + AutonavConstants::LOG_FILE_EXT;
+	std::string file = path + "/" + node + Constants::LOG_FILE_EXT;
 	ensure_file_exists(file);
 	return file;
 }
 
-void append_to_file(const std::string &name, const std::string &contents)
+void append_to_file(const std::string &node, const std::string &contents)
 {
-	std::ofstream out(generateFilePath(name), std::ios::app);
+	std::ofstream out(generateFilePath(node), std::ios::app);
 	out << contents << std::endl;
 	out.close();
 }
 
-class LoggingNode : public Autonav::ROS::AutoNode
+class LoggingNode : public SCR::Node
 {
 public:
-	LoggingNode() : AutoNode("autonav_logging")
+	LoggingNode() : SCR::Node("scr_logging")
 	{
-		m_steamSubscription = this->create_subscription<autonav_msgs::msg::Log>(AutonavConstants::TOPIC, 10, std::bind(&LoggingNode::on_log_received, this, _1));
+		m_logSubscriber = this->create_subscription<scr_msgs::msg::Log>("/scr/logging", 10, std::bind(&LoggingNode::on_log_received, this, _1));
 	}
 
-	void setup() override
+	void configure() override
 	{
-		this->setDeviceState(Autonav::State::DeviceState::READY);
-		this->setDeviceState(Autonav::State::DeviceState::OPERATING);
+		setDeviceState(SCR::DeviceState::OPERATING);
 	}
 
 private:
-	void on_log_received(const autonav_msgs::msg::Log &msg) const
+	void on_log_received(const scr_msgs::msg::Log &msg) const
 	{
-		RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.file.c_str(), msg.data.c_str());
-		append_to_file(msg.file, msg.data);
+		RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.node.c_str(), msg.data.c_str());
+		append_to_file(msg.node, msg.data);
 	}
-	rclcpp::Subscription<autonav_msgs::msg::Log>::SharedPtr m_steamSubscription;
+
+	rclcpp::Subscription<scr_msgs::msg::Log>::SharedPtr m_logSubscriber;
 };
 
 int main(int argc, char *argv[])

@@ -6,15 +6,15 @@ import threading
 from vnpy import *
 from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import GPSFeedback
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum, SystemStateEnum
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum, SystemStateEnum
 
 IMU_READ_RATE = 0
 IMU_NOTFOUND_RETRY = 1
 IMU_BADCONNECT_RETRY = 2
 
 
-class IMUNode(AutoNode):
+class IMUNode(Node):
     def __init__(self):
         super().__init__("autonav_serial_imu")
 

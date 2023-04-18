@@ -9,9 +9,9 @@ from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge
 
-from autonav_msgs.msg import SystemState
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum
+from scr_msgs.msg import SystemState
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum
 
 g_bridge = CvBridge()
 
@@ -35,7 +35,7 @@ REGION_OF_DISINTEREST_TL = 8
 REGION_OF_DISINTEREST_TR = 9
 
 
-class ImageTransformer(AutoNode):
+class ImageTransformer(Node):
     def __init__(self):
         super().__init__("autonav_vision_transformer")
 
@@ -51,12 +51,9 @@ class ImageTransformer(AutoNode):
         self.config.setInt(REGION_OF_DISINTEREST_TL, 55)
         self.config.setInt(REGION_OF_DISINTEREST_TR, 55)
 
-        self.m_cameraSubscriber = self.create_subscription(
-            CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
-        self.m_laneMapPublisher = self.create_publisher(
-            OccupancyGrid, "/autonav/cfg_space/raw", 1)
-        self.m_lanePreviewPublisher = self.create_publisher(
-            CompressedImage, "/autonav/camera/filtered", 1)
+        self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
+        self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
+        self.m_lanePreviewPublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
 
         self.setDeviceState(DeviceStateEnum.OPERATING)
 

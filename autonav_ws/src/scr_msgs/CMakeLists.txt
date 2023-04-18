@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(autonav_msgs)
+project(scr_msgs)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -12,22 +12,20 @@ find_package(builtin_interfaces REQUIRED)
 
 # generate messages
 set(msg_files
-  "msg/MotorFeedback.msg"
-  "msg/MotorInput.msg"
-  "msg/IMUData.msg"
-  "msg/SteamInput.msg"
-  "msg/GPSFeedback.msg"
-  "msg/Position.msg"
-  "msg/GoalPoint.msg"
-  "msg/Waypoint.msg"
-  "msg/ObjectDetection.msg"
-  "msg/Path.msg"
-  "msg/Obstacle.msg"
-  "msg/Obstacles.msg"
+  "msg/Log.msg"
+  "msg/SystemState.msg"
+  "msg/DeviceState.msg"
+  "msg/ConfigurationInstruction.msg"
+)
+
+set(srv_files
+  "srv/SetSystemState.srv"
+  "srv/SetDeviceState.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
+  ${srv_files}
   DEPENDENCIES builtin_interfaces
 )
 

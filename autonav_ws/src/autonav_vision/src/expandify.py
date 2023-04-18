@@ -7,11 +7,11 @@ import math
 
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from geometry_msgs.msg import Pose, Point
-from autonav_msgs.msg import SystemState
+from scr_msgs.msg import SystemState
 from cv_bridge import CvBridge
 
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum
 
 g_bridge = CvBridge()
 
@@ -24,7 +24,7 @@ g_mapData.origin.position.x = -10.0
 g_mapData.origin.position.y = -10.0
 
 
-class Expandifier(AutoNode):
+class Expandifier(Node):
     def __init__(self):
         super().__init__("autonav_vision_expandifier")
 
@@ -35,8 +35,7 @@ class Expandifier(AutoNode):
         self.noGoPercent = 0.70
         self.noGoRange = self.maxRange * self.noGoPercent  # meters
         self.maxRange = int(self.maxRange / (self.horizontalCameraRange / 80))
-        self.noGoRange = int(
-            self.noGoRange / (self.horizontalCameraRange / 80))
+        self.noGoRange = int(self.noGoRange / (self.horizontalCameraRange / 80))
 
         self.metaData = MapMetaData(
             width=100,

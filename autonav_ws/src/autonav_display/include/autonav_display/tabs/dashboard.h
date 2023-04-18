@@ -19,7 +19,7 @@ void ShowStates(SCR::Node *node)
             continue;
         }
 
-        if (it->find("autonav_state_system") != std::string::npos)
+        if (it->find("scr_state_system") != std::string::npos)
 		{
 			continue;
 		}

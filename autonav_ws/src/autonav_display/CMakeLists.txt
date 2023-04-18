@@ -12,6 +12,7 @@ find_package(scr_core REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(scr_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4 NO_DEFAULT_PATH)
@@ -52,6 +53,7 @@ ament_export_targets(export_imgui HAS_LIBRARY_TARGET)
 add_executable(primary_display src/display.cpp)
 ament_target_dependencies(primary_display
   autonav_msgs
+  scr_msgs
   scr_core
   rclcpp
   cv_bridge

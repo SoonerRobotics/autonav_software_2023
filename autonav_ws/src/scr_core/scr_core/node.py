@@ -1,6 +1,6 @@
-from autonav_msgs.srv import SetDeviceState, SetSystemState
+from scr_msgs.srv import SetDeviceState, SetSystemState
 from scr_core.state import DeviceStateEnum, SystemStateEnum
-from autonav_msgs.msg import DeviceState, SystemState
+from scr_msgs.msg import DeviceState, SystemState, Log
 from scr_core.configuration import Configuration
 from rclpy.node import Node as ROSNode
 from scr_core import hash
@@ -21,14 +21,11 @@ class Node(ROSNode):
 
         # State System
         self.config = Configuration(node_name, self)
-        self.deviceStateSubscriber = self.create_subscription(
-            DeviceState, "/autonav/state/device", self.onDeviceState, 10)
-        self.systemStateSubscriber = self.create_subscription(
-            SystemState, "/autonav/state/system", self.onSystemState, 10)
-        self.deviceStateClient = self.create_client(
-            SetDeviceState, "/autonav/state/set_device_state")
-        self.systemStateClient = self.create_client(
-            SetSystemState, "/autonav/state/set_system_state")
+        self.deviceStateSubscriber = self.create_subscription(DeviceState, "/scr/state/device", self.onDeviceState, 20)
+        self.systemStateSubscriber = self.create_subscription(SystemState, "/scr/state/system", self.onSystemState, 20)
+        self.deviceStateClient = self.create_client(SetDeviceState, "/scr/state/set_device_state")
+        self.systemStateClient = self.create_client(SetSystemState, "/scr/state/set_system_state")
+        self.logPublisher = self.create_publisher(DeviceState, "/scr/state/log", 20)
 
         # Configuration
         self.config = Configuration(self.id, self)
@@ -40,6 +37,12 @@ class Node(ROSNode):
 
     def getDeviceID(self) -> int:
         return self.id
+    
+    def log(self, message: str):
+        log = Log()
+        log.node = self.get_name()
+        log.data = message
+        self.logPublisher.publish(log)
 
     def setSystemStateInternal(self, state: SystemState):
         request = SetSystemState.Request()
@@ -93,7 +96,7 @@ class Node(ROSNode):
             self.configure()
             return
 
-    def transition(self, _: SystemState, updated: SystemState):
+    def transition(self, old: SystemState, updated: SystemState):
         if updated.state == SystemStateEnum.DISABLED:
             return
         

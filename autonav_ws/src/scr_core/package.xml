@@ -11,7 +11,7 @@
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
-  <depend>autonav_msgs</depend>
+  <depend>scr_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

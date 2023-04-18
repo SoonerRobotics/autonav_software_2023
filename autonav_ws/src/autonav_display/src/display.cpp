@@ -45,7 +45,7 @@ public:
 		render_thread = std::thread([this]() { render(); });
 	}
 
-	void transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated) override
+	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
 	{
 		UNUSED(old);
 		switch(updated.state)

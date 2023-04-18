@@ -1,7 +1,7 @@
-#include "autonav_msgs/srv/set_device_state.hpp"
-#include "autonav_msgs/srv/set_system_state.hpp"
-#include "autonav_msgs/msg/device_state.hpp"
-#include "autonav_msgs/msg/system_state.hpp"
+#include "scr_msgs/srv/set_device_state.hpp"
+#include "scr_msgs/srv/set_system_state.hpp"
+#include "scr_msgs/msg/device_state.hpp"
+#include "scr_msgs/msg/system_state.hpp"
 #include "scr_core/system_state.h"
 #include "scr_core/device_state.h"
 #include "scr_core/utils.h"
@@ -11,12 +11,12 @@
 class StateSystemNode : public rclcpp::Node
 {
 public:
-	StateSystemNode() : Node("autonav_state_system")
+	StateSystemNode() : Node("scr_state_system")
 	{
-		systemStateService = this->create_service<autonav_msgs::srv::SetSystemState>("/autonav/state/set_system_state", std::bind(&StateSystemNode::onSetSystemState, this, std::placeholders::_1, std::placeholders::_2));
-		deviceStateService = this->create_service<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state", std::bind(&StateSystemNode::onSetDeviceState, this, std::placeholders::_1, std::placeholders::_2));
-		deviceStatePublisher = this->create_publisher<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10);
-		systemStatePublisher = this->create_publisher<autonav_msgs::msg::SystemState>("/autonav/state/system", 10);
+		systemStateService = this->create_service<scr_msgs::srv::SetSystemState>("/scr/state/set_system_state", std::bind(&StateSystemNode::onSetSystemState, this, std::placeholders::_1, std::placeholders::_2));
+		deviceStateService = this->create_service<scr_msgs::srv::SetDeviceState>("/scr/state/set_device_state", std::bind(&StateSystemNode::onSetDeviceState, this, std::placeholders::_1, std::placeholders::_2));
+		deviceStatePublisher = this->create_publisher<scr_msgs::msg::DeviceState>("/scr/state/device", 10);
+		systemStatePublisher = this->create_publisher<scr_msgs::msg::SystemState>("/scr/state/system", 10);
 		stateTimer = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&StateSystemNode::onStateTick, this));
 
 		declare_parameter("forced_state", "");
@@ -25,7 +25,7 @@ public:
 		declare_parameter("override_mobility", false);
 		requiredNodes = get_parameter("required_nodes").as_string_array();
 
-		state = autonav_msgs::msg::SystemState();
+		state = scr_msgs::msg::SystemState();
 		state.state = SCR::SystemState::DISABLED;
 		state.is_simulator = get_parameter("use_simulator").as_bool();
 		state.estop = false;
@@ -53,7 +53,7 @@ public:
 
 	bool shouldIgnoreNode(std::string node)
 	{
-		if (node.find("autonav_state_system") != std::string::npos)
+		if (node.find("scr_state_system") != std::string::npos)
 		{
 			return true;
 		}
@@ -144,7 +144,7 @@ public:
 	{
 		for (auto node : waitingQueue)
 		{
-			auto deviceState = autonav_msgs::msg::DeviceState();
+			auto deviceState = scr_msgs::msg::DeviceState();
 			deviceState.device = SCR::hash(node);
 			deviceState.state = SCR::DeviceState::STANDBY;
 			deviceStatePublisher->publish(deviceState);
@@ -163,7 +163,7 @@ public:
 		}
 
 		publishState();
-		auto deviceState = autonav_msgs::msg::DeviceState();
+		auto deviceState = scr_msgs::msg::DeviceState();
 		deviceState.device = SCR::hash(node);
 		deviceState.state = SCR::DeviceState::STANDBY;
 		deviceStatePublisher->publish(deviceState);
@@ -172,7 +172,7 @@ public:
 	void onNodeRemoved(const std::string& node)
 	{
 		// Publish a new device state of standby for them
-		auto deviceState = autonav_msgs::msg::DeviceState();
+		auto deviceState = scr_msgs::msg::DeviceState();
 		deviceState.device = SCR::hash(node);
 		deviceState.state = SCR::DeviceState::OFF;
 		deviceStatePublisher->publish(deviceState);
@@ -185,7 +185,7 @@ public:
 		}
 	}
 
-	void onSetSystemState(const std::shared_ptr<autonav_msgs::srv::SetSystemState::Request> request, std::shared_ptr<autonav_msgs::srv::SetSystemState::Response> response)
+	void onSetSystemState(const std::shared_ptr<scr_msgs::srv::SetSystemState::Request> request, std::shared_ptr<scr_msgs::srv::SetSystemState::Response> response)
 	{
 		state.state = request->state;
 		// state.estop = request->estop;
@@ -195,10 +195,10 @@ public:
 		response->ok = true;
 	}
 
-	void onSetDeviceState(const std::shared_ptr<autonav_msgs::srv::SetDeviceState::Request> request, std::shared_ptr<autonav_msgs::srv::SetDeviceState::Response> response)
+	void onSetDeviceState(const std::shared_ptr<scr_msgs::srv::SetDeviceState::Request> request, std::shared_ptr<scr_msgs::srv::SetDeviceState::Response> response)
 	{
 		publishState();
-		auto deviceState = autonav_msgs::msg::DeviceState();
+		auto deviceState = scr_msgs::msg::DeviceState();
 		deviceState.device = request->device;
 		deviceState.state = request->state;
 		deviceStatePublisher->publish(deviceState);
@@ -209,12 +209,12 @@ private:
 	std::vector<std::string> requiredNodes;
 	std::vector<std::string> trackedNodes;
 	std::vector<std::string> waitingQueue;
-	autonav_msgs::msg::SystemState state;
+	scr_msgs::msg::SystemState state;
 
-	std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::DeviceState>> deviceStatePublisher;
-	std::shared_ptr<rclcpp::Publisher<autonav_msgs::msg::SystemState>> systemStatePublisher;
-	std::shared_ptr<rclcpp::Service<autonav_msgs::srv::SetSystemState>> systemStateService;
-	std::shared_ptr<rclcpp::Service<autonav_msgs::srv::SetDeviceState>> deviceStateService;
+	std::shared_ptr<rclcpp::Publisher<scr_msgs::msg::DeviceState>> deviceStatePublisher;
+	std::shared_ptr<rclcpp::Publisher<scr_msgs::msg::SystemState>> systemStatePublisher;
+	std::shared_ptr<rclcpp::Service<scr_msgs::srv::SetSystemState>> systemStateService;
+	std::shared_ptr<rclcpp::Service<scr_msgs::srv::SetDeviceState>> deviceStateService;
 	std::shared_ptr<rclcpp::TimerBase> stateTimer;
 };
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import MotorInput, Position, SystemState
+from autonav_msgs.msg import MotorInput, Position
+from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum
 from scr_core import clamp

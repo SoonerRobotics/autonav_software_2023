@@ -11,14 +11,15 @@ namespace SCR
 
 		// State System
 		deviceStates[getDeviceID()] = DeviceState::OFF;
-		systemStateSubscriber = this->create_subscription<autonav_msgs::msg::SystemState>("/autonav/state/system", 10, std::bind(&Node::onSystemState, this, std::placeholders::_1));
-		deviceStateSubscriber = this->create_subscription<autonav_msgs::msg::DeviceState>("/autonav/state/device", 10, std::bind(&Node::onDeviceState, this, std::placeholders::_1));
-		deviceStateClient = this->create_client<autonav_msgs::srv::SetDeviceState>("/autonav/state/set_device_state");
-		systemStateClient = this->create_client<autonav_msgs::srv::SetSystemState>("/autonav/state/set_system_state");
+		systemStateSubscriber = this->create_subscription<scr_msgs::msg::SystemState>("/scr/state/system", 20, std::bind(&Node::onSystemState, this, std::placeholders::_1));
+		deviceStateSubscriber = this->create_subscription<scr_msgs::msg::DeviceState>("/scr/state/device", 20, std::bind(&Node::onDeviceState, this, std::placeholders::_1));
+		deviceStateClient = this->create_client<scr_msgs::srv::SetDeviceState>("/scr/state/set_device_state");
+		systemStateClient = this->create_client<scr_msgs::srv::SetSystemState>("/scr/state/set_system_state");
+		logPublisher = this->create_publisher<scr_msgs::msg::Log>("/scr/logging", 20);
 
 		// Configuration
-		auto configurationSubscriber = this->create_subscription<autonav_msgs::msg::ConfigurationInstruction>("/autonav/configuration", 10, std::bind(&Configuration::onConfigurationInstruction, &config, std::placeholders::_1));
-		auto configurationPublisher = this->create_publisher<autonav_msgs::msg::ConfigurationInstruction>("/autonav/configuration", 10);
+		auto configurationSubscriber = this->create_subscription<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20, std::bind(&Configuration::onConfigurationInstruction, &config, std::placeholders::_1));
+		auto configurationPublisher = this->create_publisher<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20);
 		config = Configuration(id, configurationSubscriber, configurationPublisher);
 	}
 
@@ -37,7 +38,7 @@ namespace SCR
 
 	void Node::setEStop(bool state)
 	{
-		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
+		auto request = std::make_shared<scr_msgs::srv::SetSystemState::Request>();
 		request->state = this->state.state;
 		request->estop = state;
 		request->mobility = this->state.mobility;
@@ -46,7 +47,7 @@ namespace SCR
 
 	void Node::setMobility(bool state)
 	{
-		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
+		auto request = std::make_shared<scr_msgs::srv::SetSystemState::Request>();
 		request->state = this->state.state;
 		request->estop = this->state.estop;
 		request->mobility = state;
@@ -56,7 +57,7 @@ namespace SCR
 	void Node::setSystemState(SystemState state)
 	{
 		// Send a system state client request
-		auto request = std::make_shared<autonav_msgs::srv::SetSystemState::Request>();
+		auto request = std::make_shared<scr_msgs::srv::SetSystemState::Request>();
 		request->state = static_cast<uint8_t>(state);
 		request->estop = this->state.estop;
 		request->mobility = this->state.mobility;
@@ -65,13 +66,21 @@ namespace SCR
 
 	void Node::setDeviceState(DeviceState state)
 	{
-		auto request = std::make_shared<autonav_msgs::srv::SetDeviceState::Request>();
+		auto request = std::make_shared<scr_msgs::srv::SetDeviceState::Request>();
 		request->device = getDeviceID();
 		request->state = static_cast<uint8_t>(state);
 		deviceStateClient->async_send_request(request);
 	}
 
-	void Node::onSystemState(const autonav_msgs::msg::SystemState::SharedPtr msg)
+	void Node::log(const std::string& message)
+	{
+		auto msg = scr_msgs::msg::Log();
+		msg.data = message;
+		msg.node = get_name();
+		logPublisher->publish(msg);
+	}
+
+	void Node::onSystemState(const scr_msgs::msg::SystemState::SharedPtr msg)
 	{
 		if(msg->state == SystemState::SHUTDOWN)
 		{
@@ -83,7 +92,7 @@ namespace SCR
 		transition(old, state);
 	}
 
-	void Node::onDeviceState(const autonav_msgs::msg::DeviceState::SharedPtr msg)
+	void Node::onDeviceState(const scr_msgs::msg::DeviceState::SharedPtr msg)
 	{
 		deviceStates[msg->device] = static_cast<DeviceState>(msg->state);
 		if (msg->device != getDeviceID())
@@ -99,7 +108,7 @@ namespace SCR
 		}
 	}
 
-	void Node::transition(autonav_msgs::msg::SystemState old, autonav_msgs::msg::SystemState updated)
+	void Node::transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated)
 	{
 		UNUSED(old);
 		switch(updated.state)
@@ -122,7 +131,7 @@ namespace SCR
 		}
 	}
 
-	autonav_msgs::msg::SystemState Node::getSystemState()
+	scr_msgs::msg::SystemState Node::getSystemState()
 	{
 		return state;
 	}

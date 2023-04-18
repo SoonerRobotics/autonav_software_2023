@@ -2,7 +2,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
-#include "autonav_libs/common.h"
+#include "scr_core/node.h"
 
 #define MAX_SPEED 1.4
 
@@ -17,15 +17,17 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-class LoggingNode : public Autonav::ROS::AutoNode
+class LoggingNode : public SCR::Node
 {
 public:
-	LoggingNode() : AutoNode("autonav_manual_xbox") {}
+	LoggingNode() : SCR::Node("autonav_manual_xbox") {}
 
-	void setup() override
+	void configure() override
 	{
 		m_steamSubscription = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 10, std::bind(&LoggingNode::on_joy_received, this, _1));
 		m_motorPublisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
+
+		setDeviceState(SCR::DeviceState::OPERATING);
 	}
 
 private:

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(autonav_logging)
+project(scr_logging)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -9,21 +9,14 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(autonav_msgs REQUIRED)
-find_package(autonav_libs REQUIRED)
+find_package(scr_msgs REQUIRED)
+find_package(scr_core REQUIRED)
 
 add_executable(logging src/logging.cpp)
-ament_target_dependencies(logging rclcpp std_msgs autonav_msgs autonav_libs)
-
-add_executable(combined_logging src/combined_logger.cpp)
-ament_target_dependencies(combined_logging rclcpp std_msgs autonav_msgs autonav_libs)
+ament_target_dependencies(logging rclcpp std_msgs scr_msgs scr_core)
 
 install(TARGETS
   logging
-  DESTINATION lib/${PROJECT_NAME})
-
-install(TARGETS
-combined_logging
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import Position, SystemState
+from autonav_msgs.msg import Position
+from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum
 from geometry_msgs.msg import PoseStamped, Point

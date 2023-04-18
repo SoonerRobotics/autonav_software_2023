@@ -6,14 +6,14 @@ import threading
 import cv2
 from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum, SystemStateEnum
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum, SystemStateEnum
 
 REFRESH_RATE = 0
 bridge = CvBridge()
 
 
-class CameraNode(AutoNode):
+class CameraNode(Node):
     def __init__(self):
         super().__init__("autonav_serial_camera")
 

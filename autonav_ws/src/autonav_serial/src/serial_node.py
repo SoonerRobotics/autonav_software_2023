@@ -5,8 +5,8 @@ import can
 import threading
 import struct
 from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection
-from autonav_libs.node import AutoNode
-from autonav_libs.state import DeviceStateEnum
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum
 
 
 MOTOR_CONTROL_ID = 10
@@ -17,17 +17,14 @@ MOTOR_FEEDBACK_ID = 14
 OBJECT_DETECTION = 20
 
 
-class SerialMotors(AutoNode):
+class SerialMotors(Node):
     def __init__(self):
         super().__init__("autonav_serial_can")
 
-    def setup(self):
-        self.m_motorSubscriber = self.create_subscription(
-            MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
-        self.m_feedbackPublisher = self.create_publisher(
-            MotorFeedback, "/autonav/MotorFeedback", 10)
-        self.m_objectPublisher = self.create_publisher(
-            ObjectDetection, "/autonav/ObjectDetection", 10)
+    def configure(self):
+        self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
+        self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
+        self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 10)
         self.m_can = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
         self.m_canReadThread = threading.Thread(target=self.canThreadWorker)

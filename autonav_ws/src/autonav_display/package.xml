@@ -4,7 +4,7 @@
   <name>autonav_display</name>
   <version>1.0.0</version>
   <description>The primay display node</description>
-  <maintainer email="dylan.zemlin@gmail.com">Dylan ZEmlin</maintainer>
+  <maintainer email="dylan.zemlin@gmail.com">Dylan Zemlin</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -13,7 +13,8 @@
   <depend>scr_core</depend>
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>
-
+  <depend>scr_msgs</depend>
+    
   <depend>libglfw3-dev</depend>
   <depend>libglew-dev</depend>
 

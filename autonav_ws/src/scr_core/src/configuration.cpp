@@ -1,4 +1,4 @@
-#include "autonav_msgs/msg/configuration_instruction.hpp"
+#include "scr_msgs/msg/configuration_instruction.hpp"
 #include "scr_core/configuration.h"
 #include "rclcpp/rclcpp.hpp"
 #include <unistd.h>
@@ -9,7 +9,7 @@ namespace SCR
 	{
 	}
 
-	Configuration::Configuration(int64_t id, rclcpp::Subscription<autonav_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber, rclcpp::Publisher<autonav_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher)
+	Configuration::Configuration(int64_t id, rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber, rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher)
 	{
 		this->id = id;
 		this->configSubscriber = configSubscriber;
@@ -70,7 +70,7 @@ namespace SCR
 		bytes.push_back((value >> 8) & 0xFF);
 		bytes.push_back(value & 0xFF);
 
-		autonav_msgs::msg::ConfigurationInstruction instruction;
+		scr_msgs::msg::ConfigurationInstruction instruction;
 		instruction.device = id;
 		instruction.opcode = Opcode::SET;
 		instruction.address = address;
@@ -87,7 +87,7 @@ namespace SCR
 		bytes.push_back((value >> 8) & 0xFF);
 		bytes.push_back(value & 0xFF);
 
-		autonav_msgs::msg::ConfigurationInstruction instruction;
+		scr_msgs::msg::ConfigurationInstruction instruction;
 		instruction.device = device;
 		instruction.opcode = Opcode::SET;
 		instruction.address = address;
@@ -99,7 +99,7 @@ namespace SCR
 	void Configuration::set(uint8_t address, float value)
 	{
 		unsigned const char *p = reinterpret_cast<unsigned const char *>(&value);
-		autonav_msgs::msg::ConfigurationInstruction instruction;
+		scr_msgs::msg::ConfigurationInstruction instruction;
 		instruction.device = id;
 		instruction.opcode = Opcode::SET;
 		instruction.address = address;
@@ -111,7 +111,7 @@ namespace SCR
 	void Configuration::set(int64_t device, uint8_t address, float value)
 	{
 		unsigned const char *p = reinterpret_cast<unsigned const char *>(&value);
-		autonav_msgs::msg::ConfigurationInstruction instruction;
+		scr_msgs::msg::ConfigurationInstruction instruction;
 		instruction.device = device;
 		instruction.opcode = Opcode::SET;
 		instruction.address = address;
@@ -123,7 +123,7 @@ namespace SCR
 	{
 		cache.clear();
 
-		autonav_msgs::msg::ConfigurationInstruction instruction;
+		scr_msgs::msg::ConfigurationInstruction instruction;
 		instruction.device = id;
 		instruction.opcode = Opcode::GET_ALL;
 		configPublisher->publish(instruction);
@@ -134,13 +134,13 @@ namespace SCR
 		return cache;
 	}
 
-	void Configuration::onConfigurationInstruction(const autonav_msgs::msg::ConfigurationInstruction::SharedPtr instruction)
+	void Configuration::onConfigurationInstruction(const scr_msgs::msg::ConfigurationInstruction::SharedPtr instruction)
 	{
 		const bool amTarget = instruction->device == id;
 
 		if (instruction->opcode == Opcode::GET && amTarget)
 		{
-			autonav_msgs::msg::ConfigurationInstruction response;
+			scr_msgs::msg::ConfigurationInstruction response;
 			response.device = instruction->device;
 			response.opcode = Opcode::GET_ACK;
 			response.address = instruction->address;
@@ -151,7 +151,7 @@ namespace SCR
 		if (instruction->opcode == Opcode::SET && amTarget)
 		{
 			cache[instruction->device][instruction->address] = instruction->data;
-			autonav_msgs::msg::ConfigurationInstruction response;
+			scr_msgs::msg::ConfigurationInstruction response;
 			response.device = instruction->device;
 			response.opcode = Opcode::SET_ACK;
 			response.address = instruction->address;
@@ -174,7 +174,7 @@ namespace SCR
 			auto registers = cache[this->id];
 			for (auto &[address, bits] : registers)
 			{
-				autonav_msgs::msg::ConfigurationInstruction response;
+				scr_msgs::msg::ConfigurationInstruction response;
 				response.device = instruction->device;
 				response.opcode = Opcode::GET_ACK;
 				response.address = address;
