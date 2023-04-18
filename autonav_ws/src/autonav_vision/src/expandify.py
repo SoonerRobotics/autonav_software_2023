@@ -21,7 +21,6 @@ g_mapData.origin = Pose()
 g_mapData.origin.position.x = -10.0
 g_mapData.origin.position.y = -10.0
 
-
 class Expandifier(AutoNode):
     def __init__(self):
         super().__init__("autonav_vision_expandifier")

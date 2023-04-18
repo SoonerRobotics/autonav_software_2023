@@ -7,15 +7,20 @@ from rclpy.node import Node
 import random
 from autonav_msgs.msg import GoalPoint
 from autonav_msgs.msg import Path
+from autonav_msgs.msg import Position
 
 class PurePursuit(Node):
 
     def __init__(self):
         super().__init__("pure_pursuit")
         self.publisher = self.create_publisher(GoalPoint, '/autonav/goal_point', 10)
-        self.subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 10)
-        self.subscription
+        self.path_subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 10)
+        self.position_subscription = self.create_subscription(Position, '/autonav/position', self.accept_position, 10)
+        self.path_subscription
 
+    def accept_position(self, position = Position):
+        self.get_logger().info(f"hearing {position} from position topic")
+        self.robo_position = (position.x, position.y, position.theta)
     def accept_path(self, msg):
         
         local_path = []

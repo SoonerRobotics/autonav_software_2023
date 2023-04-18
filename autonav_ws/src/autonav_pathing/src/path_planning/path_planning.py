@@ -18,7 +18,17 @@ class PathPlanner(Node):
         self.position_subscriber = self.create_subscription(Position, '/autonav/position', self.on_position_received, 10)
         self.timer = self.create_timer(5.0, self.publish_path)
         self.msg = Path()
-        self.position = 0
+        self.robo_position_wp = [0,0,0,0]
+        self.pixels_to_meters = (4/480, 4/640)
+        self.robo_and_gps_path = [self.robo_position_wp]
+        self.gps_waypoints = [[0, 10, 0, 0]]
+
+    def set_unplanned_path(self):
+        self.robo_and_gps_path = []
+        self.robo_and_gps_path.append(self.robo_position_wp)
+        for wp in self.gps_waypoints:
+            self.robo_and_gps_path.append(wp)
+        self.get_logger().info(f'THE LOCAL UNPLANNED PATH IS {self.robo_and_gps_path}')
 
     def set_path(self, local_path):
         for local_waypoints in local_path:
@@ -26,21 +36,22 @@ class PathPlanner(Node):
             waypoint.x, waypoint.y, waypoint.is_generated, waypoint.can_be_deleted = float(local_waypoints[0]), float(local_waypoints[1]), int(local_waypoints[2]), int(local_waypoints[3])
             self.msg.path_data.append(waypoint)
 
-    def on_position_received(self, Position):
-        self.position = [Position[0], Position[1]]
-        self.get_logger().info(f"Setting the position to {self.position}")
+    def on_position_received(self, position = Position):
+        self.robo_position_wp = [position.x, position.y, 0, 0]
+        self.get_logger().info(f"Setting the position to {position}")
 
     def publish_path(self):
         self.publisher.publish(self.msg)
         self.get_logger().info(f"publishing {self.msg} as Path to /autonav/Path")
-        
+
     def on_obstacles_received(self, Obstacles):
         local_obstacles = []
         obstacles_data = Obstacles.obstacles_data
+        self.set_unplanned_path()
         for obstacle in obstacles_data:
-            local_obstacles.append([obstacle.center_x, obstacle.center_y, obstacle.radius])
+            local_obstacles.append([(obstacle.center_x - (640/2)) * self.pixels_to_meters[0], (obstacle.center_y - (480/2)) * self.pixels_to_meters[0], obstacle.radius * ((self.pixels_to_meters[0] + self.pixels_to_meters[1]) / 2)])
         self.get_logger().info(f"I heard {local_obstacles} as the local obstacles")
-        planning_test.planning_test([[0,0,0,2], [100, 0, 0, 2]], local_obstacles)
+        planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
 
 
 def isInside(circle_x, circle_y, rad, x, y):
