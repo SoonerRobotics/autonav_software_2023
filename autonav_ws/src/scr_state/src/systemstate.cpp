@@ -188,8 +188,8 @@ public:
 	void onSetSystemState(const std::shared_ptr<scr_msgs::srv::SetSystemState::Request> request, std::shared_ptr<scr_msgs::srv::SetSystemState::Response> response)
 	{
 		state.state = request->state;
-		// state.estop = request->estop;
-		// state.mobility = request->mobility;
+		state.estop = request->estop;
+		state.mobility = request->mobility;
 		publishState();
 
 		response->ok = true;
