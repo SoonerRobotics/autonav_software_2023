@@ -19,12 +19,9 @@ class PathResolverNode(Node):
     def configure(self):
         self.m_purePursuit = PurePursuit()
         self.backCount = -1
-        self.m_pathSubscriber = self.create_subscription(
-            Path, "/autonav/path", self.onPathReceived, 20)
-        self.m_positionSubscriber = self.create_subscription(
-            Position, "/autonav/position", self.onPositionReceived, 20)
-        self.m_motorPublisher = self.create_publisher(
-            MotorInput, "/autonav/MotorInput", 20)
+        self.m_pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
+        self.m_positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
+        self.m_motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         self.create_timer(0.1, self.onResolve)
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
@@ -45,8 +42,7 @@ class PathResolverNode(Node):
 
     def onPathReceived(self, msg: Path):
         self.points = [x.pose.position for x in msg.poses]
-        self.m_purePursuit.set_points(
-            [(point.x, point.y) for point in self.points])
+        self.m_purePursuit.set_points([(point.x, point.y) for point in self.points])
 
     def onResolve(self):
         if self.m_position is None:
@@ -56,8 +52,7 @@ class PathResolverNode(Node):
         lookahead = None
         radius = 0.7
         while lookahead is None and radius <= 4.0:
-            lookahead = self.m_purePursuit.get_lookahead_point(
-                cur_pos[0], cur_pos[1], radius)
+            lookahead = self.m_purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
             radius *= 1.2
 
         motor_pkt = MotorInput()
@@ -69,10 +64,8 @@ class PathResolverNode(Node):
             return
 
         if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:
-            angle_diff = math.atan2(
-                lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
-            error = self.getAngleDifference(
-                angle_diff, self.m_position.theta) / math.pi
+            angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
+            error = self.getAngleDifference(angle_diff, self.m_position.theta) / math.pi
             forward_speed = 0.7 * (1 - abs(angle_diff)) ** 5
             motor_pkt.forward_velocity = forward_speed
             motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)

@@ -84,7 +84,7 @@ class IMUNode(Node):
             gps.longitude = sensor_register.lla.y
             gps.altitude = sensor_register.lla.z
             gps.gps_fix = sensor_register.gps_fix
-            gps.satellites = sensor_register.num_satellites
+            gps.satellites = sensor_register.num_sats
             self.m_gpsPublisher.publish(gps)
 
             # Get lat/long if the sensor has GPS fix
