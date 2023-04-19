@@ -45,11 +45,11 @@ class ImageTransformer(Node):
         self.config.setInt(LOWER_VALUE, 35)
         self.config.setInt(UPPER_HUE, 255)
         self.config.setInt(UPPER_SATURATION, 100)
-        self.config.setInt(UPPER_VALUE, 160)
+        self.config.setInt(UPPER_VALUE, 150)
         self.config.setInt(BLUR, 5)
         self.config.setInt(BLUR_ITERATIONS, 3)
-        self.config.setInt(REGION_OF_DISINTEREST_TL, 55)
-        self.config.setInt(REGION_OF_DISINTEREST_TR, 55)
+        self.config.setInt(REGION_OF_DISINTEREST_TL, 50)
+        self.config.setInt(REGION_OF_DISINTEREST_TR, 50)
 
         self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
@@ -67,8 +67,7 @@ class ImageTransformer(Node):
 
     def region_of_disinterest(self, img, vertices):
         mask = np.ones_like(img) * 255
-        match_mask_color = 0
-        cv2.fillPoly(mask, vertices, match_mask_color)
+        cv2.fillPoly(mask, vertices, 0)
         masked_image = cv2.bitwise_and(img, mask)
         return masked_image
 
@@ -127,23 +126,17 @@ class ImageTransformer(Node):
         # Apply region of disinterest and flattening
         height = img.shape[0]
         width = img.shape[1]
-        # region_of_disinterest_vertices=[
-        #     (75, height),
-        #     (width / 5, (height / 2) + \
-        #      self.config.getInt(REGION_OF_DISINTEREST_TL)),
-        #     (width - (width / 5), (height / 3) + \
-        #      self.config.getInt(REGION_OF_DISINTEREST_TR)),
-        #     (width - 75, height)
-        # ]
-        # mask=self.region_of_disinterest(mask, np.array(
-        #     [region_of_disinterest_vertices], np.int32))
+        region_of_disinterest_vertices=[
+            (135, height),
+            (width / 3, (height / 1.5) + self.config.getInt(REGION_OF_DISINTEREST_TL)),
+            (width - (width / 3), (height / 1.5) + self.config.getInt(REGION_OF_DISINTEREST_TR)),
+            (width - 135, height)
+        ]
+        mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
         mask = self.flatten_image(mask)
 
-        # Crop the top by setting it to 0
-        # mask[0:25, :] = 0
-
-        # Convert mask to RGB for preview
         preview_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+        cv2.polylines(preview_image, np.array([region_of_disinterest_vertices], np.int32), True, (0, 255, 0), 2)
         preview_msg = g_bridge.cv2_to_compressed_imgmsg(preview_image)
         preview_msg.header = image.header
         preview_msg.format = "jpeg"

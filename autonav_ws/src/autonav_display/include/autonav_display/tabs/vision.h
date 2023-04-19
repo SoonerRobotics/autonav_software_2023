@@ -48,6 +48,9 @@ void ShowVision(SCR::Node *node)
     static rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr filteredImageSubscriber = nullptr;
     static sensor_msgs::msg::CompressedImage::SharedPtr filteredImage =  nullptr;
 
+    static rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr depthImageSubscriber = nullptr;
+    static sensor_msgs::msg::CompressedImage::SharedPtr depthImage =  nullptr;
+
     if (rawImageSubscriber == nullptr)
     {
         rawImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/compressed", 20, [](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
@@ -56,6 +59,10 @@ void ShowVision(SCR::Node *node)
 
         filteredImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/filtered", 20, [](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
             filteredImage = msg;
+        });
+
+        depthImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/cfg_space/expanded/image", 20, [](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
+            depthImage = msg;
         });
     }
 
@@ -67,5 +74,10 @@ void ShowVision(SCR::Node *node)
     if (filteredImage != nullptr)
     {
         ShowImage(filteredImage);
+    }
+
+    if (depthImage != nullptr)
+    {
+        ShowImage(depthImage);
     }
 }
