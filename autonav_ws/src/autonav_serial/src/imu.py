@@ -6,6 +6,7 @@ import threading
 from vnpy import *
 from autonav_msgs.msg import IMUData
 from autonav_msgs.msg import GPSFeedback
+from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
 
@@ -32,6 +33,9 @@ class IMUNode(Node):
         self.m_imuThread = threading.Thread(target=self.imuWorker)
         self.m_imuThread.start()
 
+    def transition(self, old: SystemState, updated: SystemState):
+        return
+
     def imuWorker(self):
         while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
             if (not self.m_hasPublishedHeaders):
@@ -44,6 +48,7 @@ class IMUNode(Node):
                         pass
 
                     self.m_sensor.connect("/dev/autonav-imu-200", 115200)
+                    self.setDeviceState(DeviceStateEnum.OPERATING)
                 except:
                     self.setDeviceState(DeviceStateEnum.STANDBY)
                     time.sleep(self.config.getFloat(IMU_NOTFOUND_RETRY))
@@ -52,11 +57,6 @@ class IMUNode(Node):
             if (not self.m_sensor.is_connected):
                 time.sleep(self.config.getFloat(IMU_BADCONNECT_RETRY))
                 self.setDeviceState(DeviceStateEnum.STANDBY)
-                continue
-
-            if (self.getDeviceState() != DeviceStateEnum.READY and self.getDeviceState() != DeviceStateEnum.OPERATING):
-                time.sleep(0.5)
-                self.setDeviceState(DeviceStateEnum.READY)
                 continue
 
             if self.getDeviceState() != DeviceStateEnum.OPERATING:
