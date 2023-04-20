@@ -96,10 +96,10 @@ void ShowDashboard(SCR::Node *node)
 
     ImGui::SeparatorText("Estimated Position");
     ImGui::Text("Estimated Position: (%.5f, %.5f, %.5f)", position.x, position.y, thetaToHeading(position.theta));
-    ImGui::Text("Estimated GPS: (%.5f, %.5f)", position.latitude, position.longitude);
+    ImGui::Text("Estimated GPS: (%.8f, %.8f)", position.latitude, position.longitude);
     
     ImGui::SeparatorText("GPS");
-    ImGui::Text("GPS: (%.5f, %.5f, %.5f)", gps.latitude, gps.longitude, gps.altitude);
+    ImGui::Text("GPS: (%.8f, %.8f, %.8f)", gps.latitude, gps.longitude, gps.altitude);
     ImGui::Text("Current Fix: %d", gps.gps_fix);
     ImGui::Text("Is Fixed: %s", (gps.gps_fix > 0 || gps.is_locked > 0 ? "Yes" : "No"));
     ImGui::Text("Satellites: %d", gps.satellites);
