@@ -30,6 +30,10 @@ class ParticleFilterNode(Node):
 
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
+    def onReset(self):
+        self.pf.resetParticles()
+        self.reckoning.reset()
+
     def transition(self, _: SystemState, updated: SystemState):
         if updated == SystemStateEnum.AUTONOMOUS:
             self.reckoning.reset()

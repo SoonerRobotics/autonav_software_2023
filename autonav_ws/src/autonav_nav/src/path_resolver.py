@@ -25,6 +25,10 @@ class PathResolverNode(Node):
         self.create_timer(0.1, self.onResolve)
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
+    def onReset(self):
+        self.m_position = None
+        self.backCount = -1
+
     def transition(self, _: SystemState, updated: SystemState):
         return
 
@@ -79,7 +83,8 @@ class PathResolverNode(Node):
             motor_pkt.angular_velocity = 0.0
 
         if not self.getSystemState().mobility:
-            return
+            motor_pkt.forward_velocity = 0.0
+            motor_pkt.angular_velocity = 0.0
 
         self.m_motorPublisher.publish(motor_pkt)
 

@@ -13,8 +13,10 @@ namespace SCR
 		deviceStates[getDeviceID()] = DeviceState::OFF;
 		systemStateSubscriber = this->create_subscription<scr_msgs::msg::SystemState>("/scr/state/system", 20, std::bind(&Node::onSystemState, this, std::placeholders::_1));
 		deviceStateSubscriber = this->create_subscription<scr_msgs::msg::DeviceState>("/scr/state/device", 20, std::bind(&Node::onDeviceState, this, std::placeholders::_1));
+		resetSubscriber = this->create_subscription<std_msgs::msg::Empty>("/scr/reset", 20, std::bind(&Node::onResetInternal, this, std::placeholders::_1));
 		deviceStateClient = this->create_client<scr_msgs::srv::SetDeviceState>("/scr/state/set_device_state");
 		systemStateClient = this->create_client<scr_msgs::srv::SetSystemState>("/scr/state/set_system_state");
+		resetPublisher = this->create_publisher<std_msgs::msg::Empty>("/scr/reset", 20);
 		logPublisher = this->create_publisher<scr_msgs::msg::Log>("/scr/logging", 20);
 
 		// Configuration
@@ -29,6 +31,16 @@ namespace SCR
 
 	void Node::configure()
 	{
+	}
+
+	void Node::onReset()
+	{
+	}
+
+	void Node::onResetInternal(const std_msgs::msg::Empty::SharedPtr msg)
+	{
+		UNUSED(msg);
+		onReset();
 	}
 
 	int64_t Node::getDeviceID()
@@ -78,6 +90,12 @@ namespace SCR
 		msg.data = message;
 		msg.node = get_name();
 		logPublisher->publish(msg);
+	}
+
+	void Node::reset()
+	{
+		auto msg = std_msgs::msg::Empty();
+		resetPublisher->publish(msg);
 	}
 
 	void Node::onSystemState(const scr_msgs::msg::SystemState::SharedPtr msg)

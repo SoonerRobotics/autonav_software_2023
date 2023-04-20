@@ -5,6 +5,7 @@
 #include "scr_msgs/srv/set_device_state.hpp"
 #include "scr_msgs/msg/device_state.hpp"
 #include "scr_msgs/msg/system_state.hpp"
+#include "std_msgs/msg/empty.hpp"
 #include "scr_msgs/msg/log.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "configuration.h"
@@ -38,21 +39,26 @@ namespace SCR
 		std::map<int64_t, DeviceState> getDeviceStates();
 
 		void log(const std::string& message);
+		void reset();
 
 	protected:
 		virtual void configure();
+		virtual void onReset();
 		virtual void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated);
 
 	private:
+		void onResetInternal(const std_msgs::msg::Empty::SharedPtr msg);
 		void onSystemState(const scr_msgs::msg::SystemState::SharedPtr msg);
 		void onDeviceState(const scr_msgs::msg::DeviceState::SharedPtr msg);
 
 	private:
 		rclcpp::Subscription<scr_msgs::msg::SystemState>::SharedPtr systemStateSubscriber;
 		rclcpp::Subscription<scr_msgs::msg::DeviceState>::SharedPtr deviceStateSubscriber;
-		rclcpp::Publisher<scr_msgs::msg::Log>::SharedPtr logPublisher;
 		rclcpp::Client<scr_msgs::srv::SetSystemState>::SharedPtr systemStateClient;
 		rclcpp::Client<scr_msgs::srv::SetDeviceState>::SharedPtr deviceStateClient;
+		rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr resetSubscriber;
+		rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr resetPublisher;
+		rclcpp::Publisher<scr_msgs::msg::Log>::SharedPtr logPublisher;
 		std::map<int64_t, DeviceState> deviceStates;
 		scr_msgs::msg::SystemState state;
 

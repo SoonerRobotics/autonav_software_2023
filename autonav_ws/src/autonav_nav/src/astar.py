@@ -53,6 +53,15 @@ class AStarNode(Node):
         first_waypoints_time = time.time()
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
+    def onReset(self):
+        global first_waypoints_time, cost_map, best_pos, waypoints
+        self.m_position = None
+        self.m_configSpace = None
+        first_waypoints_time = time.time()
+        cost_map = None
+        best_pos = (0, 0)
+        waypoints = []
+
     def transition(self, _: SystemState, updated: SystemState):
         return
 

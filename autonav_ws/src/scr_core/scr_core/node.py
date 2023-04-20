@@ -1,11 +1,12 @@
-from scr_msgs.srv import SetDeviceState, SetSystemState
 from scr_core.state import DeviceStateEnum, SystemStateEnum
+from scr_msgs.srv import SetDeviceState, SetSystemState
 from scr_msgs.msg import DeviceState, SystemState, Log
 from scr_core.configuration import Configuration
 from rclpy.node import Node as ROSNode
+from std_msgs.msg import Empty
 from scr_core import hash
-import os
 import signal
+import os
 
 
 class Node(ROSNode):
@@ -25,6 +26,8 @@ class Node(ROSNode):
         self.systemStateSubscriber = self.create_subscription(SystemState, "/scr/state/system", self.onSystemState, 20)
         self.deviceStateClient = self.create_client(SetDeviceState, "/scr/state/set_device_state")
         self.systemStateClient = self.create_client(SetSystemState, "/scr/state/set_system_state")
+        self.resetSubscriber = self.create_subscription(Empty, "/scr/reset", self.onResetInternal, 1)
+        self.resetPublisher = self.create_publisher(Empty, "/scr/reset", 1)
         self.logPublisher = self.create_publisher(Log, "/scr/state/log", 20)
 
         # Configuration
@@ -34,6 +37,15 @@ class Node(ROSNode):
 
     def configure(self):
         pass
+
+    def onReset(self):
+        pass
+
+    def onResetInternal(self, _):
+        self.onReset()
+
+    def reset(self):
+        self.resetPublisher.publish(Empty())
 
     def getDeviceID(self) -> int:
         return self.id

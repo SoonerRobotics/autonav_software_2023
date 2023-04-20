@@ -129,19 +129,32 @@ public:
 			{
 				if (ImGui::BeginTabItem("Dashboard"))
 				{
+					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 					ShowDashboard(this);
+					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem("Vision"))
 				{
+					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 					ShowVision(this);
+					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem("Configuration"))
 				{
+					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 					ShowConfiguration(this);
+					ImGui::EndChild();
 					ImGui::EndTabItem();
-				}	
+				}
+				if (ImGui::BeginTabItem("Debug"))
+				{
+					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+					ShowDebug(this);
+					ImGui::EndChild();
+					ImGui::EndTabItem();
+				}
 				ImGui::EndTabBar();
 			}
 			
@@ -156,6 +169,8 @@ public:
 			glfwSwapBuffers(window);
 		}
 
+		rclcpp::shutdown();
+
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImPlot::DestroyContext();
@@ -163,8 +178,6 @@ public:
 
 		glfwDestroyWindow(window);
 		glfwTerminate();
-
-		rclcpp::shutdown();
 	}
 
 private:

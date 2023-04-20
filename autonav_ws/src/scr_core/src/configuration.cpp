@@ -119,6 +119,40 @@ namespace SCR
 		configPublisher->publish(instruction);
 	}
 
+	template<>
+	bool Configuration::get(uint8_t address)
+	{
+		return cache[id][address][0] == 1;
+	}
+
+	template<>
+	bool Configuration::get(int64_t device, uint8_t address)
+	{
+		return cache[device][address][0] == 1;
+	}
+
+	template<>
+	void Configuration::set(uint8_t address, bool value)
+	{
+		scr_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = id;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = std::vector<uint8_t>{(uint8_t)value};
+		configPublisher->publish(instruction);
+	}
+
+	template<>
+	void Configuration::set(int64_t device, uint8_t address, bool value)
+	{
+		scr_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = device;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = std::vector<uint8_t>{(uint8_t)value};
+		configPublisher->publish(instruction);
+	}
+
 	void Configuration::recache()
 	{
 		cache.clear();

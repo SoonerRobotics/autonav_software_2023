@@ -16,6 +16,28 @@ void ShowIntOption(SCR::Configuration *config, std::string name, int64_t device,
     }
 }
 
+void ShowFloatOption(SCR::Configuration *config, std::string name, int64_t device, uint8_t address, float min, float max)
+{
+    float value = config->get<float>(device, address);
+    if (ImGui::InputFloat(name.c_str(), &value))
+    {
+        if (value < min)
+            value = min;
+        if (value > max)
+            value = max;
+        config->set<float>(device, address, value);
+    }
+}
+
+void ShowBoolOption(SCR::Configuration *config, std::string name, int64_t device, uint8_t address)
+{
+    bool value = config->get<bool>(device, address);
+    if (ImGui::Checkbox(name.c_str(), &value))
+    {
+        config->set<bool>(device, address, value);
+    }
+}
+
 void ShowVisionConfig(SCR::Configuration *config)
 {
     ImGui::SeparatorText("Vision Transformations");
