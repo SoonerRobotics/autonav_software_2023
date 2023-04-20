@@ -80,8 +80,9 @@ public:
 
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
-		ImGuiIO &io = ImGui::GetIO();
+		ImGuiIO &io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
 		ImGui::StyleColorsDark();
 
@@ -89,7 +90,7 @@ public:
 		ImGui_ImplOpenGL3_Init(glsl_version);
 
 		std::string path = ament_index_cpp::get_package_share_directory(this->get_name());
-		auto font = io.Fonts->AddFontFromFileTTF((path + "/fonts/RobotoMono-VariableFont_wght.ttf").c_str(), 20.0f);
+		auto font = io.Fonts->AddFontFromFileTTF((path + "/fonts/RobotoMono-VariableFont_wght.ttf").c_str(), font_size);
 		io.FontDefault = font;
 		ImGui_ImplOpenGL3_DestroyFontsTexture();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
@@ -121,28 +122,35 @@ public:
 			{
 				if (ImGui::BeginTabItem("Dashboard"))
 				{
-					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+					ImGui::BeginChild("scrolling1", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 					ShowDashboard(this);
 					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem("Vision"))
 				{
-					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+					ImGui::BeginChild("scrolling2", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 					ShowVision(this);
 					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem("Configuration"))
 				{
-					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+					ImGui::BeginChild("scrolling3", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 					ShowConfiguration(this);
+					ImGui::EndChild();
+					ImGui::EndTabItem();
+				}
+				if (ImGui::BeginTabItem("Preferences"))
+				{
+					ImGui::BeginChild("scrolling4", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+					ShowPreferences(this, &font_size);
 					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem("Debug"))
 				{
-					ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+					ImGui::BeginChild("scrolling5", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 					ShowDebug(this);
 					ImGui::EndChild();
 					ImGui::EndTabItem();
@@ -174,6 +182,8 @@ public:
 
 private:
 	std::thread render_thread;
+
+	float font_size = 20.0f;
 };
 
 int main(int, char **)

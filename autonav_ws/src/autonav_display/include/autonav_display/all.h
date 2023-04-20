@@ -2,3 +2,4 @@
 #include "tabs/vision.h"
 #include "tabs/config.h"
 #include "tabs/debug.h"
+#include "tabs/preferences.h"

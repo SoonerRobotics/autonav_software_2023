@@ -31,12 +31,18 @@ namespace SCR
             void recache();
 			void onConfigurationInstruction(const scr_msgs::msg::ConfigurationInstruction::SharedPtr msg);
 
+            bool hasDevice(int64_t device);
+
             std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> getCache();
 
             std::vector<std::string> getPresets();
             void load(const std::string& preset);
             void save(const std::string& preset);
             bool hasLoadedPreset();
+            std::string getActivePreset();
+            void loadLocalPresets();
+            void deleteActivePreset();
+            void deleteAllPresets();
 
         private:
             int64_t id;

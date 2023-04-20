@@ -12,6 +12,7 @@ namespace SCR
 {
 	Configuration::Configuration()
 	{
+		loadLocalPresets();
 	}
 
 	Configuration::Configuration(int64_t id, rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber, rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher)
@@ -19,6 +20,7 @@ namespace SCR
 		this->id = id;
 		this->configSubscriber = configSubscriber;
 		this->configPublisher = configPublisher;
+		loadLocalPresets();
 	}
 
 	Configuration::~Configuration()
@@ -28,6 +30,47 @@ namespace SCR
 	bool Configuration::hasLoadedPreset()
 	{
 		return preset != "";
+	}
+
+	bool Configuration::hasDevice(int64_t device)
+	{
+		return cache.find(device) != cache.end();
+	}
+
+	void Configuration::loadLocalPresets()
+	{
+		// Load all presets from the local configuration directory into the presets vector, removing the file extension
+		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration";
+		for (const auto &entry : std::filesystem::directory_iterator(path))
+		{
+			std::string preset = entry.path().filename().string();
+			preset = preset.substr(0, preset.find_last_of("."));
+			presets.push_back(preset);
+		}
+	}
+
+	std::string Configuration::getActivePreset()
+	{
+		return preset;
+	}
+
+	void Configuration::deleteActivePreset()
+	{
+		if (preset != "")
+		{
+			std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".json";
+			std::filesystem::remove(path);
+			presets.erase(std::remove(presets.begin(), presets.end(), preset), presets.end());
+			load("default");
+		}
+	}
+
+	void Configuration::deleteAllPresets()
+	{
+		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration";
+		std::filesystem::remove_all(path);
+		presets.clear();
+		load("default");
 	}
 
 	void Configuration::save(const std::string& preset)
