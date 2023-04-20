@@ -86,13 +86,12 @@ class SerialMotors(Node):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
             return
 
-        packed_data = struct.pack("hh", int(
-            input.forward_velocity * 1000.0), int(input.angular_velocity * 1000.0))
-        can_msg = can.Message(
-            arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
+        packed_data = struct.pack("hh", int(input.forward_velocity * 1000.0), int(input.angular_velocity * 1000.0))
+        can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
         try:
             self.m_can.send(can_msg)
+            self.log(f"{input.forward_velocity},{input.angular_velocity}")
         except can.CanError:
             print("Failed to send motor message :(")
 
