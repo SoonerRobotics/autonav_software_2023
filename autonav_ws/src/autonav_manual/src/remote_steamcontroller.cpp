@@ -41,7 +41,7 @@ public:
 		config.set(Registers::TIMEOUT_DELAY, 500);
 		config.set(Registers::STEERING_DEADZONE, 0.04f);
 		config.set(Registers::THROTTLE_DEADZONE, 0.04f);
-		config.set(Registers::MAX_SPEED, 0.9f);
+		config.set(Registers::MAX_SPEED, 1.0f);
 		config.set(Registers::MAX_TURN_SPEED, 0.6f);
 
 		m_timer = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
@@ -80,8 +80,8 @@ public:
 
 		if (abs(msg.rtrig) > deadzone || abs(msg.ltrig) > deadzone)
 		{
-			throttle = (1 - msg.rtrig) * maxSpeed * 0.8;
-			throttle = throttle - (1 - msg.ltrig) * maxSpeed * 0.8;
+			throttle = (1 - msg.rtrig) * maxSpeed * 0.95;
+			throttle = throttle - (1 - msg.ltrig) * maxSpeed * 0.95;
 		}
 
 		if (abs(msg.lpad_x) > steeringVoid)
@@ -98,9 +98,9 @@ public:
 		auto forward_speed = clamp(-throttle, -maxSpeed, maxSpeed);
 		auto turn_angle_rads = clamp(steering, -maxSpeed, maxSpeed);
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.forward_velocity = forward_speed;
+		package.forward_velocity = forward_speed * 2;
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
-		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise, -maxTurnSpeed, maxTurnSpeed);
+		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise * 2, -maxTurnSpeed, maxTurnSpeed);
 		m_motorPublisher->publish(package);
 	}
 
