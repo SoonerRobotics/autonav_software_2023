@@ -2,6 +2,7 @@
 
 import rclpy
 import can
+import time
 import threading
 import struct
 from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection
@@ -95,7 +96,7 @@ class SerialMotors(Node):
             
             if self.lastMotorInput is None or self.lastMotorInput.forward_velocity != input.forward_velocity or self.lastMotorInput.angular_velocity != input.angular_velocity:
                 self.lastMotorInput = input
-                self.log(f"{input.forward_velocity},{input.angular_velocity}")
+                self.log(f"{time.time()},{input.forward_velocity},{input.angular_velocity}")
         except can.CanError:
             print("Failed to send motor message :(")
 
