@@ -26,6 +26,7 @@ class SerialMotors(Node):
         self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
         self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 10)
         self.m_can = None
+        self.lastMotorInput = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
         self.m_canReadThread = threading.Thread(target=self.canThreadWorker)
         self.m_canReadThread.daemon = True
@@ -91,7 +92,10 @@ class SerialMotors(Node):
 
         try:
             self.m_can.send(can_msg)
-            self.log(f"{input.forward_velocity},{input.angular_velocity}")
+            
+            if self.lastMotorInput is None or self.lastMotorInput.forward_velocity != input.forward_velocity or self.lastMotorInput.angular_velocity != input.angular_velocity:
+                self.lastMotorInput = input
+                self.log(f"{input.forward_velocity},{input.angular_velocity}")
         except can.CanError:
             print("Failed to send motor message :(")
 
