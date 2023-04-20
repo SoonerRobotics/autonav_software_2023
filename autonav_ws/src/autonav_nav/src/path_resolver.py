@@ -11,6 +11,13 @@ import math
 import rclpy
 
 
+FORWARD_SPEED = 0
+REVERSE_SPEED = 1
+RADIUS_MULTIPLIER = 2
+RADIUS_MAX = 3
+RADIUS_START = 4
+
+
 class PathResolverNode(Node):
     def __init__(self):
         super().__init__("autonav_nav_resolver")
@@ -22,6 +29,13 @@ class PathResolverNode(Node):
         self.m_pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
         self.m_positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
         self.m_motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
+        
+        self.config.setFloat(FORWARD_SPEED, 0.7)
+        self.config.setFloat(REVERSE_SPEED, -0.5)
+        self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
+        self.config.setFloat(RADIUS_MAX, 4.0)
+        self.config.setFloat(RADIUS_START, 0.7)
+        
         self.create_timer(0.1, self.onResolve)
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
@@ -54,10 +68,10 @@ class PathResolverNode(Node):
 
         cur_pos = (self.m_position.x, self.m_position.y)
         lookahead = None
-        radius = 0.7
-        while lookahead is None and radius <= 4.0:
+        radius = self.config.getFloat(RADIUS_START)
+        while lookahead is None and radius <= self.config.getFloat(RADIUS_MAX):
             lookahead = self.m_purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
-            radius *= 1.2
+            radius *= self.config.getFloat(RADIUS_MULTIPLIER)
 
         motor_pkt = MotorInput()
         motor_pkt.forward_velocity = 0.0
@@ -70,7 +84,7 @@ class PathResolverNode(Node):
         if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.m_position.theta) / math.pi
-            forward_speed = 0.8 * (1 - abs(angle_diff)) ** 5
+            forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(angle_diff)) ** 5
             motor_pkt.forward_velocity = forward_speed
             motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)
         else:
@@ -79,7 +93,7 @@ class PathResolverNode(Node):
             else:
                 self.backCount -= -1
 
-            motor_pkt.forward_velocity = -0.5
+            motor_pkt.forward_velocity = self.config.getFloat(REVERSE_SPEED)
             motor_pkt.angular_velocity = 0.0
 
         if not self.getSystemState().mobility:

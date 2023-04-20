@@ -25,7 +25,7 @@ enum Registers
 	STEERING_DEADZONE = 1,
 	THROTTLE_DEADZONE = 2,
 	MAX_SPEED = 3,
-	SPEED_OFFSET = 4
+	MAX_TURN_SPEED = 4
 };
 
 class JoyNode : public SCR::Node
@@ -41,8 +41,8 @@ public:
 		config.set(Registers::TIMEOUT_DELAY, 500);
 		config.set(Registers::STEERING_DEADZONE, 0.04f);
 		config.set(Registers::THROTTLE_DEADZONE, 0.04f);
-		config.set(Registers::MAX_SPEED, 2.2f);
-		config.set(Registers::SPEED_OFFSET, 0.6f);
+		config.set(Registers::MAX_SPEED, 0.9f);
+		config.set(Registers::MAX_TURN_SPEED, 0.6f);
 
 		m_timer = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
 		setDeviceState(SCR::DeviceState::OPERATING);
@@ -75,8 +75,8 @@ public:
 		float steering = 0;
 		const float deadzone = config.get<float>(Registers::THROTTLE_DEADZONE);
 		const float maxSpeed = config.get<float>(Registers::MAX_SPEED);
+		const float maxTurnSpeed = config.get<float>(Registers::MAX_TURN_SPEED);
 		const float steeringVoid = config.get<float>(Registers::STEERING_DEADZONE);
-		const float offset = config.get<float>(Registers::SPEED_OFFSET);
 
 		if (abs(msg.rtrig) > deadzone || abs(msg.ltrig) > deadzone)
 		{
@@ -100,7 +100,7 @@ public:
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
 		package.forward_velocity = forward_speed;
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
-		package.angular_velocity = turn_angle_rads_counter_clockwise / 2;
+		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise, -maxTurnSpeed, maxTurnSpeed);
 		m_motorPublisher->publish(package);
 	}
 
