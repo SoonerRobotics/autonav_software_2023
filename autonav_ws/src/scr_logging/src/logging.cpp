@@ -11,11 +11,12 @@
 #include "scr_core/node.h"
 #include "scr_msgs/msg/log.hpp"
 
+#define UNUSED(x) (void)(x)
 using std::placeholders::_1;
 
 namespace Constants
 {
-	std::string LOG_PATH = "/home/{user}/logs/";
+	std::string LOG_PATH = "/home/{user}/.scr/logs/";
 	std::string LOG_FILE_EXT = ".log";
 }
 
@@ -79,6 +80,12 @@ public:
 	void configure() override
 	{
 		setDeviceState(SCR::DeviceState::OPERATING);
+	}
+
+	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
+	{
+		UNUSED(old);
+		UNUSED(updated);
 	}
 
 private:

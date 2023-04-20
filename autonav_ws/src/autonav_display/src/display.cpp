@@ -48,14 +48,6 @@ public:
 	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
 	{
 		UNUSED(old);
-		switch(updated.state)
-		{
-			case SCR::SystemState::SHUTDOWN:
-			case SCR::SystemState::DISABLED:
-			case SCR::SystemState::MANUAL:
-			case SCR::SystemState::AUTONOMOUS:
-				break;
-		}
 	}
 
 	bool setup_imgui()
