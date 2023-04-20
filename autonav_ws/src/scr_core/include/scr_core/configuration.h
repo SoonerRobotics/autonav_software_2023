@@ -33,11 +33,18 @@ namespace SCR
 
             std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> getCache();
 
+            std::vector<std::string> getPresets();
+            void load(const std::string& preset);
+            void save(const std::string& preset);
+            bool hasLoadedPreset();
+
         private:
             int64_t id;
             std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> cache;
 			rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber;
 			rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher;
+            std::vector<std::string> presets;
+            std::string preset;
 
         private:
             enum Opcode

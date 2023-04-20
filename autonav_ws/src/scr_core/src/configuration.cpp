@@ -1,7 +1,12 @@
 #include "scr_msgs/msg/configuration_instruction.hpp"
 #include "scr_core/configuration.h"
 #include "rclcpp/rclcpp.hpp"
+#include <sys/stat.h>
 #include <unistd.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <filesystem>
 
 namespace SCR
 {
@@ -20,12 +25,106 @@ namespace SCR
 	{
 	}
 
+	bool Configuration::hasLoadedPreset()
+	{
+		return preset != "";
+	}
+
+	void Configuration::save(const std::string& preset)
+	{
+		std::string configPath = "/home/" + std::string(getenv("USER")) + "/.scr/configuration";
+		std::string path = configPath + "/" + preset + ".json";
+		std::ofstream file(path);
+
+		RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Saving configuration file: %s", path.c_str());
+
+		if (!std::filesystem::exists(configPath))
+		{
+			RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Creating configuration directory: %s", configPath.c_str());
+			std::filesystem::create_directories(configPath);
+		}
+
+		for (auto device : cache)
+		{
+			for (auto address : device.second)
+			{
+				file << device.first << "," << (int)address.first << ",";
+				for (auto byte : address.second)
+				{
+					file << (int)byte << ":";
+				}
+				file << std::endl;
+			}
+		}
+
+		file.close();
+		if (std::find(presets.begin(), presets.end(), preset) == presets.end())
+		{
+			presets.push_back(preset);
+		}
+	}
+
+	void Configuration::load(const std::string& preset)
+	{
+		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".json";
+		if (!std::filesystem::exists(path))
+		{
+			if (preset != "default")
+			{
+				RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Configuration file not found. Loading default configuration.");
+				load("default");
+				return;
+			}
+			else
+			{
+				RCLCPP_INFO(rclcpp::get_logger("scr_core"), "No configuration file found. Creating default configuration.");
+				this->preset = "default";
+				save("default");
+				return;
+			}	
+		}
+
+		RCUTILS_LOG_INFO("Loading configuration file: %s", path.c_str());
+		std::ifstream file(path);
+		std::string line;
+
+		while (getline(file, line))
+		{
+			std::vector<std::string> tokens;
+			std::string token;
+			std::istringstream tokenStream(line);
+			while (std::getline(tokenStream, token, ','))
+			{
+				tokens.push_back(token);
+			}
+
+			int64_t device = std::stoll(tokens[0]);
+			uint8_t address = std::stoi(tokens[1]);
+
+			std::vector<uint8_t> bytes;
+			std::istringstream byteStream(tokens[2]);
+			while (std::getline(byteStream, token, ':'))
+			{
+				bytes.push_back(std::stoi(token));
+			}
+
+			cache[device][address] = bytes;
+		}
+
+		this->preset = preset;
+		file.close();
+	}
+
+	std::vector<std::string> Configuration::getPresets()
+	{
+		return presets;
+	}
+
 	template <>
 	int Configuration::get(uint8_t address)
 	{
 		return *(int*)cache[id][address].data();
 	}
-
 
 	template <>
 	int Configuration::get(int64_t device, uint8_t address)
