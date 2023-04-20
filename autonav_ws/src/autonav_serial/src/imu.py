@@ -86,6 +86,7 @@ class IMUNode(Node):
             gps.gps_fix = sensor_register.gps_fix
             gps.satellites = sensor_register.num_sats
             self.m_gpsPublisher.publish(gps)
+            self.log(f"{data.accel_x},{data.accel_y},{data.accel_z},{data.yaw},{data.pitch},{data.roll},{data.angular_x},{data.angular_y},{data.angular_z},{gps.latitude},{gps.longitude},{gps.altitude},{gps.gps_fix},{gps.satellites}")
 
             # Get lat/long if the sensor has GPS fix
             time.sleep(self.config.getFloat(IMU_READ_RATE))
