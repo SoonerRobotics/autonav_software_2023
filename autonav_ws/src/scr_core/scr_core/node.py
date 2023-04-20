@@ -28,7 +28,7 @@ class Node(ROSNode):
         self.systemStateClient = self.create_client(SetSystemState, "/scr/state/set_system_state")
         self.resetSubscriber = self.create_subscription(Empty, "/scr/reset", self.onResetInternal, 1)
         self.resetPublisher = self.create_publisher(Empty, "/scr/reset", 1)
-        self.logPublisher = self.create_publisher(Log, "/scr/state/log", 20)
+        self.logPublisher = self.create_publisher(Log, "/scr/logging", 20)
 
         # Configuration
         self.config = Configuration(self.id, self)
