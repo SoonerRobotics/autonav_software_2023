@@ -36,9 +36,10 @@ class CameraNode(Node):
                 if not os.path.exists("/dev/video" + str(self.deviceId)):
                     continue
 
-                capture = cv2.VideoCapture(self.deviceId)
+                capture = cv2.VideoCapture(self.deviceId, cv2.CAP_V4L2)
                 if capture is None or not capture.isOpened():
                     continue
+
 
                 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
                 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
