@@ -48,8 +48,8 @@ class ImageTransformer(Node):
         self.config.setInt(UPPER_VALUE, 150)
         self.config.setInt(BLUR, 5)
         self.config.setInt(BLUR_ITERATIONS, 3)
-        self.config.setInt(REGION_OF_DISINTEREST_TL, 50)
-        self.config.setInt(REGION_OF_DISINTEREST_TR, 50)
+        self.config.setInt(REGION_OF_DISINTEREST_TL, 0)
+        self.config.setInt(REGION_OF_DISINTEREST_TR, 0)
 
         self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
@@ -124,16 +124,16 @@ class ImageTransformer(Node):
         mask[mask < 250] = 0
 
         # Apply region of disinterest and flattening
+        mask = self.flatten_image(mask)
         height = img.shape[0]
         width = img.shape[1]
         region_of_disinterest_vertices=[
-            (135, height),
+            (100, height),
             (width / 3, (height / 1.5) + self.config.getInt(REGION_OF_DISINTEREST_TL)),
             (width - (width / 3), (height / 1.5) + self.config.getInt(REGION_OF_DISINTEREST_TR)),
-            (width - 135, height)
+            (width - 100, height)
         ]
         mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
-        mask = self.flatten_image(mask)
 
         preview_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
         cv2.polylines(preview_image, np.array([region_of_disinterest_vertices], np.int32), True, (0, 255, 0), 2)

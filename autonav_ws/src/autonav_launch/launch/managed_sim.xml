@@ -1,10 +1,11 @@
 <launch>
     <node pkg="scr_state" exec="statemanager" >
         <param name="use_simulator" value="true" />
-        <param name="override_mobility" value="true" />
+        <param name="override_mobility" value="false" />
         <param name="forced_state" value="autonomous" />
         <param name="required_nodes" value="[autonav_display]" />
     </node>
+    <node pkg="scr_logging" exec="logging" />
     <node pkg="autonav_display" exec="primary_display" output="screen" />
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify" />

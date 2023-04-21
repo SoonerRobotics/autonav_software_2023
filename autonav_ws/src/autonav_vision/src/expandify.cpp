@@ -138,8 +138,8 @@ private:
 
 	nav_msgs::msg::MapMetaData map;
 	
-	float maxRange = 0.85;
-	float noGoPercent = 0.8;
+	float maxRange = 0.5;
+	float noGoPercent = 0.5;
 	int noGoRange = 0;
 	std::vector<Circle> circles;
 };
