@@ -21,16 +21,28 @@ class PurePursuit(Node):
     def accept_position(self, position = Position):
         self.get_logger().info(f"hearing {position} from position topic")
         self.robo_position = (position.x, position.y, position.theta)
-    def accept_path(self, msg):
+
+    def get_lookahead(self, local_path):
+        path = lookahead_finder.PurePursuit()
+        path.setpath(local_path)
+        lookahead = None
+        radius = .7
+        while lookahead == None and radius <= 4.0:
+            lookahead = path.get_lookahead_point(local_path[0][0], local_path[0][1], radius)
         
+        return lookahead
+            
+    def accept_path(self, msg):
         local_path = []
         path_data = msg.path_data
         for Waypoint in path_data:
             local_path.append([Waypoint.x, Waypoint.y])
         self.get_logger().info(f'I heard {local_path} as the local_path')
-        path = lookahead_finder.PurePursuit()
-        path.setpath(local_path)
-        lookahead = path.get_lookahead_point(local_path[0][0], local_path[0][1], 2.3)
+        
+        lookahead = self.get_lookahead(local_path)
+        #path = lookahead_finder.PurePursuit()
+        #path.setpath(local_path)
+        #lookahead = path.get_lookahead_point(local_path[0][0], local_path[0][1], 2.3)
         self.publish_lookahead(lookahead)
         pursuit_test.pursuit_test(local_path[0], local_path, 2.3)
         

@@ -93,11 +93,13 @@ class ImageTransformer(AutoNode):
         self.m_laneMapPublisher.publish(msg)
 
     def onImageReceived(self, image: CompressedImage):
+        self.get_logger().info("Image received")
         if self.getDeviceState() != DeviceState.OPERATING:
             return
         
         # Decompressify
         cv_image = g_bridge.compressed_imgmsg_to_cv2(image)
+
 
         # Blur it up
         for _ in range(self.config.readInt(Register.BLUR_ITERATIONS)):

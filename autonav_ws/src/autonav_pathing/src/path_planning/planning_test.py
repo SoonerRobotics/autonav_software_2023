@@ -22,14 +22,17 @@ def planning_test(wpoints, obstacles):
     start_time = time.time()
     
     counter = 0
+    print("chuggin")
     while(testccw.updated == True):
-        if counter < 10:
+        print(f"counter {counter}")
+        if counter < 2:
             testccw.intersections("ccw")
             testccw.path_intersections()
             testccw.delete_inside()
             counter = counter + 1
         else:
             break
+    print("done chuggin")
 
     testccw.path_intersections()
     testccw.delete_inside()

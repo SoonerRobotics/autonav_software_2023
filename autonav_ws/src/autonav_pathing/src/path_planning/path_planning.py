@@ -3,6 +3,7 @@
 import tangent_based
 import planning_test
 import random
+import math
 import time
 import rclpy
 from rclpy.node import Node
@@ -16,19 +17,68 @@ class PathPlanner(Node):
         self.publisher = self.create_publisher(Path, '/autonav/Path', 10)
         self.subscriber = self.create_subscription(Obstacles, '/autonav/obstacles', self.on_obstacles_received, 10)
         self.position_subscriber = self.create_subscription(Position, '/autonav/position', self.on_position_received, 10)
-        self.timer = self.create_timer(5.0, self.publish_path)
         self.msg = Path()
-        self.robo_position_wp = [0,0,0,0]
-        self.pixels_to_meters = (4/480, 4/640)
+        self.robo_position = Position()
+        self.robo_position_wp = [0,0,0,2]
+        self.pixels_to_meters = (4/640, 4/480)
         self.robo_and_gps_path = [self.robo_position_wp]
-        self.gps_waypoints = [[0, 10, 0, 0]]
+        self.planned_path = []
+        self.gps_waypoints = [[0, 10, 0, 2]]
+        self.normalized_theta = 0.0
+
+    def reset(self):
+        self.robo_and_gps_path = [self.robo_position_wp]
+        self.planned_path = []
+
+    def set_drive_point(self):
+        raw_theta = self.robo_position.theta 
+        if raw_theta >= 0:
+            self.normalized_theta = raw_theta % (2 * math.pi)
+        elif raw_theta < 0:
+            self.normalized_theta = raw_theta % (-1 * 2 * math.pi)
+        # these are flipped because our theta is shifted 90 degrees
+        dy = math.cos(self.normalized_theta)
+        dx = -1 * math.sin(self.normalized_theta)
+        drive_point = [2 * dx, 2 * dy, 0, 0]
+        return drive_point
 
     def set_unplanned_path(self):
         self.robo_and_gps_path = []
         self.robo_and_gps_path.append(self.robo_position_wp)
+        self.robo_and_gps_path.append(self.set_drive_point())
         for wp in self.gps_waypoints:
             self.robo_and_gps_path.append(wp)
         self.get_logger().info(f'THE LOCAL UNPLANNED PATH IS {self.robo_and_gps_path}')
+        
+
+    def rotate_obstacles(self, x, y):
+        x1 = ((x - self.robo_position_wp[0]) * math.cos(self.normalized_theta)) - ((y - self.robo_position_wp[1]) * math.sin(self.normalized_theta)) + self.robo_position_wp[0]
+        y1 = ((x - self.robo_position_wp[0]) * math.sin(self.normalized_theta)) + ((y - self.robo_position_wp[1]) * math.cos(self.normalized_theta)) + self.robo_position_wp[1]
+        
+        return x1, y1
+    
+    def path_plan(self, local_obstacles, direction):
+        test = tangent_based.path_planning()
+        test.setpath(self.robo_and_gps_path)
+        test.setobstacles(local_obstacles)
+        
+        print("chuggin")
+        counter = 0
+        while(test.updated == True):
+            if counter < 2:
+                test.intersections(direction)
+                test.path_intersections()
+                test.delete_inside()
+                counter = counter + 1
+            else:
+                break
+
+        print("done chuggin")
+        test.path_intersections()
+        test.delete_inside()
+
+        return test.final
+
 
     def set_path(self, local_path):
         for local_waypoints in local_path:
@@ -37,7 +87,8 @@ class PathPlanner(Node):
             self.msg.path_data.append(waypoint)
 
     def on_position_received(self, position = Position):
-        self.robo_position_wp = [position.x, position.y, 0, 0]
+        self.robo_position_wp = [position.x, position.y, 0, 2]
+        self.robo_position = position 
         self.get_logger().info(f"Setting the position to {position}")
 
     def publish_path(self):
@@ -45,12 +96,21 @@ class PathPlanner(Node):
         self.get_logger().info(f"publishing {self.msg} as Path to /autonav/Path")
 
     def on_obstacles_received(self, Obstacles):
+        direction = "ccw" # change later based on pose
         local_obstacles = []
         obstacles_data = Obstacles.obstacles_data
         self.set_unplanned_path()
         for obstacle in obstacles_data:
-            local_obstacles.append([(obstacle.center_x - (640/2)) * self.pixels_to_meters[0], (obstacle.center_y - (480/2)) * self.pixels_to_meters[0], obstacle.radius * ((self.pixels_to_meters[0] + self.pixels_to_meters[1]) / 2)])
+            x = ((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0]
+            y = ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1]
+            x, y = self.rotate_obstacles(x,y)
+            rad = obstacle.radius * self.pixels_to_meters[1]
+            #local_obstacles.append([((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0], ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1], obstacle.radius * self.pixels_to_meters[1]])
+            local_obstacles.append([x,y,rad])
         self.get_logger().info(f"I heard {local_obstacles} as the local obstacles")
+        self.planned_path = self.path_plan(local_obstacles, direction)
+        self.set_path(self.planned_path)
+        self.publish_path()
         planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
 
 
