@@ -21,7 +21,7 @@ class CameraNode(Node):
     def configure(self):
         self.config.setInt(REFRESH_RATE, 15)
 
-        self.declare_parameter("device_id", 2)
+        self.declare_parameter("device_id", 4)
         self.deviceId = self.get_parameter("device_id").value
 
         self.m_cameraPublisher = self.create_publisher(CompressedImage, "/autonav/camera/compressed", 20)
