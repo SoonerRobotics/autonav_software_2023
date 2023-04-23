@@ -37,9 +37,9 @@ class PathPlanner(Node):
         elif raw_theta < 0:
             self.normalized_theta = raw_theta % (-1 * 2 * math.pi)
         # these are flipped because our theta is shifted 90 degrees
-        dy = math.cos(self.normalized_theta)
-        dx = -1 * math.sin(self.normalized_theta)
-        drive_point = [2 * dx, 2 * dy, 0, 0]
+        
+        dpx, dpy = self.rotate(self.robo_position_wp[0], self.robo_position_wp[1] + 2, self.robo_position_wp[0], self.robo_position_wp[1])
+        drive_point = [dpx, dpy, 0, 0]
         return drive_point
 
     def set_unplanned_path(self):
@@ -51,9 +51,9 @@ class PathPlanner(Node):
         self.get_logger().info(f'THE LOCAL UNPLANNED PATH IS {self.robo_and_gps_path}')
         
 
-    def rotate_obstacles(self, x, y):
-        x1 = ((x - self.robo_position_wp[0]) * math.cos(self.normalized_theta)) - ((y - self.robo_position_wp[1]) * math.sin(self.normalized_theta)) + self.robo_position_wp[0]
-        y1 = ((x - self.robo_position_wp[0]) * math.sin(self.normalized_theta)) + ((y - self.robo_position_wp[1]) * math.cos(self.normalized_theta)) + self.robo_position_wp[1]
+    def rotate(self, x, y, centerx, centery):
+        x1 = ((x - centerx) * math.cos(self.normalized_theta)) - ((y - centery) * math.sin(self.normalized_theta)) + centerx
+        y1 = ((x - centerx) * math.sin(self.normalized_theta)) + ((y - centery) * math.cos(self.normalized_theta)) + centery
         
         return x1, y1
     
@@ -65,7 +65,7 @@ class PathPlanner(Node):
         print("chuggin")
         counter = 0
         while(test.updated == True):
-            if counter < 2:
+            if counter < 4:
                 test.intersections(direction)
                 test.path_intersections()
                 test.delete_inside()
@@ -103,7 +103,7 @@ class PathPlanner(Node):
         for obstacle in obstacles_data:
             x = ((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0]
             y = ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1]
-            x, y = self.rotate_obstacles(x,y)
+            x, y = self.rotate(x,y, self.robo_position_wp[0], self.robo_position_wp[1])
             rad = obstacle.radius * self.pixels_to_meters[1]
             #local_obstacles.append([((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0], ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1], obstacle.radius * self.pixels_to_meters[1]])
             local_obstacles.append([x,y,rad])
