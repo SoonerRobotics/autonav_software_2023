@@ -4,7 +4,7 @@ import math
 
 # Algorithm source: https://github.com/xiaoxiae/PurePursuitAlgorithm/blob/master/src/main/PurePursuit.java
 class PurePursuit:
-    def initialize(self):
+    def __init__(self):
         self.path = []
 
     def setpath(self, list):

@@ -19,15 +19,15 @@ class PurePursuit(Node):
         self.publisher = self.create_publisher(GoalPoint, '/autonav/goal_point', 10)
         self.path_subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 10)
         self.position_subscription = self.create_subscription(Position, '/autonav/position', self.accept_position, 10)
-        self.motor_publisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
+        self.motor_publisher = self.create_publisher(MotorInput, "/igvc/motors_raw", 20)
         self.create_timer(0.1, self.onResolve)
-        self.pure_pursuit = lookahead_finder.PurePursuit()
+        self.purePursuit = lookahead_finder.PurePursuit()
         self.path_subscription
-        self.robo_position = (0.0, 0.0, 1.0)
+        self.robo_position = [0.0, 0.0, 1.0]
 
     def accept_position(self, position = Position):
-        self.get_logger().info(f"hearing {position} from position topic")
-        self.robo_position = (position.x, position.y, position.theta)
+        #self.get_logger().info(f"hearing {position} from position topic")
+        self.robo_position = [position.x, position.y, position.theta]
 
     def getAngleDifference(self, to_angle, from_angle):
         delta = to_angle - from_angle
@@ -50,7 +50,7 @@ class PurePursuit(Node):
         for Waypoint in path_data:
             local_path.append([Waypoint.x, Waypoint.y])
         self.get_logger().info(f'I heard {local_path} as the local_path')
-        self.pure_pursuit.set_points(local_path)
+        self.purePursuit.setpath(local_path)
         
         #lookahead = self.get_lookahead(local_path)
         #path = lookahead_finder.PurePursuit()
@@ -66,14 +66,14 @@ class PurePursuit(Node):
         return delta
     
     def onResolve(self):
-        if self.pure_pursuit.path == []:
+        if self.purePursuit.path == []:
             return
         
         cur_pos = (self.robo_position[0], self.robo_position[1])
         lookahead = None
         radius = 0.7
         while lookahead is None and radius <= 4.0:
-            lookahead = self.pure_pursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
+            lookahead = self.purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
             radius *= 1.2
         
         motor_pkt = MotorInput()
@@ -86,12 +86,13 @@ class PurePursuit(Node):
         
         if ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:  
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
-            error = self.getAngleDifference(angle_diff, self.m_position.theta) / math.pi
+            error = self.getAngleDifference(angle_diff, self.robo_position[2]) / math.pi
             forward_speed = 0.7 * (1 - abs(angle_diff)) ** 5
             motor_pkt.forward_velocity = forward_speed
             motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)
 
             self.motor_publisher.publish(motor_pkt)
+            self.get_logger().info(f"publishing {motor_pkt} to /igvc/motors_raw")
 
     def publish_lookahead(self, lookahead):
         msg = GoalPoint()
