@@ -5,7 +5,7 @@ import can
 import time
 import threading
 import struct
-from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection
+from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection, MotorControllerDebug
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum
 
@@ -26,10 +26,10 @@ class SerialMotors(Node):
         super().__init__("autonav_serial_can")
 
     def configure(self):
-        self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
-        self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
-        self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 10)
-        # self.m_debugPublisher = self.create_publisher()
+        self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 20)
+        self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 20)
+        self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 20)
+        self.m_debugPublisher = self.create_publisher(MotorControllerDebug, "/autonav/MotorControllerDebug", 20)
         self.m_can = None
         self.lastMotorInput = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
@@ -83,6 +83,14 @@ class SerialMotors(Node):
             leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
             leftMotorOutput /= 1000.0
             rightMotorOutput /= 1000.0
+            pkg = MotorControllerDebug()
+            pkg.current_forward_velocity = self.currentForwardVel
+            pkg.forward_velocity_setpoint = self.setpointForwardVel
+            pkg.current_angular_velocity = self.currentAngularVel
+            pkg.angular_velocity_setpoint = self.setpointAngularVel
+            pkg.left_motor_output = leftMotorOutput
+            pkg.right_motor_output = rightMotorOutput
+            pkg.timestamp = self.getTimeMs()
             self.log(f"51,{self.getTimeMs()},{leftMotorOutput},{rightMotorOutput}")
 
     def canWorker(self):
