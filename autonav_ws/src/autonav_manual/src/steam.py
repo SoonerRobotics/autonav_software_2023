@@ -104,9 +104,9 @@ class SteamTranslationNode(Node):
                     self.m_debounce["DISABLED"] = False
                 if button == SCButtons.B:
                     self.m_debounce["SHUTDOWN"] = False
-                if button == SCButtons.LB:
+                if button == SCButtons.LGRIP:
                     self.m_debounce["SPEEDDOWN"] = False
-                if button == SCButtons.RB:
+                if button == SCButtons.RGRIP:
                     self.m_debounce["SPEEDUP"] = False
                     
 
@@ -130,7 +130,7 @@ class SteamTranslationNode(Node):
             self.setSystemState(SystemStateEnum.SHUTDOWN)
             return
         
-        if (time.time() * 1000) - self.m_Buttons[SCButtons.LB] >= 250 and self.m_Buttons[SCButtons.LB] != 0 and self.m_debounce["SPEEDDOWN"] == False:
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.LGRIP] >= 250 and self.m_Buttons[SCButtons.LGRIP] != 0 and self.m_debounce["SPEEDDOWN"] == False:
             self.m_debounce["SPEEDDOWN"] = True
             self.speed -= 0.1
             if self.speed < 0:
@@ -138,7 +138,7 @@ class SteamTranslationNode(Node):
             self.speedTickPublisher.publish(Float32(self.speed))
             return
         
-        if (time.time() * 1000) - self.m_Buttons[SCButtons.RB] >= 250 and self.m_Buttons[SCButtons.RB] != 0 and self.m_debounce["SPEEDUP"] == False:
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 250 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
             self.m_debounce["SPEEDUP"] = True
             self.speed += 0.1
             if self.speed > 1:

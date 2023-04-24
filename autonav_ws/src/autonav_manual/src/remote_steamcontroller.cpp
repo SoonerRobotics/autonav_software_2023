@@ -106,7 +106,7 @@ public:
 		auto forward_speed = clamp(-throttle, -maxSpeed, maxSpeed);
 		auto turn_angle_rads = clamp(steering, -maxSpeed, maxSpeed);
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.forward_velocity = forward_speed * 2;
+		package.forward_velocity = forward_speed;
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
 		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise * 2, -maxTurnSpeed, maxTurnSpeed);
 		m_motorPublisher->publish(package);
