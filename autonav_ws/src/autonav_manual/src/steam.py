@@ -130,20 +130,24 @@ class SteamTranslationNode(Node):
             self.setSystemState(SystemStateEnum.SHUTDOWN)
             return
         
-        if (time.time() * 1000) - self.m_Buttons[SCButtons.LGRIP] >= 250 and self.m_Buttons[SCButtons.LGRIP] != 0 and self.m_debounce["SPEEDDOWN"] == False:
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.LGRIP] >= 1000 and self.m_Buttons[SCButtons.LGRIP] != 0 and self.m_debounce["SPEEDDOWN"] == False:
             self.m_debounce["SPEEDDOWN"] = True
             self.speed -= 0.1
-            if self.speed < 0:
-                self.speed = 0
-            self.speedTickPublisher.publish(Float32(self.speed))
+            if self.speed < 0.0:
+                self.speed = 0.0
+            pkg = Float32()
+            pkg.data = self.speed
+            self.speedTickPublisher.publish(pkg)
             return
         
-        if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 250 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 1000 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
             self.m_debounce["SPEEDUP"] = True
             self.speed += 0.1
-            if self.speed > 1:
-                self.speed = 1
-            self.speedTickPublisher.publish(Float32(self.speed))
+            if self.speed > 1.0:
+                self.speed = 1.0
+            pkg = Float32()
+            pkg.data = self.speed
+            self.speedTickPublisher.publish(pkg)
             return
 
         msg.ltrig = float(sci.ltrig) / 255
