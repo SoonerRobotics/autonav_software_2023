@@ -36,6 +36,7 @@ class SerialMotors(Node):
         self.m_canReadThread = threading.Thread(target=self.canThreadWorker)
         self.m_canReadThread.daemon = True
         self.m_canReadThread.start()
+        self.start = self.getTimeMs()
 
     def getTimeMs(self):
         return int(round(time.time() * 1000))
@@ -77,7 +78,7 @@ class SerialMotors(Node):
             self.setpointForwardVel = setpointForwardVel / 1000.0
             self.currentAngularVel = currentAngularVel / 1000.0
             self.setpointAngularVel = setpointAngularVel / 1000.0
-            self.log(f"50,{self.getTimeMs()},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
+            self.log(f"50,{self.getTimeMs() - self.start},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
 
         if arb_id == CAN_51:
             leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
@@ -90,8 +91,8 @@ class SerialMotors(Node):
             pkg.angular_velocity_setpoint = self.setpointAngularVel
             pkg.left_motor_output = leftMotorOutput
             pkg.right_motor_output = rightMotorOutput
-            pkg.timestamp = self.getTimeMs()
-            self.log(f"51,{self.getTimeMs()},{leftMotorOutput},{rightMotorOutput}")
+            pkg.timestamp = (self.getTimeMs() - self.start) * 1.0
+            self.log(f"51,{self.getTimeMs() - self.start},{leftMotorOutput},{rightMotorOutput}")
 
     def canWorker(self):
         try:
