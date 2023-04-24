@@ -82,7 +82,7 @@ public:
 		float steering = 0;
 		const float deadzone = config.get<float>(Registers::THROTTLE_DEADZONE);
 		float maxSpeed = config.get<float>(Registers::MAX_SPEED);
-		const float maxTurnSpeed = config.get<float>(Registers::MAX_TURN_SPEED);
+		float maxTurnSpeed = config.get<float>(Registers::MAX_TURN_SPEED);
 		const float steeringVoid = config.get<float>(Registers::STEERING_DEADZONE);
 
 		if (abs(msg.rtrig) > deadzone || abs(msg.ltrig) > deadzone)
@@ -92,6 +92,7 @@ public:
 		}
 
 		maxSpeed = speed;
+		maxTurnSpeed = speed;
 		if (abs(msg.lpad_x) > steeringVoid)
 		{
 			float real = abs(msg.lpad_x) - steeringVoid;
@@ -103,12 +104,12 @@ public:
 			steering = real * maxSpeed;
 		}
 
-		auto forward_speed = clamp(-throttle, -maxSpeed, maxSpeed);
+		auto forward_speed = clamp(-throttle * 4, -maxSpeed, maxSpeed);
 		auto turn_angle_rads = clamp(steering, -maxSpeed, maxSpeed);
 		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
 		package.forward_velocity = forward_speed;
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
-		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise * 2, -maxTurnSpeed, maxTurnSpeed);
+		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise * 4, -maxTurnSpeed, maxTurnSpeed);
 
 		if(package.forward_velocity == -0.0)
 		{
