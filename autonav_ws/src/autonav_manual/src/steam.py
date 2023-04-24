@@ -130,7 +130,7 @@ class SteamTranslationNode(Node):
             self.setSystemState(SystemStateEnum.SHUTDOWN)
             return
         
-        if (time.time() * 1000) - self.m_Buttons[SCButtons.LGRIP] >= 1000 and self.m_Buttons[SCButtons.LGRIP] != 0 and self.m_debounce["SPEEDDOWN"] == False:
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.LGRIP] >= 200 and self.m_Buttons[SCButtons.LGRIP] != 0 and self.m_debounce["SPEEDDOWN"] == False:
             self.m_debounce["SPEEDDOWN"] = True
             self.speed -= 0.1
             if self.speed < 0.0:
@@ -140,7 +140,7 @@ class SteamTranslationNode(Node):
             self.speedTickPublisher.publish(pkg)
             return
         
-        if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 300 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 200 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
             self.m_debounce["SPEEDUP"] = True
             self.speed += 0.1
             if self.speed > 1.0:
