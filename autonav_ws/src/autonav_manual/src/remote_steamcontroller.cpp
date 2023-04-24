@@ -109,6 +109,17 @@ public:
 		package.forward_velocity = forward_speed;
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
 		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise * 2, -maxTurnSpeed, maxTurnSpeed);
+
+		if(package.forward_velocity == -0.0)
+		{
+			package.forward_velocity = 0.0;
+		}
+
+		if(package.angular_velocity == -0.0)
+		{
+			package.angular_velocity = 0.0;
+		}
+
 		m_motorPublisher->publish(package);
 	}
 
