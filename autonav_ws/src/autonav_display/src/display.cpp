@@ -155,6 +155,11 @@ public:
 					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
+				if (ImGui::BeginTabItem("Plots"))
+				{
+					ShowPlots(this);
+					ImGui::EndTabItem();
+				}
 				ImGui::EndTabBar();
 			}
 			

@@ -29,6 +29,7 @@ class SerialMotors(Node):
         self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 10)
         self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 10)
         self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 10)
+        # self.m_debugPublisher = self.create_publisher()
         self.m_can = None
         self.lastMotorInput = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
@@ -69,11 +70,11 @@ class SerialMotors(Node):
 
         if arb_id == CAN_50:
             currentForwardVel, setpointForwardVel, currentAngularVel, setpointAngularVel = struct.unpack("hhhh", msg.data)
-            currentForwardVel /= 1000.0
-            setpointForwardVel /= 1000.0
-            currentAngularVel /= 1000.0
-            setpointAngularVel /= 1000.0
-            self.log(f"50,{time.time()},{currentForwardVel},{setpointForwardVel},{currentAngularVel},{setpointAngularVel}")
+            self.currentForwardVel = currentForwardVel / 1000.0
+            self.setpointForwardVel = setpointForwardVel / 1000.0
+            self.currentAngularVel = currentAngularVel / 1000.0
+            self.setpointAngularVel = setpointAngularVel / 1000.0
+            self.log(f"50,{time.time()},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
 
         if arb_id == CAN_51:
             leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
@@ -113,7 +114,7 @@ class SerialMotors(Node):
             
             if self.lastMotorInput is None or self.lastMotorInput.forward_velocity != input.forward_velocity or self.lastMotorInput.angular_velocity != input.angular_velocity:
                 self.lastMotorInput = input
-                self.log(f"{time.time()},{input.forward_velocity},{input.angular_velocity}")
+                self.log(f"99,{time.time()},{input.forward_velocity},{input.angular_velocity}")
         except can.CanError:
             print("Failed to send motor message :(")
 

@@ -164,9 +164,9 @@ class SteamTranslationNode(Node):
         msg.q1 = float(sci.q3)
         msg.q1 = float(sci.q4)
 
-        if self.m_Buttons[SCButtons.LPADTOUCH] != 0:
-            msg.lpad_x = 0.0
-            msg.lpad_y = 0.0
+        # if self.m_Buttons[SCButtons.LPADTOUCH] != 0:
+        #     msg.lpad_x = 0.0
+        #     msg.lpad_y = 0.0
 
         self.m_joyPublisher.publish(msg)
 
