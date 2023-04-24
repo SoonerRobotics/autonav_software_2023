@@ -2,6 +2,7 @@
 #define DIFFERENTIAL_DRIVE_H
 
 #include "motor_with_encoder.h"
+#include "common.h"
 
 class DifferentialDrive {
 
@@ -16,6 +17,9 @@ public:
     void pulseRightEncoder();
 
     void updateState(float& delta_x_out, float& delta_y_out, float& delta_theta_out);
+
+    void getSetpoints(PIDSetpoints& pid_setpoints);
+    void getControl(PIDControl& pid_control);
 
     float* getPulsesPerRadian();
     float* getWheelRadius();
@@ -40,6 +44,12 @@ private:
 
     float forward_velocity_setpoint_;
     float angular_velocity_setpoint_;
+
+    float velocity_estimate;
+    float angular_estimate;
+
+    float left_motor_output;
+    float right_motor_output;
 
     float computeVelocityPID_(float velocity_setpoint, float velocity_current);
     float velocity_kP_ = 0.1;
@@ -86,8 +96,8 @@ inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_ou
     float distance_estimate = (wheel_radius_ / 2.0f) * (right_motor_angular_distance + left_motor_angular_distance);
     float rotation_estimate = (wheel_radius_ / wheelbase_length_) * (right_motor_angular_distance - left_motor_angular_distance);
 
-    float velocity_estimate = distance_estimate / update_period_;
-    float angular_estimate = rotation_estimate / update_period_;
+    velocity_estimate = distance_estimate / update_period_;
+    angular_estimate = rotation_estimate / update_period_;
 
     float velocity_control = computeVelocityPID_(forward_velocity_setpoint_, velocity_estimate);
     float angular_control = computeAngularPID_(angular_velocity_setpoint_, angular_estimate);
@@ -98,9 +108,14 @@ inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_ou
       right_motor_.setOutput(0);
       velocity_integrator_ = 0;
       angular_integrator_ = 0;
+      left_motor_output = 0;
+      right_motor_output = 0;
     } else {
       left_motor_.setOutput(velocity_control - angular_control);
       right_motor_.setOutput(velocity_control + angular_control);
+
+      left_motor_output = velocity_control - angular_control;
+      right_motor_output = velocity_control + angular_control;
     }
 
     delta_x_out += distance_estimate * cos(delta_theta_out);
@@ -168,6 +183,18 @@ inline float* DifferentialDrive::getAngularkI() {
 
 inline float* DifferentialDrive::getAngularkD() {
     return &angular_kD_;
+}
+
+inline void DifferentialDrive::getSetpoints(PIDSetpoints& pid_setpoints) {
+  pid_setpoints.forward_current = velocity_estimate;
+  pid_setpoints.forward_setpoint = forward_velocity_setpoint_;
+  pid_setpoints.angular_current = angular_estimate;
+  pid_setpoints.angular_setpoint = angular_velocity_setpoint_;
+}
+
+inline void DifferentialDrive::getControl(PIDControl& pid_control) {
+  pid_control.left_motor_output = left_motor_output;
+  pid_control.right_motor_output = right_motor_output;
 }
 
 #endif

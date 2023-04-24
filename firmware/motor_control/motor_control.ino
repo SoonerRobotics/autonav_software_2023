@@ -146,14 +146,12 @@ void onCanRecieve() {
       motorCommand = *(MotorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
       drivetrain.setOutput((float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
       break;
-    case 20:
-      if((frame.data[1] < collisonBoxDist || frame.data[2] < collisonBoxDist || frame.data[3] < collisonBoxDist) & 
-        motorCommand.setpoint_forward_velocity > 0.0){
-        drivetrain.setOutput(0.0, float angular_velocity);
-      }
-    case 
   }
 }
+
+PIDSetpoints pid_setpoints;
+PIDControl pid_controls;
+
 void sendCanOdomMsgOut(){
   outFrame.id = ODOM_OUT_ID;
   outFrame.len = ODOM_OUT_LEN;
@@ -164,6 +162,18 @@ void sendCanOdomMsgOut(){
 
   memcpy(outFrame.data, &motorDistances, ODOM_OUT_LEN );
   const bool ok = can.tryToSend (outFrame) ;
+
+  drivetrain.getSetpoints(pid_setpoints);
+  outFrame.id = 50;
+  outFrame.len = 8;
+  memcpy(outFrame.data, &pid_setpoints, 8);
+  can.tryToSend(outFrame);
+
+  drivetrain.getControl(pid_controls);
+  outFrame.id = 51;
+  outFrame.len = 4;
+  memcpy(outFrame.data, &pid_controls, 4);
+  can.tryToSend(outFrame);
 
 }
 void printCanMsg(CANMessage frame) {
