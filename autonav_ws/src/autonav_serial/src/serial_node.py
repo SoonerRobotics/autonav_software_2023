@@ -37,6 +37,9 @@ class SerialMotors(Node):
         self.m_canReadThread.daemon = True
         self.m_canReadThread.start()
 
+    def getTimeMs(self):
+        return int(round(time.time() * 1000))
+
     def canThreadWorker(self):
         while rclpy.ok():
             if self.getDeviceState() != DeviceStateEnum.READY and self.getDeviceState() != DeviceStateEnum.OPERATING:
@@ -74,13 +77,13 @@ class SerialMotors(Node):
             self.setpointForwardVel = setpointForwardVel / 1000.0
             self.currentAngularVel = currentAngularVel / 1000.0
             self.setpointAngularVel = setpointAngularVel / 1000.0
-            self.log(f"50,{time.time()},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
+            self.log(f"50,{self.getTimeMs()},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
 
         if arb_id == CAN_51:
             leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
             leftMotorOutput /= 1000.0
             rightMotorOutput /= 1000.0
-            self.log(f"51,{time.time()},{leftMotorOutput},{rightMotorOutput}")
+            self.log(f"51,{self.getTimeMs()},{leftMotorOutput},{rightMotorOutput}")
 
     def canWorker(self):
         try:
@@ -111,10 +114,6 @@ class SerialMotors(Node):
 
         try:
             self.m_can.send(can_msg)
-            
-            if self.lastMotorInput is None or self.lastMotorInput.forward_velocity != input.forward_velocity or self.lastMotorInput.angular_velocity != input.angular_velocity:
-                self.lastMotorInput = input
-                self.log(f"99,{time.time()},{input.forward_velocity},{input.angular_velocity}")
         except can.CanError:
             print("Failed to send motor message :(")
 
