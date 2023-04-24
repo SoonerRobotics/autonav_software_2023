@@ -23,6 +23,10 @@ void ShowPlots(SCR::Node *node)
             "/autonav/MotorControllerDebug",
             20,
             [&](const autonav_msgs::msg::MotorControllerDebug::SharedPtr msg) {
+                if (times.size() == 0)
+                {
+                    start_time = msg->timestamp;
+                }
                 times.push_back(msg->timestamp);
                 forwardVelocities.push_back(msg->current_forward_velocity);
                 forwardSetpoints.push_back(msg->forward_velocity_setpoint);
@@ -34,14 +38,13 @@ void ShowPlots(SCR::Node *node)
     }
 
     // Create a plot for forward velocity. Plotting the 6 values against timestamp
-    if (ImPlot::BeginPlot("Motor Data"))
+    if (times.size() > 0)
     {
-        ImPlot::PlotLine("Forward Velocity", times.data(), forwardVelocities.data(), times.size());
-        ImPlot::PlotLine("Forward Setpoint", times.data(), forwardSetpoints.data(), times.size());
-        ImPlot::PlotLine("Angular Velocity", times.data(), angularVelocities.data(), times.size());
-        ImPlot::PlotLine("Angular Setpoint", times.data(), angularSetpoints.data(), times.size());
-        ImPlot::PlotLine("Left Motor Velocity", times.data(), leftMotorVelocities.data(), times.size());
-        ImPlot::PlotLine("Right Motor Velocity", times.data(), rightMotorVelocities.data(), times.size());
-        ImPlot::EndPlot();
+        if (ImPlot::BeginPlot("Forward Velocity", "Time (s)", "Velocity (m/s)", ImVec2(-1, 200)))
+        {
+            ImPlot::PlotLine("Forward Velocity", times.data(), forwardVelocities.data(), times.size());
+            ImPlot::PlotLine("Forward Setpoint", times.data(), forwardSetpoints.data(), times.size());
+            ImPlot::EndPlot();
+        }
     }
 }

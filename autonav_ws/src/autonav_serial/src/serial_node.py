@@ -2,7 +2,6 @@
 
 import rclpy
 import can
-import time
 import threading
 import struct
 from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection, MotorControllerDebug
@@ -25,21 +24,26 @@ class SerialMotors(Node):
     def __init__(self):
         super().__init__("autonav_serial_can")
 
+        self.currentForwardVel = 0.0
+        self.setpointForwardVel = 0.0
+        self.currentAngularVel = 0.0
+        self.setpointAngularVel = 0.0
+        self.m_can = None
+        self.lastMotorInput = None
+        self.start = self.getTimeMs()
+
     def configure(self):
         self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 20)
         self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 20)
         self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 20)
         self.m_debugPublisher = self.create_publisher(MotorControllerDebug, "/autonav/MotorControllerDebug", 20)
-        self.m_can = None
-        self.lastMotorInput = None
         self.m_canTimer = self.create_timer(0.5, self.canWorker)
         self.m_canReadThread = threading.Thread(target=self.canThreadWorker)
         self.m_canReadThread.daemon = True
         self.m_canReadThread.start()
-        self.start = self.getTimeMs()
 
     def getTimeMs(self):
-        return int(round(time.time() * 1000))
+        return self.get_clock().now().nanoseconds / 1000000
 
     def canThreadWorker(self):
         while rclpy.ok():
