@@ -140,7 +140,7 @@ class SteamTranslationNode(Node):
             self.speedTickPublisher.publish(pkg)
             return
         
-        if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 1000 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 300 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
             self.m_debounce["SPEEDUP"] = True
             self.speed += 0.1
             if self.speed > 1.0:
@@ -163,10 +163,6 @@ class SteamTranslationNode(Node):
         msg.q1 = float(sci.q2)
         msg.q1 = float(sci.q3)
         msg.q1 = float(sci.q4)
-
-        # if self.m_Buttons[SCButtons.LPADTOUCH] != 0:
-        #     msg.lpad_x = 0.0
-        #     msg.lpad_y = 0.0
 
         self.m_joyPublisher.publish(msg)
 

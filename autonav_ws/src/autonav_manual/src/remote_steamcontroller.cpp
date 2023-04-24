@@ -10,6 +10,8 @@
 using std::placeholders::_1;
 
 long lastMessageTime = 0;
+float lastForwardSpeed = 0;
+float lastTurnSpeed = 0;
 
 float clamp(float value, float min, float max)
 {
@@ -63,10 +65,10 @@ public:
 			return;
 		}
 
-		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.forward_velocity = 0;
-		package.angular_velocity = 0;
-		m_motorPublisher->publish(package);
+		// autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
+		// package.forward_velocity = 0;
+		// package.angular_velocity = 0;
+		// m_motorPublisher->publish(package);
 	}
 
 	void on_steam_received(const autonav_msgs::msg::SteamInput &msg)
@@ -111,15 +113,8 @@ public:
 		auto turn_angle_rads_counter_clockwise = -turn_angle_rads;
 		package.angular_velocity = clamp(turn_angle_rads_counter_clockwise * 4, -maxTurnSpeed, maxTurnSpeed);
 
-		if(package.forward_velocity == -0.0)
-		{
-			package.forward_velocity = 0.0;
-		}
-
-		if(package.angular_velocity == -0.0)
-		{
-			package.angular_velocity = 0.0;
-		}
+		lastForwardSpeed = package.forward_velocity;
+		lastTurnSpeed = package.angular_velocity;
 
 		m_motorPublisher->publish(package);
 	}
