@@ -84,9 +84,9 @@ class PathResolverNode(Node):
         if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.m_position.theta) / math.pi
-            forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(angle_diff)) ** 5
+            forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(angle_diff)) ** 8
             motor_pkt.forward_velocity = forward_speed
-            motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)
+            motor_pkt.angular_velocity = clamp(error * 2.0, -2.0, 2.0)
         else:
             if self.backCount == -1:
                 self.backCount = 5

@@ -101,34 +101,34 @@ public:
 		mapPublisher->publish(newSpace);
 
 		// Remap data from 0 to 255
-		for (int i = 0; i < data.size(); i++)
-		{
-			if (data.at(i) == 0)
-			{
-				data.at(i) = 0;
-			} else if (data.at(i) == 100)
-			{
-				data.at(i) = 255;
-			} else
-			{
-				data.at(i) = 255 - data.at(i);
-			}
-		}
+		// for (int i = 0; i < data.size(); i++)
+		// {
+		// 	if (data.at(i) == 0)
+		// 	{
+		// 		data.at(i) = 0;
+		// 	} else if (data.at(i) == 100)
+		// 	{
+		// 		data.at(i) = 255;
+		// 	} else
+		// 	{
+		// 		data.at(i) = 255 - data.at(i);
+		// 	}
+		// }
 
 		// Generate cv image and publish compreseed image
-		cv::Mat image = cv::Mat(80, 80, CV_8UC1, data.data());
-		cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
+		// cv::Mat image = cv::Mat(80, 80, CV_8UC1, data.data());
+		// cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
 
-		cv::circle(image, cv::Point(40, 78), 2, cv::Scalar(255, 0, 0), 2);
+		// cv::circle(image, cv::Point(40, 78), 2, cv::Scalar(255, 0, 0), 2);
 
-		// Increase image isze
-		cv::resize(image, image, cv::Size(800, 800), 0, 0, cv::INTER_NEAREST);
+		// // Increase image isze
+		// cv::resize(image, image, cv::Size(800, 800), 0, 0, cv::INTER_NEAREST);
 
-		auto cmpr = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", image).toCompressedImageMsg();
-		cmpr->header.stamp = this->now();
-		cmpr->header.frame_id = "autonav_vision_expandifier";
-		cmpr->format = "jpeg";
-		imagePublisher->publish(*cmpr);
+		// auto cmpr = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", image).toCompressedImageMsg();
+		// cmpr->header.stamp = this->now();
+		// cmpr->header.frame_id = "autonav_vision_expandifier";
+		// cmpr->format = "jpeg";
+		// imagePublisher->publish(*cmpr);
 	}
 
 private:
@@ -138,8 +138,8 @@ private:
 
 	nav_msgs::msg::MapMetaData map;
 	
-	float maxRange = 0.5;
-	float noGoPercent = 0.5;
+	float maxRange = 0.55;
+	float noGoPercent = 0.75;
 	int noGoRange = 0;
 	std::vector<Circle> circles;
 };

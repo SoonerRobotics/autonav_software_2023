@@ -47,7 +47,7 @@ class ImageTransformer(Node):
         self.config.setInt(UPPER_SATURATION, 100)
         self.config.setInt(UPPER_VALUE, 150)
         self.config.setInt(BLUR, 5)
-        self.config.setInt(BLUR_ITERATIONS, 3)
+        self.config.setInt(BLUR_ITERATIONS, 2)
         self.config.setInt(REGION_OF_DISINTEREST_TL, 0)
         self.config.setInt(REGION_OF_DISINTEREST_TR, 0)
 
@@ -73,30 +73,21 @@ class ImageTransformer(Node):
 
     def flatten_image(self, img):
         top_left = (int)(img.shape[1] * 0.26), (int)(img.shape[0])
-        top_right = (int)(img.shape[1] * 0.74), (int)(img.shape[0])
+        top_right = (int)(img.shape[1] - img.shape[1] * 0.26), (int)(img.shape[0])
         bottom_left = 0, 0
         bottom_right = (int)(img.shape[1]), 0
 
-        src = np.float32([top_left, top_right, bottom_left, bottom_right])
-        dst = np.float32(
-            [[0, img.shape[0]], [img.shape[1], img.shape[0]], [0, 0], [img.shape[1], 0]])
+        src_pts = np.float32([[top_left], [top_right], [bottom_left], [bottom_right]])
+        dest_pts = np.float32([ [0, 480], [640, 480] ,[0, 0], [640, 0]])
 
-        M = cv2.getPerspectiveTransform(src, dst)
-        return cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]))
+        matrix = cv2.getPerspectiveTransform(dest_pts, src_pts)
+        output = cv2.warpPerspective(img, matrix, (640, 480))
+        return output
 
     def generate_occupancy_map(self, img):
-        # Resize and flatten
-        datamap = cv2.resize(img, dsize=(
-            80, 80), interpolation=cv2.INTER_LINEAR) / 2
+        datamap = cv2.resize(img, dsize=(80, 80), interpolation=cv2.INTER_LINEAR) / 2
         flat = list(datamap.flatten().astype(int))
-
         msg = OccupancyGrid(info=g_mapData, data=flat)
-
-        # Visualize using plt
-        # plt.imshow(datamap, cmap='gray')
-        # plt.show(block = False)
-        # plt.pause(0.001)
-
         self.m_laneMapPublisher.publish(msg)
 
     def onImageReceived(self, image: CompressedImage):
@@ -121,19 +112,19 @@ class ImageTransformer(Node):
         )
         mask = cv2.inRange(img, lower, upper)
         mask = 255 - mask
-        mask[mask < 250] = 0
 
         # Apply region of disinterest and flattening
-        mask = self.flatten_image(mask)
         height = img.shape[0]
         width = img.shape[1]
         region_of_disinterest_vertices=[
-            (100, height),
-            (width / 3, (height / 1.5) + self.config.getInt(REGION_OF_DISINTEREST_TL)),
-            (width - (width / 3), (height / 1.5) + self.config.getInt(REGION_OF_DISINTEREST_TR)),
-            (width - 100, height)
+            (0, height),
+            (width / 2, height / 2 + 120),
+            (width, height)
         ]
         mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
+        mask[mask < 250] = 0
+
+        mask = self.flatten_image(mask)
 
         preview_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
         cv2.polylines(preview_image, np.array([region_of_disinterest_vertices], np.int32), True, (0, 255, 0), 2)
