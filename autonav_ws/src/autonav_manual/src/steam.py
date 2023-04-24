@@ -12,6 +12,8 @@ from autonav_msgs.msg import SteamInput
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
 
+from std_msgs.msg import Float32
+
 
 class SCButtons(IntEnum):
     RPADTOUCH = 0b00010000000000000000000000000000
@@ -48,10 +50,13 @@ class SteamTranslationNode(Node):
             "MANUAL": False,
             "AUTONOMOUS": False,
             "DISABLED": False,
-            "SHUTDOWN": False
+            "SHUTDOWN": False,
+            "SPEEDDOWN": False,
+            "SPEEDUP": False,
         }
-        self.m_debounce["MANUAL"] = False
         self.m_joyPublisher = self.create_publisher(SteamInput, "/autonav/joy/steam", 20)
+        self.speed = 0.3
+        self.speedTickPublisher = self.create_publisher(Float32, "/autonav/speed", 20)
 
     def start_steam_controller(self):
         try:
@@ -99,6 +104,11 @@ class SteamTranslationNode(Node):
                     self.m_debounce["DISABLED"] = False
                 if button == SCButtons.B:
                     self.m_debounce["SHUTDOWN"] = False
+                if button == SCButtons.LB:
+                    self.m_debounce["SPEEDDOWN"] = False
+                if button == SCButtons.RB:
+                    self.m_debounce["SPEEDUP"] = False
+                    
 
         if (time.time() * 1000) - self.m_Buttons[SCButtons.START] > 1250 and self.m_Buttons[SCButtons.START] != 0 and self.m_debounce["MANUAL"] == False:
             self.m_debounce["MANUAL"] = True
@@ -118,6 +128,22 @@ class SteamTranslationNode(Node):
         if (time.time() * 1000) - self.m_Buttons[SCButtons.B] >= 2500 and self.m_Buttons[SCButtons.B] != 0 and self.m_debounce["SHUTDOWN"] == False:
             self.m_debounce["SHUTDOWN"] = True
             self.setSystemState(SystemStateEnum.SHUTDOWN)
+            return
+        
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.LB] >= 250 and self.m_Buttons[SCButtons.LB] != 0 and self.m_debounce["SPEEDDOWN"] == False:
+            self.m_debounce["SPEEDDOWN"] = True
+            self.speed -= 0.1
+            if self.speed < 0:
+                self.speed = 0
+            self.speedTickPublisher.publish(Float32(self.speed))
+            return
+        
+        if (time.time() * 1000) - self.m_Buttons[SCButtons.RB] >= 250 and self.m_Buttons[SCButtons.RB] != 0 and self.m_debounce["SPEEDUP"] == False:
+            self.m_debounce["SPEEDUP"] = True
+            self.speed += 0.1
+            if self.speed > 1:
+                self.speed = 1
+            self.speedTickPublisher.publish(Float32(self.speed))
             return
 
         msg.ltrig = float(sci.ltrig) / 255

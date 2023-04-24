@@ -17,6 +17,9 @@ MOBILITY_START_ID = 9
 MOTOR_FEEDBACK_ID = 14
 OBJECT_DETECTION = 20
 
+CAN_50 = 50
+CAN_51 = 51
+
 
 class SerialMotors(Node):
     def __init__(self):
@@ -63,6 +66,20 @@ class SerialMotors(Node):
 
         if arb_id == MOBILITY_START_ID:
             self.setMobility(True)
+
+        if arb_id == CAN_50:
+            currentForwardVel, setpointForwardVel, currentAngularVel, setpointAngularVel = struct.unpack("hhhh", msg.data)
+            currentForwardVel /= 1000.0
+            setpointForwardVel /= 1000.0
+            currentAngularVel /= 1000.0
+            setpointAngularVel /= 1000.0
+            self.log(f"50,{time.time()},{currentForwardVel},{setpointForwardVel},{currentAngularVel},{setpointAngularVel}")
+
+        if arb_id == CAN_51:
+            leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
+            leftMotorOutput /= 1000.0
+            rightMotorOutput /= 1000.0
+            self.log(f"51,{time.time()},{leftMotorOutput},{rightMotorOutput}")
 
     def canWorker(self):
         try:
