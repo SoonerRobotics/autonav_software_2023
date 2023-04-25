@@ -22,7 +22,7 @@ first_waypoints_time = -1
 verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
-MAP_RES = 80
+MAP_RES = 100
 
 orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
 sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
@@ -164,7 +164,8 @@ class AStarNode(Node):
             north_to_gps = (next_waypoint[0] - self.m_position.latitude) * 111086.2
             west_to_gps = (self.m_position.longitude - next_waypoint[1]) * 81978.2
             dist = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
-            if dist < 100: # Only apply the waypoint costs if we are near no mans land
+            self.log("Distance to next waypoint: " + str(dist))
+            if dist < 20: # Only apply the waypoint costs if we are near no mans land
                 first_waypoints_time = -2
                 waypoints = [pt for pt in (sim_waypoints if self.getSystemState().is_simulator else orig_waypoints)]
 

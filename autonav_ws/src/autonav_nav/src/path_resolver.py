@@ -86,12 +86,12 @@ class PathResolverNode(Node):
             error = self.getAngleDifference(angle_diff, self.m_position.theta) / math.pi
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(angle_diff)) ** 8
             motor_pkt.forward_velocity = forward_speed
-            motor_pkt.angular_velocity = clamp(error * 2.0, -2.0, 2.0)
+            motor_pkt.angular_velocity = clamp(error * 3.0, -2.0, 2.0)
         else:
             if self.backCount == -1:
                 self.backCount = 5
             else:
-                self.backCount -= -1
+                self.backCount -= 1
 
             motor_pkt.forward_velocity = self.config.getFloat(REVERSE_SPEED)
             motor_pkt.angular_velocity = 0.0
