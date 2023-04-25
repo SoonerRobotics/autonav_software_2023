@@ -40,7 +40,7 @@ void ShowPlots(SCR::Node *node)
     // Create a plot for forward velocity. Plotting the 6 values against timestamp
     if (times.size() > 0)
     {
-        if (ImPlot::BeginPlot("Forward Velocity", "Time (s)", "Velocity (m/s)", ImVec2(-1, 200)))
+        if (ImPlot::BeginPlot("Forward Velocity", ImVec2(0, 200), ImPlotFlags_NoChild))
         {
             ImPlot::PlotLine("Forward Velocity", times.data(), forwardVelocities.data(), times.size());
             ImPlot::PlotLine("Forward Setpoint", times.data(), forwardSetpoints.data(), times.size());
