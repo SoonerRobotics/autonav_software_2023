@@ -28,6 +28,17 @@ void ShowPlots(SCR::Node *node)
                 angularSetpoints.push_back(msg->angular_velocity_setpoint);
                 leftMotorVelocities.push_back(msg->left_motor_output);
                 rightMotorVelocities.push_back(msg->right_motor_output);
+
+                if (times.size() > 700)
+                {
+                    times.erase(times.begin());
+                    forwardVelocities.erase(forwardVelocities.begin());
+                    forwardSetpoints.erase(forwardSetpoints.begin());
+                    angularVelocities.erase(angularVelocities.begin());
+                    angularSetpoints.erase(angularSetpoints.begin());
+                    leftMotorVelocities.erase(leftMotorVelocities.begin());
+                    rightMotorVelocities.erase(rightMotorVelocities.begin());
+                }
             });
     }
 
