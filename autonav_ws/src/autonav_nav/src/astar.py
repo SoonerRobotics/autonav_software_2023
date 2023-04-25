@@ -22,6 +22,8 @@ first_waypoints_time = -1
 verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
+MAP_RES = 80
+
 orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
 sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
 # sim_waypoints = []
@@ -69,8 +71,8 @@ class AStarNode(Node):
         if self.m_position is None or cost_map is None:
             return
         
-        robot_pos = (40, 78)
-        path = self.find_path_to_point(robot_pos, best_pos, cost_map, 80, 80)
+        robot_pos = (MAP_RES // 2, MAP_RES - 4)
+        path = self.find_path_to_point(robot_pos, best_pos, cost_map, MAP_RES, MAP_RES)
         
         if path is not None:
             global_path = Path()
@@ -89,7 +91,7 @@ class AStarNode(Node):
         return total_path[::-1]
         
     def find_path_to_point(self, start, goal, map, width, height):
-        looked_at = np.zeros((80, 80))
+        looked_at = np.zeros((MAP_RES, MAP_RES))
         open_set = [start]
         path = {}
         search_dirs = []
@@ -98,10 +100,10 @@ class AStarNode(Node):
             for y in range(-1, 2):
                 if x == 0 and y == 0:
                     continue
-                search_dirs.append((x,y,math.sqrt(x**2+y**2)))
+                search_dirs.append((x,y,math.sqrt(x ** 2 + y ** 2)))
 
         def h(point):
-            return math.sqrt((goal[0] - point[0])**2 + (goal[1] - point[1])**2)
+            return math.sqrt((goal[0] - point[0]) ** 2 + (goal[1] - point[1]) ** 2)
 
         def d(to_pt, dist):
             return dist + map[to_pt[1] * width + to_pt[0]] / 10
@@ -151,10 +153,10 @@ class AStarNode(Node):
 
         grid_data = msg.data
 
-        temp_best_pos = (40, 78)
+        temp_best_pos = (MAP_RES // 2, MAP_RES - 4)
         best_pos_cost = -1000
         frontier = set()
-        frontier.add((40,78))
+        frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
         if first_waypoints_time > 0 and time.time() > first_waypoints_time:
@@ -181,10 +183,10 @@ class AStarNode(Node):
             for pos in curfrontier:
                 x = pos[0]
                 y = pos[1]
-                cost = (80 - y) * 1.3 + depth * 2.2
+                cost = (MAP_RES - y) * 1.3 + depth * 2.2
 
                 if len(waypoints) > 0:
-                    heading_err_to_gps = abs(get_angle_diff(self.m_position.theta + math.atan2(40-x,80-y), heading_to_gps)) * 180 / math.pi
+                    heading_err_to_gps = abs(get_angle_diff(self.m_position.theta + math.atan2(MAP_RES // 2- x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
                     cost -= max(heading_err_to_gps, 10)
 
                 if cost > best_pos_cost:
@@ -192,14 +194,14 @@ class AStarNode(Node):
                     temp_best_pos = pos
 
                 frontier.remove(pos)
-                explored.add(x + 80 * y)
+                explored.add(x + MAP_RES * y)
 
-                if y > 1 and grid_data[x + 80 * (y-1)] < 50 and x + 80 * (y-1) not in explored:
+                if y > 1 and grid_data[x + MAP_RES * (y-1)] < 50 and x + MAP_RES * (y-1) not in explored:
                     frontier.add((x, y-1))
 
-                if x < 79 and grid_data[x + 1 + 80 * y] < 50 and x + 1 + 80 * y not in explored:
+                if x < 79 and grid_data[x + 1 + MAP_RES * y] < 50 and x + 1 + MAP_RES * y not in explored:
                     frontier.add((x+1, y))
-                if x > 0 and grid_data[x - 1 + 80 * y] < 50 and x - 1 + 80 * y not in explored:
+                if x > 0 and grid_data[x - 1 + MAP_RES * y] < 50 and x - 1 + MAP_RES * y not in explored:
                     frontier.add((x-1, y))
 
             depth += 1
@@ -209,8 +211,8 @@ class AStarNode(Node):
         map_init = False
         
 def pathToGlobalPose(robot, pp0, pp1):
-    x = (80 - pp1) * verticalCameraRange / 80
-    y = (40 - pp0) * horizontalCameraRange / 80
+    x = (MAP_RES - pp1) * verticalCameraRange / MAP_RES
+    y = (MAP_RES // 2 - pp0) * horizontalCameraRange / MAP_RES
     dx = 0
     dy = 0
     psi = 0

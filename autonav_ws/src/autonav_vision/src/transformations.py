@@ -23,6 +23,8 @@ g_mapData.origin = Pose()
 g_mapData.origin.position.x = -10.0
 g_mapData.origin.position.y = -10.0
 
+MAP_RES = 80
+
 LOWER_HUE = 0
 LOWER_SATURATION = 1
 LOWER_VALUE = 2
@@ -85,7 +87,7 @@ class ImageTransformer(Node):
         return output
 
     def generate_occupancy_map(self, img):
-        datamap = cv2.resize(img, dsize=(80, 80), interpolation=cv2.INTER_LINEAR) / 2
+        datamap = cv2.resize(img, dsize=(MAP_RES, MAP_RES), interpolation=cv2.INTER_LINEAR) / 2
         flat = list(datamap.flatten().astype(int))
         msg = OccupancyGrid(info=g_mapData, data=flat)
         self.m_laneMapPublisher.publish(msg)

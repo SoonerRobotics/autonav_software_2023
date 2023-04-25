@@ -12,6 +12,8 @@ namespace ExpandifyConstants
 {
 	const float VERTICAL_FOV = 2.75;
 	const float HORIZONTAL_FOV = 3;
+	const float MAP_RES_F = 80.0f;
+	const int MAP_RES = 80;
 }
 
 struct Circle
@@ -38,8 +40,8 @@ public:
 		map.origin.position.y = -10.0;
 
 		auto tempRange = maxRange * noGoPercent;
-		maxRange = (int)(maxRange / (ExpandifyConstants::HORIZONTAL_FOV / 80.0));
-		noGoRange = (int)(tempRange / (ExpandifyConstants::HORIZONTAL_FOV / 80.0));
+		maxRange = (int)(maxRange / (ExpandifyConstants::HORIZONTAL_FOV / ExpandifyConstants::MAP_RES_F));
+		noGoRange = (int)(tempRange / (ExpandifyConstants::HORIZONTAL_FOV / ExpandifyConstants::MAP_RES_F));
 
 		circles.push_back(Circle{0, 0, 0});
 		for (int x = -maxRange; x <= maxRange; x++)
@@ -63,20 +65,20 @@ public:
 	void onConfigSpaceReceived(const nav_msgs::msg::OccupancyGrid::SharedPtr cfg)
 	{
 		// Create a 80 * 80 1d int array
-		std::vector<int8_t> data = std::vector<int8_t>(80 * 80);
+		std::vector<int8_t> data = std::vector<int8_t>(ExpandifyConstants::MAP_RES * ExpandifyConstants::MAP_RES);
 		std::fill(data.begin(), data.end(), 0);
 
-		for (int x = 0; x < 80; x++)
+		for (int x = 0; x < ExpandifyConstants::MAP_RES; x++)
 		{
-			for (int y = 1; y < 80; y++)
+			for (int y = 1; y < ExpandifyConstants::MAP_RES; y++)
 			{
-				if(cfg->data.at(x + y * 80) > 0)
+				if(cfg->data.at(x + y * ExpandifyConstants::MAP_RES) > 0)
 				{
 					for (Circle& circle : circles)
 					{
-						auto idx = (x + circle.x) + 80 * (y + circle.y);
-						auto expr_x = (x + circle.x) < 80 && (x + circle.x) >= 0;
-						auto expr_y = (y + circle.y) < 80 && (y + circle.y) >= 0;
+						auto idx = (x + circle.x) + ExpandifyConstants::MAP_RES * (y + circle.y);
+						auto expr_x = (x + circle.x) < ExpandifyConstants::MAP_RES && (x + circle.x) >= 0;
+						auto expr_y = (y + circle.y) < ExpandifyConstants::MAP_RES && (y + circle.y) >= 0;
 						if (expr_x && expr_y)
 						{
 							auto val = cfg->data.at(idx);
