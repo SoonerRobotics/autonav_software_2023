@@ -52,25 +52,25 @@ private:
     float right_motor_output;
 
     float computeVelocityPID_(float velocity_setpoint, float velocity_current);
-    float velocity_kP_ = 0.3;
-    float velocity_kI_ = 0.1;
+    float velocity_kP_ = 0.1;
+    float velocity_kI_ = 1.0;
     float velocity_kD_ = 0;
-    float velocity_kF_ = 0.5;
+    float velocity_kF_ = 0.15;
     float velocity_integrator_ = 0;
     float velocity_previous_error_ = 0;
 
     float computeAngularPID_(float angular_setpoint, float angular_current);
-    float angular_kP_ = 0.3;
-    float angular_kI_ = 0.1;
+    float angular_kP_ = 0.1;
+    float angular_kI_ = 0.4;
     float angular_kD_ = 0;
-    float angular_kF_ = 0.2;
+    float angular_kF_ = 0.15;
     float angular_integrator_ = 0;
     float angular_previous_error_ = 0;
 
     float pulsesToRadians_(int pulses);
 
     float slewLimit_(float current_output, float desired_output);
-    float slew_rate_limit_ = 0.03f;
+    float slew_rate_limit_ = 0.05;
 };
 
 inline DifferentialDrive::DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_period)
