@@ -3,8 +3,6 @@
 #include "imgui.h"
 #include "implot.h"
 
-float start_time = 0.0f;
-
 void ShowPlots(SCR::Node *node)
 {
     // Create a subscriber to /autonav/MotorControllerDebug
@@ -23,10 +21,6 @@ void ShowPlots(SCR::Node *node)
             "/autonav/MotorControllerDebug",
             20,
             [&](const autonav_msgs::msg::MotorControllerDebug::SharedPtr msg) {
-                if (times.size() == 0)
-                {
-                    start_time = msg->timestamp;
-                }
                 times.push_back(msg->timestamp);
                 forwardVelocities.push_back(msg->current_forward_velocity);
                 forwardSetpoints.push_back(msg->forward_velocity_setpoint);
@@ -40,10 +34,11 @@ void ShowPlots(SCR::Node *node)
     // Create a plot for forward velocity. Plotting the 6 values against timestamp
     if (times.size() > 0)
     {
-        if (ImPlot::BeginPlot("Forward Velocity", ImVec2(0, 200), ImPlotFlags_NoChild))
+        if (ImPlot::BeginPlot("##Velocities", ImVec(-1, -1)))
         {
-            ImPlot::PlotLine("Forward Velocity", times.data(), forwardVelocities.data(), times.size());
-            ImPlot::PlotLine("Forward Setpoint", times.data(), forwardSetpoints.data(), times.size());
+            ImPlot::SetupAxes("Time [s]", "Velocity [m/s]");
+            ImPlot::SetupLegend(ImPlotLocation_NorthEast);
+            ImPlot::PlotLine("Forward Velocity", &times[0], &forwardVelocities[0], times.size(), 0, sizeof(float));
             ImPlot::EndPlot();
         }
     }
