@@ -34,7 +34,7 @@ void ShowPlots(SCR::Node *node)
     // Create a plot for forward velocity. Plotting the 6 values against timestamp
     if (times.size() > 0)
     {
-        if (ImPlot::BeginPlot("##Velocities", ImVec(-1, -1)))
+        if (ImPlot::BeginPlot("##Velocities", ImVec2(-1, -1)))
         {
             ImPlot::SetupAxes("Time [s]", "Velocity [m/s]");
             ImPlot::SetupLegend(ImPlotLocation_NorthEast);
