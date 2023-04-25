@@ -96,8 +96,8 @@ class SerialMotors(Node):
             pkg.left_motor_output = leftMotorOutput
             pkg.right_motor_output = rightMotorOutput
             pkg.timestamp = (self.getTimeMs() - self.start) * 1.0
-            self.m_debugPublisher.publish(pkg)
             self.log(f"51,{self.getTimeMs() - self.start},{leftMotorOutput},{rightMotorOutput}")
+            self.m_debugPublisher.publish(pkg)
 
     def canWorker(self):
         try:
