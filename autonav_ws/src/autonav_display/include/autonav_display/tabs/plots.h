@@ -31,15 +31,21 @@ void ShowPlots(SCR::Node *node)
             });
     }
 
-    // Create a plot for forward velocity. Plotting the 6 values against timestamp
-    // if (times.size() > 0)
-    // {
-    //     if (ImPlot::BeginPlot("##Velocities", ImVec2(-1, -1)))
-    //     {
-    //         ImPlot::SetupAxes("Time [s]", "Velocity [m/s]");
-    //         ImPlot::SetupLegend(ImPlotLocation_NorthEast);
-    //         ImPlot::PlotLine("Forward Velocity", &times[0], &forwardVelocities[0], times.size(), 0, sizeof(float));
-    //         ImPlot::EndPlot();
-    //     }
-    // }
+    if (times.size() >= 2)
+    {
+        if (ImPlot::BeginPlot("##Velocities", ImVec2(600, 400)))
+        {
+            ImPlot::SetupAxes("Time [s]", "Velocity [m/s]", ImPlotAxisFlags_AutoFit, 0);
+            ImPlot::SetupLegend(ImPlotLocation_NorthWest);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 1.5, ImGuiCond_Always);
+
+            ImPlot::PlotLine("Forward Velocity", &times[0], &forwardVelocities[0], times.size(), 0, sizeof(float));
+            ImPlot::PlotLine("Forward Setpoint", &times[0], &forwardSetpoints[0], times.size(), 0, sizeof(float));
+            ImPlot::PlotLine("Angular Velocity", &times[0], &angularVelocities[0], times.size(), 0, sizeof(float));
+            ImPlot::PlotLine("Angular Setpoint", &times[0], &angularSetpoints[0], times.size(), 0, sizeof(float));
+            ImPlot::PlotLine("Left Motor Velocity", &times[0], &leftMotorVelocities[0], times.size(), 0, sizeof(float));
+            ImPlot::PlotLine("Right Motor Velocity", &times[0], &rightMotorVelocities[0], times.size(), 0, sizeof(float));
+            ImPlot::EndPlot();
+        }
+    }
 }

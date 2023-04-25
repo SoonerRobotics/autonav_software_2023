@@ -55,7 +55,7 @@ class SteamTranslationNode(Node):
             "SPEEDUP": False,
         }
         self.m_joyPublisher = self.create_publisher(SteamInput, "/autonav/joy/steam", 20)
-        self.speed = 0.3
+        self.speed = 0.6
         self.speedTickPublisher = self.create_publisher(Float32, "/autonav/speed", 20)
 
     def start_steam_controller(self):
@@ -143,8 +143,8 @@ class SteamTranslationNode(Node):
         if (time.time() * 1000) - self.m_Buttons[SCButtons.RGRIP] >= 200 and self.m_Buttons[SCButtons.RGRIP] != 0 and self.m_debounce["SPEEDUP"] == False:
             self.m_debounce["SPEEDUP"] = True
             self.speed += 0.1
-            if self.speed > 1.0:
-                self.speed = 1.0
+            if self.speed > 1.5:
+                self.speed = 1.5
             pkg = Float32()
             pkg.data = self.speed
             self.speedTickPublisher.publish(pkg)

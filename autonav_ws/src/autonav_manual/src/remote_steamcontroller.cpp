@@ -123,7 +123,7 @@ public:
 	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr m_steamSubscription;
 	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_steeringSubscription;
 	rclcpp::TimerBase::SharedPtr m_timer;
-	float speed = 0.3f;
+	float speed = 0.6f;
 };
 
 int main(int argc, char *argv[])
