@@ -24,7 +24,8 @@ horizontalCameraRange = 3
 
 MAP_RES = 100
 
-orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
+# orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
+orig_waypoints = []
 sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
 # sim_waypoints = []
 
@@ -159,8 +160,9 @@ class AStarNode(Node):
         frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        if first_waypoints_time > 0 and time.time() > first_waypoints_time:
-            next_waypoint = [pt for pt in (sim_waypoints if self.getSystemState().is_simulator else orig_waypoints)][0]
+        next_waypoint = [pt for pt in (sim_waypoints if self.getSystemState().is_simulator else orig_waypoints)]
+        if first_waypoints_time > 0 and time.time() > first_waypoints_time and len(next_waypoint) > 0:
+            next_waypoint = next_waypoint[0]
             north_to_gps = (next_waypoint[0] - self.m_position.latitude) * 111086.2
             west_to_gps = (self.m_position.longitude - next_waypoint[1]) * 81978.2
             dist = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)

@@ -42,6 +42,9 @@ class SerialMotors(Node):
         self.m_canReadThread.daemon = True
         self.m_canReadThread.start()
 
+    def transition(self, old, neww):
+        pass
+
     def getTimeMs(self):
         return self.get_clock().now().nanoseconds / 1000000
 
@@ -108,16 +111,13 @@ class SerialMotors(Node):
                 return
 
             self.m_can = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
-            self.setDeviceState(DeviceStateEnum.READY)
+            self.setDeviceState(DeviceStateEnum.OPERATING)
         except:
             if self.m_can is not None:
                 self.m_can = None
 
             if self.getDeviceState() != DeviceStateEnum.STANDBY:
                 self.setDeviceState(DeviceStateEnum.STANDBY)
-
-        if self.m_can is not None and self.getDeviceState() != DeviceStateEnum.READY:
-            self.setDeviceState(DeviceStateEnum.READY)
 
     def on_motor_input(self, input: MotorInput):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:

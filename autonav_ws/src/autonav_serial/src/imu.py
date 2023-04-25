@@ -2,6 +2,7 @@
 
 import rclpy
 import time
+import os
 import threading
 from vnpy import *
 from autonav_msgs.msg import IMUData
@@ -21,7 +22,6 @@ class IMUNode(Node):
 
     def configure(self):
         self.m_sensor = VnSensor()
-        self.m_hasPublishedHeaders = False
 
         self.config.setFloat(IMU_READ_RATE, 0.1)
         self.config.setFloat(IMU_NOTFOUND_RETRY, 5.0)
@@ -37,15 +37,12 @@ class IMUNode(Node):
         return
 
     def imuWorker(self):
-        while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
-            if (not self.m_hasPublishedHeaders):
-                self.m_hasPublishedHeaders = True
-                continue
-
+        while rclpy.ok() and self.getSystemState().state != SystemStateEnum.SHUTDOWN:
             if (not self.m_sensor.is_connected):
                 try:
-                    with open("/dev/autonav-imu-200", "r") as f:
-                        pass
+                    if not os.path.exists("/dev/autonav-imu-200"):
+                        time.sleep(self.config.getFloat(IMU_NOTFOUND_RETRY))
+                        continue
 
                     self.m_sensor.connect("/dev/autonav-imu-200", 115200)
                     self.setDeviceState(DeviceStateEnum.OPERATING)

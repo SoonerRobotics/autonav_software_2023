@@ -91,7 +91,7 @@ public:
 private:
 	void on_log_received(const scr_msgs::msg::Log &msg) const
 	{
-		RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.node.c_str(), msg.data.c_str());
+		// RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.node.c_str(), msg.data.c_str());
 		append_to_file(msg.node, msg.data);
 	}
 

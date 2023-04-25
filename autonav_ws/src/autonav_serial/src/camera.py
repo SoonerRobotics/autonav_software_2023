@@ -22,28 +22,31 @@ class CameraNode(Node):
         self.config.setInt(REFRESH_RATE, 15)
 
         self.declare_parameter("device_id", 0)
-        self.deviceId = self.get_parameter("device_id").value
+        self.deviceId = 0
 
         self.m_cameraPublisher = self.create_publisher(CompressedImage, "/autonav/camera/compressed", 20)
         self.m_cameraThread = threading.Thread(target=self.camera_read)
         self.m_cameraThread.start()
 
+    def transition(self, old, neww):
+        pass
+
     def camera_read(self):
         capture = None
-        while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
+        while rclpy.ok() and self.getSystemState().state != SystemStateEnum.SHUTDOWN:
             try:
                 # Check if /dev/videoX exists
                 if not os.path.exists("/dev/video" + str(self.deviceId)):
+                    time.sleep(1.5)
                     continue
 
-                capture = cv2.VideoCapture(self.deviceId, cv2.CAP_V4L2)
+                capture = cv2.VideoCapture(self.deviceId)
                 if capture is None or not capture.isOpened():
+                    time.sleep(1.5)
                     continue
-
 
                 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
                 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-                self.setDeviceState(DeviceStateEnum.READY)
                 self.setDeviceState(DeviceStateEnum.OPERATING)
             except:
                 self.setDeviceState(DeviceStateEnum.STANDBY)
@@ -51,7 +54,7 @@ class CameraNode(Node):
                 continue
                 
 
-            while rclpy.ok() and self.getSystemState() != SystemStateEnum.SHUTDOWN:
+            while rclpy.ok() and self.getSystemState().state != SystemStateEnum.SHUTDOWN:
                 if self.getDeviceState() != DeviceStateEnum.OPERATING:
                     continue
 
@@ -69,7 +72,7 @@ class CameraNode(Node):
                     continue
 
                 self.m_cameraPublisher.publish(bridge.cv2_to_compressed_imgmsg(frame))
-                time.sleep(1.0 / self.config.readInt(REFRESH_RATE))
+                time.sleep(1.0 / self.config.getInt(REFRESH_RATE))
 
 
 def main():

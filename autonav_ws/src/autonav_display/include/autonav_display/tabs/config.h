@@ -185,7 +185,7 @@ void ShowConfiguration(SCR::Node *node)
 {
     if(!node->config.hasLoadedPreset())
     {
-        node->config.load("default");
+        // node->config.load("default");
     }
 
     ShowVisionConfig(&node->config);

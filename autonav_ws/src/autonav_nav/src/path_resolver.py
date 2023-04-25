@@ -30,7 +30,7 @@ class PathResolverNode(Node):
         self.m_positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
         self.m_motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         
-        self.config.setFloat(FORWARD_SPEED, 0.7)
+        self.config.setFloat(FORWARD_SPEED, 0.3)
         self.config.setFloat(REVERSE_SPEED, -0.5)
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
