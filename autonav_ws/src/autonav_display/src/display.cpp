@@ -81,9 +81,8 @@ public:
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImPlot::CreateContext();
-		ImGuiIO &io = ImGui::GetIO(); (void)io;
+		ImGuiIO &io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
 		ImGui::StyleColorsDark();
 
@@ -95,6 +94,12 @@ public:
 		io.FontDefault = font;
 		ImGui_ImplOpenGL3_DestroyFontsTexture();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
+
+		if (this->get_parameter("fullscreen").as_bool())
+		{
+			glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
+		}
+
 		return true;
 	}
 
@@ -114,7 +119,7 @@ public:
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 
-			const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoBringToFrontOnFocus;
+			const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoBringToFrontOnFocus;
 			ImGui::Begin("Autonav 2023 | The Weeb Wagon", NULL, flags);
 			ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
 			ImGui::SetWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Always);
