@@ -129,24 +129,8 @@ namespace SCR
 	void Node::transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated)
 	{
 		UNUSED(old);
-		switch(updated.state)
-		{
-			case SystemState::SHUTDOWN:
-				break;
-			case SystemState::DISABLED:
-				if (getDeviceState() == DeviceState::OPERATING)
-				{
-					setDeviceState(DeviceState::READY);
-				}
-				break;
-			case SystemState::MANUAL:
-			case SystemState::AUTONOMOUS:
-				if (getDeviceState() == DeviceState::READY)
-				{
-					setDeviceState(DeviceState::OPERATING);
-				}
-				break;
-		}
+		UNUSED(updated);
+		throw std::runtime_error("Transition function not overridden");
 	}
 
 	scr_msgs::msg::SystemState Node::getSystemState()

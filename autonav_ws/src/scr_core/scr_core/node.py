@@ -109,16 +109,7 @@ class Node(ROSNode):
             return
 
     def transition(self, old: SystemState, updated: SystemState):
-        if updated.state == SystemStateEnum.DISABLED:
-            return
-        
-        if updated.state == SystemStateEnum.DISABLED and self.getDeviceState() == DeviceStateEnum.OPERATING:
-            self.setDeviceState(DeviceStateEnum.READY)
-            return
-        
-        if (updated.state == SystemStateEnum.MANUAL or updated.state == SystemStateEnum.AUTONOMOUS) and self.getDeviceState() == DeviceStateEnum.READY:
-            self.setDeviceState(DeviceStateEnum.OPERATING)
-            return
+        raise NotImplementedError()
 
     def getSystemState(self) -> SystemState:
         return self.state
