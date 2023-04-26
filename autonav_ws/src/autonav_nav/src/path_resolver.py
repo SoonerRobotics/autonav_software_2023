@@ -3,7 +3,7 @@
 from autonav_msgs.msg import MotorInput, Position
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
-from scr_core.state import DeviceStateEnum
+from scr_core.state import DeviceStateEnum, SystemStateEnum
 from scr_core import clamp
 from nav_msgs.msg import Path
 from pure_pursuit import PurePursuit
@@ -21,14 +21,14 @@ RADIUS_START = 4
 class PathResolverNode(Node):
     def __init__(self):
         super().__init__("autonav_nav_resolver")
-        self.m_position = Position()
+        self.position = Position()
 
     def configure(self):
-        self.m_purePursuit = PurePursuit()
+        self.purePursuit = PurePursuit()
         self.backCount = -1
-        self.m_pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
-        self.m_positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
-        self.m_motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
+        self.pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
+        self.positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
+        self.motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         
         self.config.setFloat(FORWARD_SPEED, 0.3)
         self.config.setFloat(REVERSE_SPEED, -0.5)
@@ -37,21 +37,28 @@ class PathResolverNode(Node):
         self.config.setFloat(RADIUS_START, 0.7)
         
         self.create_timer(0.1, self.onResolve)
-        self.setDeviceState(DeviceStateEnum.OPERATING)
+        self.setDeviceState(DeviceStateEnum.READY)
 
     def onReset(self):
-        self.m_position = None
+        self.position = None
         self.backCount = -1
 
-    def transition(self, _: SystemState, updated: SystemState):
-        return
+    def transition(self, old: SystemState, updated: SystemState):
+        if updated.state == SystemStateEnum.AUTONOMOUS and old.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+            self.setDeviceState(DeviceStateEnum.OPERATING)
+            
+        if updated.state != SystemStateEnum.AUTONOMOUS and old.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
+            self.setDeviceState(DeviceStateEnum.READY)
+            inputPacket = MotorInput()
+            inputPacket.forward_velocity = 0.0
+            inputPacket.angular_velocity = 0.0
+            self.motorPublisher.publish(inputPacket)
 
     def onPositionReceived(self, msg):
-        self.m_position = msg
-        # self.m_position.theta = self.m_position.theta
-        self.m_position.x = 0.0
-        self.m_position.y = 0.0
-        self.m_position.theta = 0.0
+        self.position = msg
+        self.position.x = 0.0
+        self.position.y = 0.0
+        self.position.theta = 0.0
 
     def getAngleDifference(self, to_angle, from_angle):
         delta = to_angle - from_angle
@@ -60,47 +67,47 @@ class PathResolverNode(Node):
 
     def onPathReceived(self, msg: Path):
         self.points = [x.pose.position for x in msg.poses]
-        self.m_purePursuit.set_points([(point.x, point.y) for point in self.points])
+        self.purePursuit.set_points([(point.x, point.y) for point in self.points])
 
     def onResolve(self):
-        if self.m_position is None:
+        if self.position is None or self.getDeviceState() != DeviceStateEnum.OPERATING or self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             return
 
-        cur_pos = (self.m_position.x, self.m_position.y)
+        cur_pos = (self.position.x, self.position.y)
         lookahead = None
         radius = self.config.getFloat(RADIUS_START)
         while lookahead is None and radius <= self.config.getFloat(RADIUS_MAX):
-            lookahead = self.m_purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
+            lookahead = self.purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
             radius *= self.config.getFloat(RADIUS_MULTIPLIER)
 
-        motor_pkt = MotorInput()
-        motor_pkt.forward_velocity = 0.0
-        motor_pkt.angular_velocity = 0.0
+        inputPacket = MotorInput()
+        inputPacket.forward_velocity = 0.0
+        inputPacket.angular_velocity = 0.0
 
         if lookahead is None:
-            self.m_motorPublisher.publish(motor_pkt)
+            self.motorPublisher.publish(inputPacket)
             return
 
         if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
-            error = self.getAngleDifference(angle_diff, self.m_position.theta) / math.pi
+            error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(angle_diff)) ** 8
-            motor_pkt.forward_velocity = forward_speed
-            motor_pkt.angular_velocity = clamp(error * 3.0, -2.0, 2.0)
+            inputPacket.forward_velocity = forward_speed
+            inputPacket.angular_velocity = clamp(error * 3.0, -2.0, 2.0)
         else:
             if self.backCount == -1:
                 self.backCount = 5
             else:
                 self.backCount -= 1
 
-            motor_pkt.forward_velocity = self.config.getFloat(REVERSE_SPEED)
-            motor_pkt.angular_velocity = 0.0
+            inputPacket.forward_velocity = self.config.getFloat(REVERSE_SPEED)
+            inputPacket.angular_velocity = 0.0
 
         if not self.getSystemState().mobility:
-            motor_pkt.forward_velocity = 0.0
-            motor_pkt.angular_velocity = 0.0
+            inputPacket.forward_velocity = 0.0
+            inputPacket.angular_velocity = 0.0
 
-        self.m_motorPublisher.publish(motor_pkt)
+        self.motorPublisher.publish(inputPacket)
 
 
 def main():

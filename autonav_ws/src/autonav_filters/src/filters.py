@@ -34,12 +34,15 @@ class ParticleFilterNode(Node):
         self.pf.resetParticles()
         self.reckoning.reset()
 
-    def transition(self, _: SystemState, updated: SystemState):
-        if updated == SystemStateEnum.AUTONOMOUS:
+    def transition(self, old: SystemState, updated: SystemState):
+        if old.state != SystemStateEnum.AUTONOMOUS and updated.state == SystemStateEnum.AUTONOMOUS:
             self.reckoning.reset()
-
-        if updated != SystemStateEnum.AUTONOMOUS:
+            
+        if old.state == SystemStateEnum.AUTONOMOUS and updated.state != SystemStateEnum.AUTONOMOUS:
             self.pf.resetParticles()
+            
+        if old.state != SystemStateEnum.MANUAL and updated.state == SystemStateEnum.MANUAL:
+            self.onReset()
 
     def onGPSReceived(self, msg: GPSFeedback):
         if msg.gps_fix == 0 and msg.is_locked == False:

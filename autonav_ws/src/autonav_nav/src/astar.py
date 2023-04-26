@@ -3,7 +3,7 @@
 from autonav_msgs.msg import Position
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
-from scr_core.state import DeviceStateEnum
+from scr_core.state import DeviceStateEnum, SystemStateEnum
 from geometry_msgs.msg import PoseStamped, Point
 from nav_msgs.msg import OccupancyGrid, Path
 import rclpy
@@ -18,7 +18,6 @@ GRID_SIZE = 0.1
 cost_map = None
 best_pos = (0, 0)
 waypoints = []
-first_waypoints_time = -1
 verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
@@ -26,8 +25,8 @@ MAP_RES = 100
 
 # orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
 orig_waypoints = []
-sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
-# sim_waypoints = []
+# sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
+sim_waypoints = []
 
 
 def get_angle_diff(to_angle, from_angle):
@@ -41,35 +40,36 @@ class AStarNode(Node):
         super().__init__("autonav_nav_astar")
 
         self.m_configSpace = None
-        self.m_position = None
+        self.position = None
 
     def configure(self):
-        global first_waypoints_time
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
-        first_waypoints_time = time.time()
         self.m_mapTimer = self.create_timer(0.3, self.makeMap)
-        self.setDeviceState(DeviceStateEnum.OPERATING)
+        self.setDeviceState(DeviceStateEnum.READY)
         
     def onReset(self):
-        global first_waypoints_time, cost_map, best_pos, waypoints
-        self.m_position = None
+        global cost_map, best_pos, waypoints
+        self.position = None
         self.m_configSpace = None
-        first_waypoints_time = time.time()
         cost_map = None
         best_pos = (0, 0)
         waypoints = []
 
-    def transition(self, _: SystemState, updated: SystemState):
-        pass
-
+    def transition(self, old: SystemState, updated: SystemState):
+        if updated.state == SystemStateEnum.AUTONOMOUS and old.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+            self.setDeviceState(DeviceStateEnum.OPERATING)
+            
+        if updated.state != SystemStateEnum.AUTONOMOUS and old.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
+            self.setDeviceState(DeviceStateEnum.READY)
+            
     def onPoseReceived(self, msg: Position):
-        self.m_position = msg
+        self.position = msg
         
     def makeMap(self):
         global cost_map, best_pos, planner
-        if self.m_position is None or cost_map is None:
+        if self.position is None or cost_map is None:
             return
         
         robot_pos = (MAP_RES // 2, MAP_RES - 4)
@@ -147,34 +147,23 @@ class AStarNode(Node):
                         heappush(next_current, (fScore[neighbor], neighbor))
                     
     def onConfigSpaceReceived(self, msg: OccupancyGrid):
-        global cost_map, best_pos, planner, first_waypoints_time, waypoints
-        
-        if self.m_position is None:
+        global cost_map, best_pos, planner, waypoints
+        if self.position is None or self.getDeviceState() != DeviceStateEnum.OPERATING or self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             return
 
         grid_data = msg.data
-
         temp_best_pos = (MAP_RES // 2, MAP_RES - 4)
         best_pos_cost = -1000
         frontier = set()
         frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        next_waypoint = [pt for pt in (sim_waypoints if self.getSystemState().is_simulator else orig_waypoints)]
-        if first_waypoints_time > 0 and time.time() > first_waypoints_time and len(next_waypoint) > 0:
-            next_waypoint = next_waypoint[0]
-            north_to_gps = (next_waypoint[0] - self.m_position.latitude) * 111086.2
-            west_to_gps = (self.m_position.longitude - next_waypoint[1]) * 81978.2
-            dist = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
-            self.log("Distance to next waypoint: " + str(dist))
-            if dist < 20: # Only apply the waypoint costs if we are near no mans land
-                first_waypoints_time = -2
-                waypoints = [pt for pt in (sim_waypoints if self.getSystemState().is_simulator else orig_waypoints)]
+        # TODO: Redo the waypoint system
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
-            north_to_gps = (next_waypoint[0] - self.m_position.latitude) * 111086.2
-            west_to_gps = (self.m_position.longitude - next_waypoint[1]) * 81978.2
+            north_to_gps = (next_waypoint[0] - self.position.latitude) * 111086.2
+            west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
             heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
             if north_to_gps ** 2 + west_to_gps ** 2 <= 1:
@@ -189,7 +178,7 @@ class AStarNode(Node):
                 cost = (MAP_RES - y) * 1.3 + depth * 2.2
 
                 if len(waypoints) > 0:
-                    heading_err_to_gps = abs(get_angle_diff(self.m_position.theta + math.atan2(MAP_RES // 2- x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
+                    heading_err_to_gps = abs(get_angle_diff(self.position.theta + math.atan2(MAP_RES // 2- x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
                     cost -= max(heading_err_to_gps, 10)
 
                 if cost > best_pos_cost:
@@ -211,7 +200,6 @@ class AStarNode(Node):
 
         cost_map = grid_data
         best_pos = temp_best_pos
-        map_init = False
         
 def pathToGlobalPose(robot, pp0, pp1):
     x = (MAP_RES - pp1) * verticalCameraRange / MAP_RES
