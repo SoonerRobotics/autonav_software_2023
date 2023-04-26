@@ -21,17 +21,21 @@ public:
     void getSetpoints(PIDSetpoints& pid_setpoints);
     void getControl(PIDControl& pid_control);
 
+    float* getUpdatePeriod();
     float* getPulsesPerRadian();
     float* getWheelRadius();
     float* getWheelbaseLength();
+    float* getSlewRateLimit();
 
     float* getVelocitykP();
     float* getVelocitykI();
     float* getVelocitykD();
+    float* getVelocitykF();
 
     float* getAngularkP();
     float* getAngularkI();
     float* getAngularkD();
+    float* getAngularkF();
 
 private:
     MotorWithEncoder left_motor_;
@@ -163,6 +167,10 @@ inline float DifferentialDrive::computeAngularPID_(float angular_setpoint, float
     return angular_kP_ * angular_error + angular_kI_ * angular_integrator_ + angular_kD_ * angular_derivative + angular_kF_ * angular_setpoint;
 }
 
+inline float* DifferentialDrive::getUpdatePeriod() {
+    return &update_period_;
+}
+
 inline float* DifferentialDrive::getPulsesPerRadian() {
     return &pulses_per_radian_;
 }
@@ -173,6 +181,10 @@ inline float* DifferentialDrive::getWheelRadius() {
 
 inline float* DifferentialDrive::getWheelbaseLength() {
     return &wheelbase_length_;
+}
+
+inline float* DifferentialDrive::getSlewRateLimit() {
+    return &slew_rate_limit_;
 }
 
 inline float* DifferentialDrive::getVelocitykP() {
@@ -187,6 +199,10 @@ inline float* DifferentialDrive::getVelocitykD() {
     return &velocity_kD_;
 }
 
+inline float* DifferentialDrive::getVelocitykF() {
+    return &velocity_kF_;
+}
+
 inline float* DifferentialDrive::getAngularkP() {
     return &angular_kP_;
 }
@@ -197,6 +213,10 @@ inline float* DifferentialDrive::getAngularkI() {
 
 inline float* DifferentialDrive::getAngularkD() {
     return &angular_kD_;
+}
+
+inline float* DifferentialDrive::getAngularkF() {
+    return &angular_kF_;
 }
 
 inline void DifferentialDrive::getSetpoints(PIDSetpoints& pid_setpoints) {

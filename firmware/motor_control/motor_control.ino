@@ -4,6 +4,8 @@
 #include "differential_drive.h"
 #include "motor_with_encoder.h"
 #include "common.h"
+#include <CONBus.h> 
+#include <CANBusDriver.h>
 
 //LEDs
 const int ledPin = LED_BUILTIN;
@@ -40,6 +42,10 @@ static const uint32_t QUARTZ_FREQUENCY = 8UL * 1000UL * 1000UL;  // 8 MHz
 CANMessage frame;
 CANMessage outFrame;
 
+// Setup CONBus variables
+CONBus::CONBus conbus;
+CONBus::CANBusDriver conbus_can(conbus, 0x10); // device id 0x10 (16)
+
 robotStatus_t roboStatus;
 distance motorDistances;
 MotorCommand motorCommand;
@@ -62,11 +68,16 @@ void resetDelta();
 bool SEND_CAN_ODOM = false;
 bool canBlinky = false;
 
+bool useObstacleAvoidance = false;
 short collisonBoxDist = 20;
+bool isDetectingObstacle = false;
 
 float delta_x = 0;
 float delta_y = 0;
 float delta_theta = 0;
+
+float desired_forward_velocity;
+float desired_angular_velocity;
 
 void setup() {
   delay(50);
@@ -94,6 +105,25 @@ void setup1(){
   pinMode(LED0, OUTPUT);
   pinMode(CANLED, OUTPUT);
   pinMode(estopPin, INPUT);
+
+  conbus.addReadOnlyRegister(0x00, drivetrain.getUpdatePeriod());
+  conbus.addRegister(0x01, drivetrain.getPulsesPerRadian());
+  conbus.addRegister(0x02, drivetrain.getWheelRadius());
+  conbus.addRegister(0x03, drivetrain.getWheelbaseLength());
+  conbus.addRegister(0x04, drivetrain.getSlewRateLimit());
+
+  conbus.addRegister(0x10, drivetrain.getVelocitykP());
+  conbus.addRegister(0x11, drivetrain.getVelocitykI());
+  conbus.addRegister(0x12, drivetrain.getVelocitykD());
+  conbus.addRegister(0x13, drivetrain.getVelocitykF());
+
+  conbus.addRegister(0x20, drivetrain.getAngularkP());
+  conbus.addRegister(0x21, drivetrain.getAngularkI());
+  conbus.addRegister(0x22, drivetrain.getAngularkD());
+  conbus.addRegister(0x23, drivetrain.getAngularkF());
+
+  conbus.addRegister(0x30, &useObstacleAvoidance);
+  conbus.addRegister(0x31, &collisonBoxDist);
 }
 void loop() {
   updateTimers();
@@ -113,10 +143,17 @@ void loop() {
   }
 }
 void loop1(){
+
   if (SEND_CAN_ODOM) {
     sendCanOdomMsgOut();
     resetDelta();
     SEND_CAN_ODOM = false;
+  }
+
+  if (conbus_can.isReplyReady()) {
+    conbus_can.getReply(outFrame.id, outFrame.len, outFrame.data);
+
+    can.tryToSend(outFrame);
   }
 }
 void configureCan() {
@@ -141,10 +178,30 @@ void configureCan() {
 void onCanRecieve() {
   can.isr();
   can.receive(frame);  
+
+  conbus_can.readCanMessage(frame.id, frame.data);
+
   switch (frame.id) {
     case 10:
       motorCommand = *(MotorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
-      drivetrain.setOutput((float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
+
+      desired_forward_velocity = (float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR;
+      desired_angular_velocity = (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR;
+
+      if (useObstacleAvoidance && isDetectingObstacle && desired_forward_velocity > 0) {
+        desired_forward_velocity = 0;
+      }
+
+      drivetrain.setOutput(desired_forward_velocity, desired_angular_velocity);
+      break;
+    case 20:
+      isDetectingObstacle = (frame.data[1] < collisonBoxDist || frame.data[2] < collisonBoxDist || frame.data[3] < collisonBoxDist);
+
+      if (useObstacleAvoidance && isDetectingObstacle && desired_forward_velocity > 0) {
+        desired_forward_velocity = 0;
+      }
+
+      drivetrain.setOutput(desired_forward_velocity, desired_angular_velocity);
       break;
   }
 }
