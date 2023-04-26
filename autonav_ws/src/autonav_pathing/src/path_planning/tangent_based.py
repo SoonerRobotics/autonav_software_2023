@@ -79,11 +79,11 @@ class path_planning:
             
         for removals in for_removal:
             if removals in self.final:
-                if removals[3] != 2:
+                if removals[3] != 0:
                     self.final.remove(removals)
 
 
-    def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):
+    def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2, safety_d):
         # go clockwise or counter-clockwise depending on which theta is smaller
         number_of_points = 10
         points = []
@@ -107,7 +107,7 @@ class path_planning:
         # this for loop draws points along the edge of the avoidance circles
         for k in range(0, number_of_points):
             #print(f"dtheta5t * k {dtheta5t * (k)}")
-            points.append([(((obstacle[2]+ .25) * (math.cos(theta1 + (dtheta5t * (k))))) + obstacle[0]), (((obstacle[2] + .25) * math.sin(theta1+ (dtheta5t * (k)))) + obstacle[1]), 1, 1])
+            points.append([(((obstacle[2]+ safety_d) * (math.cos(theta1 + (dtheta5t * (k))))) + obstacle[0]), (((obstacle[2] + safety_d) * math.sin(theta1+ (dtheta5t * (k)))) + obstacle[1]), 1, 1])
             #print(f"points is {points}")
             #print(len(self.final))
                     
@@ -198,7 +198,7 @@ class path_planning:
                         end = point1
                     
                     # point 1 and point 2 are both generated waypoints
-                    if working_path[point1][2] != 2:
+                    if working_path[point1][2] != 0:
                         #print("Intersection is not between the end or the start of the path")
                         for betweens in range(start, end + 1):
                             if working_path[betweens] not in for_deletion:
@@ -206,7 +206,7 @@ class path_planning:
                             #print(f"betweens: {betweens}")
 
                     # if point1 or point2 is the start or end, we don't want to delete them
-                    elif working_path[point1][2] == 2:
+                    elif working_path[point1][2] == 0:
                         for betweens in range(start + 1, end):
                             if working_path[betweens] not in for_deletion:
                                 for_deletion.append(working_path[betweens])
@@ -219,7 +219,7 @@ class path_planning:
         #print(f"PATH LENGTH BEFORE DELETION: {len(working_path)}")
         for deletes in for_deletion:
             if deletes in working_path:
-                if deletes[2] != 2:
+                if deletes[2] != 0:
                     #print("Deleting a waypoint")
                     working_path.remove(deletes)
         
@@ -359,7 +359,7 @@ class path_planning:
                         print(f"theta2t_arg {theta2t_arg}")"""
 
                         #print("adding points from double intersection")
-                        working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg)
+                        working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg, .01)
         
         if rotation == "cw":
             #print("Seeing rotation as cw")

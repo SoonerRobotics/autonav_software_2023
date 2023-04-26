@@ -7,7 +7,9 @@ import tangent_based
 import time
 
 def planning_test(wpoints, obstacles):
+    print(f"length of wpoints = {len(wpoints)}")
     print(f"wpoints = {wpoints}")
+    print(f"length of obstacles {len(obstacles)}")
     print(f"obstacles = {obstacles}")
     testcw = tangent_based.path_planning()
     testcw.setpath(wpoints)
@@ -22,10 +24,10 @@ def planning_test(wpoints, obstacles):
     start_time = time.time()
     
     counter = 0
-    print("chuggin")
+    print("chuggin in planning test")
     while(testccw.updated == True):
         print(f"counter {counter}")
-        if counter < 2:
+        if counter < 3:
             testccw.intersections("ccw")
             testccw.path_intersections()
             testccw.delete_inside()

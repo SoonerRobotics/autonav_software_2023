@@ -9,7 +9,7 @@ class DeadReckoningFilter(Node):
     def __init__(self):
         super().__init__("dead_reckoning")
         self.position_publisher = self.create_publisher(Position, '/autonav/position', 10)
-        self.feedback_subscriber = self.create_subscription(MotorFeedback, '/igvc/velocity', self.updateMotors, 10)
+        self.feedback_subscriber = self.create_subscription(MotorFeedback, '/autonav/MotorFeedback', self.updateMotors, 10)
         self.reset()
         
     def reset(self):

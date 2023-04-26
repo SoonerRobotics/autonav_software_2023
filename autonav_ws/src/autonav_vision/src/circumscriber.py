@@ -31,7 +31,7 @@ class Circumscriber(Node):
 
     def __init__(self):
         super().__init__("circumscriber")
-        self.subscriber = self.create_subscription(CompressedImage, "/igvc/camera/compressed", self.on_image_received, 10)
+        self.subscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.on_image_received, 10)
         self.publisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
         self.obstacle_publisher = self.create_publisher(Obstacles, "/autonav/obstacles", 1)
         self.h = None
@@ -92,8 +92,8 @@ class Circumscriber(Node):
         
         # Convert mask to RGB for preview
         preview_image = mask
-        cv.imshow("preview_image", preview_image)
-        cv.waitKey(1000)
+        #cv.imshow("preview_image", preview_image)
+        #cv.waitKey(1000)
 
 
         start = time.time()
@@ -106,7 +106,7 @@ class Circumscriber(Node):
         # define how many sections of the image you want to search for objects in
         # grid sizes need to be square numbers
         
-        sections = 4
+        sections = 3
         grid_sections = sections ** 2
         fractional_w = int(w // sections)
         fractional_h = int(h // sections)
@@ -146,8 +146,8 @@ class Circumscriber(Node):
         self.get_logger().info(f"Time to draw circles: {end - start}")
 
         # display the image 
-        cv.imshow("preview_image after circles", preview_image)
-        cv.waitKey(10000)
+        #cv.imshow("preview_image after circles", preview_image)
+        #cv.waitKey(10000)
         cv.destroyAllWindows()
         
         # send the obstacles to the path planner
@@ -171,19 +171,19 @@ class Circumscriber(Node):
         cv.fillPoly(mask, vertices, match_mask_color)
         masked_image = cv.bitwise_and(img, mask)
         return masked_image
-
+    
     def flatten_image(self, img):
         top_left = (int)(img.shape[1] * 0.26), (int)(img.shape[0])
-        top_right = (int)(img.shape[1] * 0.74), (int)(img.shape[0])
+        top_right = (int)(img.shape[1] - img.shape[1] * 0.26), (int)(img.shape[0])
         bottom_left = 0, 0
         bottom_right = (int)(img.shape[1]), 0
-        
-        src = np.float32([top_left, top_right, bottom_left, bottom_right])
-        dst = np.float32([[0, img.shape[0]], [img.shape[1], img.shape[0]], [0, 0], [img.shape[1], 0]])
 
-        M = cv.getPerspectiveTransform(src, dst)
-        return cv.warpPerspective(img, M, (img.shape[1], img.shape[0]))
-    
+        src_pts = np.float32([[top_left], [top_right], [bottom_left], [bottom_right]])
+        dest_pts = np.float32([ [0, 480], [640, 480] ,[0, 0], [640, 0]])
+
+        matrix = cv.getPerspectiveTransform(dest_pts, src_pts)
+        output = cv.warpPerspective(img, matrix, (640, 480))
+        return output
     
 def main(args=None):
     rclpy.init(args=args)

@@ -25,6 +25,7 @@ class PathPlanner(Node):
         self.planned_path = []
         self.gps_waypoints = [[0, 10, 0, 2]]
         self.normalized_theta = 0.0
+        self.min_distance = .5
 
     def reset(self):
         self.robo_and_gps_path = [self.robo_position_wp]
@@ -39,7 +40,7 @@ class PathPlanner(Node):
         # these are flipped because our theta is shifted 90 degrees
         
         dpx, dpy = self.rotate(self.robo_position_wp[0], self.robo_position_wp[1] + 2, self.robo_position_wp[0], self.robo_position_wp[1])
-        drive_point = [dpx, dpy, 0, 0]
+        drive_point = [dpx, dpy, 1, 1]
         return drive_point
 
     def set_unplanned_path(self):
@@ -62,20 +63,20 @@ class PathPlanner(Node):
         test.setpath(self.robo_and_gps_path)
         test.setobstacles(local_obstacles)
         
-        print("chuggin")
+        print("chuggin in path_planning")
         counter = 0
         while(test.updated == True):
-            if counter < 4:
+            if counter < 3:
                 test.intersections(direction)
-                test.path_intersections()
-                test.delete_inside()
+                #test.path_intersections()
+                #test.delete_inside()
                 counter = counter + 1
             else:
                 break
 
         print("done chuggin")
-        test.path_intersections()
-        test.delete_inside()
+        #test.path_intersections()
+        #test.delete_inside()
 
         return test.final
 
@@ -102,16 +103,18 @@ class PathPlanner(Node):
         self.set_unplanned_path()
         for obstacle in obstacles_data:
             x = ((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0]
-            y = ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1]
+            y = ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1] + self.min_distance
             x, y = self.rotate(x,y, self.robo_position_wp[0], self.robo_position_wp[1])
             rad = obstacle.radius * self.pixels_to_meters[1]
             #local_obstacles.append([((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0], ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1], obstacle.radius * self.pixels_to_meters[1]])
-            local_obstacles.append([x,y,rad])
+            if rad >= .3:
+                local_obstacles.append([x,y,rad])
+        
         self.get_logger().info(f"I heard {local_obstacles} as the local obstacles")
         self.planned_path = self.path_plan(local_obstacles, direction)
         self.set_path(self.planned_path)
         self.publish_path()
-        planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
+        #planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
 
 
 def isInside(circle_x, circle_y, rad, x, y):
