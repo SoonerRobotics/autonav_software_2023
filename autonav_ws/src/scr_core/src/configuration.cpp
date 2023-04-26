@@ -151,7 +151,11 @@ namespace SCR
 				bytes.push_back(std::stoi(token));
 			}
 
-			cache[device][address] = bytes;
+			scr_msgs::msg::ConfigurationInstruction instruction;
+			instruction.device = device;
+			instruction.address = address;
+			instruction.data = bytes;
+			configPublisher->publish(instruction);
 		}
 
 		this->preset = preset;
