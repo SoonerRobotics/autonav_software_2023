@@ -25,6 +25,7 @@ class PurePursuit(Node):
         self.path_subscription
         self.robo_position = [0.0, 0.0, 0.0]
         self.local_path = []
+        self.backCount = -1
 
     def accept_position(self, position = Position):
         #self.get_logger().info(f"hearing {position} from position topic")
@@ -79,10 +80,11 @@ class PurePursuit(Node):
         radius = 0.7
         while lookahead is None and radius <= 4.0:
             lookahead = self.purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
-            #pursuit_test.pursuit_test(cur_pos, self.local_path, radius)
+            pursuit_test.pursuit_test(cur_pos, self.local_path, radius)
             radius *= 1.2
 
         self.get_logger().info(f"Received lookahead -> {lookahead}")
+        self.get_logger().info(f"The robots position is {self.robo_position}")
         
         motor_pkt = MotorInput()
         motor_pkt.forward_velocity = 0.0
@@ -92,15 +94,23 @@ class PurePursuit(Node):
             self.motor_publisher.publish(motor_pkt)
             return
         
-        if ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:  
+        if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:  
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.robo_position[2]) / math.pi
             forward_speed = 0.7 * (1 - abs(angle_diff)) ** 5
             motor_pkt.forward_velocity = forward_speed
-            motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)
+            motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)  
+        else:
+            if self.backCount == -1:
+                self.backCount = 5
+            else:
+                self.backCount -= -1
 
-            self.motor_publisher.publish(motor_pkt)
-            self.get_logger().info(f"publishing {motor_pkt} to /igvc/motors_raw")
+            motor_pkt.forward_velocity = -0.5
+            motor_pkt.angular_velocity = 0.0
+        
+        self.motor_publisher.publish(motor_pkt)
+        self.get_logger().info(f"publishing {motor_pkt} to /igvc/motors_raw")
 
     def publish_lookahead(self, lookahead):
         msg = GoalPoint()
