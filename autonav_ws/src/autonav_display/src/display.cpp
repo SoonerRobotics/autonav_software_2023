@@ -48,6 +48,7 @@ public:
 	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
 	{
 		UNUSED(old);
+		UNUSED(updated);
 	}
 
 	bool setup_imgui()
