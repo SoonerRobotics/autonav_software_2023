@@ -58,7 +58,7 @@ namespace SCR
 	{
 		if (preset != "")
 		{
-			std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".json";
+			std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".csv";
 			std::filesystem::remove(path);
 			presets.erase(std::remove(presets.begin(), presets.end(), preset), presets.end());
 			load("default");
@@ -76,7 +76,7 @@ namespace SCR
 	void Configuration::save(const std::string& preset)
 	{
 		std::string configPath = "/home/" + std::string(getenv("USER")) + "/.scr/configuration";
-		std::string path = configPath + "/" + preset + ".json";
+		std::string path = configPath + "/" + preset + ".csv";
 		std::ofstream file(path);
 
 		RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Saving configuration file: %s", path.c_str());
@@ -109,7 +109,7 @@ namespace SCR
 
 	void Configuration::load(const std::string& preset)
 	{
-		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".json";
+		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".csv";
 		if (!std::filesystem::exists(path))
 		{
 			if (preset != "default")
@@ -154,6 +154,7 @@ namespace SCR
 			scr_msgs::msg::ConfigurationInstruction instruction;
 			instruction.device = device;
 			instruction.address = address;
+			instruction.opcode = Opcode::SET;
 			instruction.data = bytes;
 			configPublisher->publish(instruction);
 		}
