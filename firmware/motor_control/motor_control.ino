@@ -72,6 +72,8 @@ bool useObstacleAvoidance = false;
 short collisonBoxDist = 20;
 bool isDetectingObstacle = false;
 
+bool sendStatistics = true;
+
 float delta_x = 0;
 float delta_y = 0;
 float delta_theta = 0;
@@ -124,6 +126,8 @@ void setup1(){
 
   conbus.addRegister(0x30, &useObstacleAvoidance);
   conbus.addRegister(0x31, &collisonBoxDist);
+
+  conbus.addRegister(0x40, &sendStatistics);
 }
 void loop() {
   updateTimers();
@@ -220,17 +224,19 @@ void sendCanOdomMsgOut(){
   memcpy(outFrame.data, &motorDistances, ODOM_OUT_LEN );
   const bool ok = can.tryToSend (outFrame) ;
 
-  drivetrain.getSetpoints(pid_setpoints);
-  outFrame.id = 50;
-  outFrame.len = 8;
-  memcpy(outFrame.data, &pid_setpoints, 8);
-  can.tryToSend(outFrame);
+  if (sendStatistics) {
+    drivetrain.getSetpoints(pid_setpoints);
+    outFrame.id = 50;
+    outFrame.len = 8;
+    memcpy(outFrame.data, &pid_setpoints, 8);
+    can.tryToSend(outFrame);
 
-  drivetrain.getControl(pid_controls);
-  outFrame.id = 51;
-  outFrame.len = 4;
-  memcpy(outFrame.data, &pid_controls, 4);
-  can.tryToSend(outFrame);
+    drivetrain.getControl(pid_controls);
+    outFrame.id = 51;
+    outFrame.len = 4;
+    memcpy(outFrame.data, &pid_controls, 4);
+    can.tryToSend(outFrame);
+  }
 
 }
 void printCanMsg(CANMessage frame) {
