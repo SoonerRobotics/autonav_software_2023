@@ -62,11 +62,13 @@ void resetDelta();
 bool SEND_CAN_ODOM = false;
 bool canBlinky = false;
 
-short collisonBoxDist = 20;
+short collisonBoxDist = 60;
 
 float delta_x = 0;
 float delta_y = 0;
 float delta_theta = 0;
+
+bool isSafe = true;
 
 void setup() {
   delay(50);
@@ -143,15 +145,28 @@ void onCanRecieve() {
   can.receive(frame);  
   switch (frame.id) {
     case 10:
-      motorCommand = *(MotorCommand*)(frame.data);     //Noah made me cry. I dont know what they did but I dont like it one bit - Jorge
-      drivetrain.setOutput((float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
+      motorCommand = *(MotorCommand*)(frame.data); 
+      if(isSafe){
+        drivetrain.setOutput((float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
+      }
+      else if(isSafe = false && (float)motorCommand.setpoint_forward_velocity < 0.0){
+        drivetrain.setOutput((float)motorCommand.setpoint_forward_velocity / SPEED_SCALE_FACTOR, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
+      }
       break;
     case 20:
+      Serial.print(frame.data[1]);
+      Serial.print(frame.data[2]);
+      Serial.println(frame.data[3]);
       if((frame.data[1] < collisonBoxDist || frame.data[2] < collisonBoxDist || frame.data[3] < collisonBoxDist) & 
         motorCommand.setpoint_forward_velocity > 0.0){
-        drivetrain.setOutput(0.0, float angular_velocity);
+        drivetrain.setOutput(0.0, (float)motorCommand.setpoint_angular_velocity / SPEED_SCALE_FACTOR);
+        isSafe = false;
       }
-    case 
+      else{
+        isSafe = true;
+
+      }
+      break;
   }
 }
 void sendCanOdomMsgOut(){
