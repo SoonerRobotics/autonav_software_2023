@@ -13,11 +13,6 @@ long lastMessageTime = 0;
 float lastForwardSpeed = 0;
 float lastTurnSpeed = 0;
 
-float speedCurve(float t, float maxSpeed)
-{
-	return (((pow(-t, 2 * t) + pow(1 - t, 2 * t)) * pow(t, 2.4 - 2 * t)) / (-2 * t + 1)) * maxSpeed;
-}
-
 float clamp(float value, float min, float max)
 {
 	if (value < min)
@@ -86,8 +81,8 @@ public:
 
 		if (abs(msg.ltrig) > throttleDeadzone || abs(msg.rtrig) > throttleDeadzone)
 		{
-			throttle = speedCurve(msg.rtrig, config.get<float>(Registers::FORWARD_SPEED));
-			throttle = throttle - speedCurve(msg.ltrig, config.get<float>(Registers::FORWARD_SPEED));
+			throttle = msg.rtrig * config.get<float>(Registers::FORWARD_SPEED);
+			throttle = throttle - msg.ltrig * config.get<float>(Registers::FORWARD_SPEED);
 		}
 
 		if (abs(msg.lpad_x) > steeringDeadzone)
