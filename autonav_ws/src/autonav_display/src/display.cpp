@@ -113,6 +113,8 @@ public:
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		while (!glfwWindowShouldClose(window) && rclcpp::ok())
 		{
+			performance.start("Display Render");
+
 			glfwPollEvents();
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
@@ -153,6 +155,11 @@ public:
 					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
+				if (ImGui::BeginTabItem("Performance"))
+				{
+					ShowPerformance(this);
+					ImGui::EndTabItem();
+				}
 				if (ImGui::BeginTabItem("Debug"))
 				{
 					ImGui::BeginChild("scrolling5", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
@@ -177,6 +184,8 @@ public:
 			glClear(GL_COLOR_BUFFER_BIT);
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			glfwSwapBuffers(window);
+
+			performance.end("Display Render");
 		}
 
 		rclcpp::shutdown();

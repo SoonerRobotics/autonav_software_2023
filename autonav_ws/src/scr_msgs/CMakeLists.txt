@@ -16,6 +16,7 @@ set(msg_files
   "msg/SystemState.msg"
   "msg/DeviceState.msg"
   "msg/ConfigurationInstruction.msg"
+  "msg/PerformanceResult.msg"
 )
 
 set(srv_files

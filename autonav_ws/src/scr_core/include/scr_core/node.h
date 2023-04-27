@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scr_msgs/msg/configuration_instruction.hpp"
+#include "scr_msgs/msg/performance_result.hpp"
 #include "scr_msgs/srv/set_system_state.hpp"
 #include "scr_msgs/srv/set_device_state.hpp"
 #include "scr_msgs/msg/device_state.hpp"
@@ -9,6 +10,7 @@
 #include "scr_msgs/msg/log.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "configuration.h"
+#include "performance.h"
 #include "device_state.h"
 #include "system_state.h"
 #include <stdint.h>
@@ -30,6 +32,7 @@ namespace SCR
 		void setMobility(bool state);
 
 		Configuration config;
+		Performance performance;
 
 		DeviceState getDeviceState();
 		DeviceState getDeviceState(std::string device);

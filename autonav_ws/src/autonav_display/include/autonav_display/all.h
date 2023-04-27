@@ -4,3 +4,4 @@
 #include "tabs/debug.h"
 #include "tabs/preferences.h"
 #include "tabs/plots.h"
+#include "tabs/performance.h"

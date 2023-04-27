@@ -105,7 +105,5 @@ void ShowPlots(SCR::Node *node)
             }
             ImPlot::EndPlot();
         }
-
-
     }
 }

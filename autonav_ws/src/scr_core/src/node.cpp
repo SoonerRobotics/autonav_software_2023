@@ -23,6 +23,10 @@ namespace SCR
 		auto configurationSubscriber = this->create_subscription<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20, std::bind(&Configuration::onConfigurationInstruction, &config, std::placeholders::_1));
 		auto configurationPublisher = this->create_publisher<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20);
 		config = Configuration(id, configurationSubscriber, configurationPublisher);
+
+		// Performance
+		auto performancePublisher = this->create_publisher<scr_msgs::msg::PerformanceResult>("/scr/performance", 20);
+		performance = Performance(node_name, performancePublisher);
 	}
 
 	Node::~Node()

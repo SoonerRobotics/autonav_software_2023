@@ -2,6 +2,7 @@ from scr_core.state import DeviceStateEnum, SystemStateEnum
 from scr_msgs.srv import SetDeviceState, SetSystemState
 from scr_msgs.msg import DeviceState, SystemState, Log
 from scr_core.configuration import Configuration
+from scr_core.performance import Performance
 from rclpy.node import Node as ROSNode
 from std_msgs.msg import Empty
 from scr_core import hash
@@ -34,6 +35,9 @@ class Node(ROSNode):
         self.config = Configuration(self.id, self)
         self.deviceStates = {}
         self.state = SystemState()
+
+        # Performance
+        self.performance = Performance(self)
 
     def configure(self):
         pass
@@ -96,6 +100,10 @@ class Node(ROSNode):
 
         old = self.state
         self.state = state
+
+        if self.getDeviceState() == DeviceStateEnum.OFF:
+            return
+
         self.transition(old, state)
         
     def getClockMs(self) -> int:
@@ -112,7 +120,7 @@ class Node(ROSNode):
         if state.state == DeviceStateEnum.STANDBY:
             self.config.recache()
             self.configure()
-            return
+            self.onSystemState(self.state)
 
     def transition(self, old: SystemState, updated: SystemState):
         raise NotImplementedError()
@@ -121,7 +129,9 @@ class Node(ROSNode):
         return self.state
 
     def getDeviceState(self, id: int = None) -> DeviceStateEnum:
-        return self.deviceStates[id] if id else self.deviceStates[self.id]
+        if id is None:
+            return DeviceStateEnum.OFF if self.id not in self.deviceStates else self.deviceStates[self.id]
+        return self.deviceStates[self.id] if id is None else self.deviceStates[self.id]
     
     def getDeviceStates(self):
         return self.deviceStates

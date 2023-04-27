@@ -35,6 +35,14 @@ void ShowDebug(SCR::Node *node)
         ImGui::EndCombo();
     }
 
+    static bool showImGuiDemo = false;
+    ImGui::Checkbox("Show ImGui Demo", &showImGuiDemo);
+
+    if (showImGuiDemo)
+    {
+        ImGui::ShowDemoWindow(&showImGuiDemo);
+    }
+
     ImGui::Text("Wants Keyboard Input: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
     ImGui::Text("Wants Mouse Input: %s", ImGui::GetIO().WantCaptureMouse ? "true" : "false");
     ImGui::Text("Wants Set Mouse Pos: %s", ImGui::GetIO().WantSetMousePos ? "true" : "false");

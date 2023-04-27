@@ -51,8 +51,8 @@ public:
 			}
 		}
 
-		rawMapSubscriber = create_subscription<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/raw", 10, std::bind(&Expandify::onConfigSpaceReceived, this, std::placeholders::_1));
-		expandedMapPublisher = create_publisher<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/expanded", 10);
+		rawMapSubscriber = create_subscription<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/raw", 20, std::bind(&Expandify::onConfigSpaceReceived, this, std::placeholders::_1));
+		expandedMapPublisher = create_publisher<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/expanded", 20);
 
 		setDeviceState(SCR::DeviceState::OPERATING);
 	}
@@ -77,9 +77,12 @@ public:
 			return;
 		}
 
+		performance.start("Expandification");
+
 		std::vector<int8_t> data = std::vector<int8_t>(ExpandifyConstants::MAP_RES * ExpandifyConstants::MAP_RES);
 		std::fill(data.begin(), data.end(), 0);
 
+		int totalLoops = 0;
 		for (int x = 0; x < ExpandifyConstants::MAP_RES; x++)
 		{
 			for (int y = 1; y < ExpandifyConstants::MAP_RES; y++)
@@ -88,6 +91,7 @@ public:
 				{
 					for (Circle& circle : circles)
 					{
+						totalLoops++;
 						auto idx = (x + circle.x) + ExpandifyConstants::MAP_RES * (y + circle.y);
 						auto expr_x = (x + circle.x) < ExpandifyConstants::MAP_RES && (x + circle.x) >= 0;
 						auto expr_y = (y + circle.y) < ExpandifyConstants::MAP_RES && (y + circle.y) >= 0;
@@ -113,6 +117,8 @@ public:
 		newSpace.info = map;
 		newSpace.data = data;
 		expandedMapPublisher->publish(newSpace);
+
+		performance.end("Expandification");
 	}
 
 private:

@@ -58,10 +58,10 @@ class AStarNode(Node):
         waypoints = []
 
     def transition(self, old: SystemState, updated: SystemState):
-        if updated.state == SystemStateEnum.AUTONOMOUS and old.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+        if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
-        if updated.state != SystemStateEnum.AUTONOMOUS and old.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
+        if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
             self.setDeviceState(DeviceStateEnum.READY)
             
     def onPoseReceived(self, msg: Position):
@@ -89,6 +89,7 @@ class AStarNode(Node):
             current = path[current]
             total_path.append(current)
 
+        self.performance.end("A*")
         return total_path[::-1]
         
     def find_path_to_point(self, start, goal, map, width, height):
@@ -96,6 +97,8 @@ class AStarNode(Node):
         open_set = [start]
         path = {}
         search_dirs = []
+
+        self.performance.start("A*")
 
         for x in range(-1, 2):
             for y in range(-1, 2):
@@ -151,6 +154,8 @@ class AStarNode(Node):
         if self.position is None or self.getDeviceState() != DeviceStateEnum.OPERATING or self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             return
 
+        self.performance.start("Smellification")
+
         grid_data = msg.data
         temp_best_pos = (MAP_RES // 2, MAP_RES - 4)
         best_pos_cost = -1000
@@ -200,6 +205,8 @@ class AStarNode(Node):
 
         cost_map = grid_data
         best_pos = temp_best_pos
+
+        self.performance.end("Smellification")
         
 def pathToGlobalPose(robot, pp0, pp1):
     x = (MAP_RES - pp1) * verticalCameraRange / MAP_RES

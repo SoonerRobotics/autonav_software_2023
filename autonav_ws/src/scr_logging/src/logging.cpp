@@ -74,7 +74,10 @@ class LoggingNode : public SCR::Node
 public:
 	LoggingNode() : SCR::Node("scr_logging")
 	{
-		m_logSubscriber = this->create_subscription<scr_msgs::msg::Log>("/scr/logging", 10, std::bind(&LoggingNode::on_log_received, this, _1));
+		logSubscriber = this->create_subscription<scr_msgs::msg::Log>("/scr/logging", 10, std::bind(&LoggingNode::on_log_received, this, _1));
+
+		this->declare_parameter<bool>("log_to_console", false);
+		this->get_parameter("log_to_console", logToConsole);
 	}
 
 	void configure() override
@@ -91,11 +94,15 @@ public:
 private:
 	void on_log_received(const scr_msgs::msg::Log &msg) const
 	{
-		// RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.node.c_str(), msg.data.c_str());
+		if (logToConsole)
+		{
+			RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.node.c_str(), msg.data.c_str());
+		}
 		append_to_file(msg.node, msg.data);
 	}
 
-	rclcpp::Subscription<scr_msgs::msg::Log>::SharedPtr m_logSubscriber;
+	rclcpp::Subscription<scr_msgs::msg::Log>::SharedPtr logSubscriber;
+	bool logToConsole = false;
 };
 
 int main(int argc, char *argv[])

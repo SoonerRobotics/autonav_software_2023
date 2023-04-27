@@ -44,10 +44,10 @@ class PathResolverNode(Node):
         self.backCount = -1
 
     def transition(self, old: SystemState, updated: SystemState):
-        if updated.state == SystemStateEnum.AUTONOMOUS and old.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+        if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
-        if updated.state != SystemStateEnum.AUTONOMOUS and old.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
+        if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
             self.setDeviceState(DeviceStateEnum.READY)
             inputPacket = MotorInput()
             inputPacket.forward_velocity = 0.0

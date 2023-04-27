@@ -92,6 +92,8 @@ class ImageTransformer(Node):
         self.rawMapPublisher.publish(msg)
 
     def onImageReceived(self, image: CompressedImage):
+        self.performance.start("Image Transformation")
+
         # Decompressify
         cv_image = g_bridge.compressed_imgmsg_to_cv2(image)
 
@@ -136,6 +138,8 @@ class ImageTransformer(Node):
 
         # Actually generate the map
         self.publishOccupancyMap(mask)
+
+        self.performance.end("Image Transformation")
 
 
 def main():

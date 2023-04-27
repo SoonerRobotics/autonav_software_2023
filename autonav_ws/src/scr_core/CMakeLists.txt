@@ -13,7 +13,7 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME} SHARED
-  src/configuration.cpp src/node.cpp
+  src/configuration.cpp src/node.cpp src/performance.cpp
 )
 
 ament_python_install_package(${PROJECT_NAME})

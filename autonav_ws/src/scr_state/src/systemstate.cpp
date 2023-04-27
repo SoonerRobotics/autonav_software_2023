@@ -162,11 +162,11 @@ public:
 			return;
 		}
 
-		publishState();
 		auto deviceState = scr_msgs::msg::DeviceState();
 		deviceState.device = SCR::hash(node);
 		deviceState.state = SCR::DeviceState::STANDBY;
 		deviceStatePublisher->publish(deviceState);
+		publishState();
 	}
 
 	void onNodeRemoved(const std::string& node)
