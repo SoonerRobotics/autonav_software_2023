@@ -21,26 +21,22 @@ class CameraNode(Node):
     def configure(self):
         self.config.setInt(REFRESH_RATE, 15)
 
-        self.declare_parameter("device_id", 0)
-        self.deviceId = 0
+        self.cameraPublisher = self.create_publisher(CompressedImage, "/autonav/camera/compressed", 20)
+        self.cameraThread = threading.Thread(target=self.cameraWorker)
+        self.cameraThread.start()
 
-        self.m_cameraPublisher = self.create_publisher(CompressedImage, "/autonav/camera/compressed", 20)
-        self.m_cameraThread = threading.Thread(target=self.camera_read)
-        self.m_cameraThread.start()
+    def transition(self, old, updated):
+        return
 
-    def transition(self, old, neww):
-        pass
-
-    def camera_read(self):
+    def cameraWorker(self):
         capture = None
         while rclpy.ok() and self.getSystemState().state != SystemStateEnum.SHUTDOWN:
             try:
-                # Check if /dev/videoX exists
-                if not os.path.exists("/dev/video" + str(self.deviceId)):
+                if not os.path.exists("/dev/video0"):
                     time.sleep(1.5)
                     continue
 
-                capture = cv2.VideoCapture(self.deviceId)
+                capture = cv2.VideoCapture(0)
                 if capture is None or not capture.isOpened():
                     time.sleep(1.5)
                     continue
@@ -52,7 +48,6 @@ class CameraNode(Node):
                 self.setDeviceState(DeviceStateEnum.STANDBY)
                 time.sleep(1.5)
                 continue
-                
 
             while rclpy.ok() and self.getSystemState().state != SystemStateEnum.SHUTDOWN:
                 if self.getDeviceState() != DeviceStateEnum.OPERATING:
@@ -71,7 +66,7 @@ class CameraNode(Node):
                 if not ret or frame is None:
                     continue
 
-                self.m_cameraPublisher.publish(bridge.cv2_to_compressed_imgmsg(frame))
+                self.cameraPublisher.publish(bridge.cv2_to_compressed_imgmsg(frame))
                 time.sleep(1.0 / self.config.getInt(REFRESH_RATE))
 
 

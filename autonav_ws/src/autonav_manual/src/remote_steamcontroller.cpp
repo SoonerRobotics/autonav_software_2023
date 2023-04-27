@@ -64,11 +64,6 @@ public:
 		{
 			setDeviceState(SCR::DeviceState::READY);
 		}
-
-		if (updated.state == SCR::SystemState::AUTONOMOUS && getDeviceState() == SCR::DeviceState::OPERATING)
-		{
-			setDeviceState(SCR::DeviceState::READY);
-		}
 	}
 
 	void onSpeedReceived(const std_msgs::msg::Float32::SharedPtr msg)

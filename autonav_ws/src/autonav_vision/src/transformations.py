@@ -9,7 +9,6 @@ from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge
 
-from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum
 
@@ -53,13 +52,13 @@ class ImageTransformer(Node):
         self.config.setInt(REGION_OF_DISINTEREST_TL, 0)
         self.config.setInt(REGION_OF_DISINTEREST_TR, 0)
 
-        self.m_cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
-        self.m_laneMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
-        self.m_lanePreviewPublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
+        self.cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
+        self.rawMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
+        self.filteredImagePublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
 
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
-    def transition(self, _: SystemState, updated: SystemState):
+    def transition(self, old, updated):
         return
 
     def getBlur(self):
@@ -67,13 +66,13 @@ class ImageTransformer(Node):
         blur = max(1, blur)
         return (blur, blur)
 
-    def region_of_disinterest(self, img, vertices):
+    def regionOfDisinterest(self, img, vertices):
         mask = np.ones_like(img) * 255
         cv2.fillPoly(mask, vertices, 0)
         masked_image = cv2.bitwise_and(img, mask)
         return masked_image
 
-    def flatten_image(self, img):
+    def flattenImage(self, img):
         top_left = (int)(img.shape[1] * 0.26), (int)(img.shape[0])
         top_right = (int)(img.shape[1] - img.shape[1] * 0.26), (int)(img.shape[0])
         bottom_left = 0, 0
@@ -86,11 +85,11 @@ class ImageTransformer(Node):
         output = cv2.warpPerspective(img, matrix, (640, 480))
         return output
 
-    def generate_occupancy_map(self, img):
+    def publishOccupancyMap(self, img):
         datamap = cv2.resize(img, dsize=(MAP_RES, MAP_RES), interpolation=cv2.INTER_LINEAR) / 2
         flat = list(datamap.flatten().astype(int))
         msg = OccupancyGrid(info=g_mapData, data=flat)
-        self.m_laneMapPublisher.publish(msg)
+        self.rawMapPublisher.publish(msg)
 
     def onImageReceived(self, image: CompressedImage):
         # Decompressify
@@ -123,20 +122,20 @@ class ImageTransformer(Node):
             (width / 2, height / 2 + 120),
             (width, height)
         ]
-        mask = self.region_of_disinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
+        mask = self.regionOfDisinterest(mask, np.array([region_of_disinterest_vertices], np.int32))
         mask[mask < 250] = 0
 
-        mask = self.flatten_image(mask)
+        mask = self.flattenImage(mask)
 
         preview_image = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
         cv2.polylines(preview_image, np.array([region_of_disinterest_vertices], np.int32), True, (0, 255, 0), 2)
         preview_msg = g_bridge.cv2_to_compressed_imgmsg(preview_image)
         preview_msg.header = image.header
         preview_msg.format = "jpeg"
-        self.m_lanePreviewPublisher.publish(preview_msg)
+        self.filteredImagePublisher.publish(preview_msg)
 
         # Actually generate the map
-        self.generate_occupancy_map(mask)
+        self.publishOccupancyMap(mask)
 
 
 def main():

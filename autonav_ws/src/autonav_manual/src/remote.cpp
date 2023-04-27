@@ -41,11 +41,6 @@ public:
 		{
 			setDeviceState(SCR::DeviceState::READY);
 		}
-
-		if (updated.state == SCR::SystemState::AUTONOMOUS && getDeviceState() == SCR::DeviceState::OPERATING)
-		{
-			setDeviceState(SCR::DeviceState::READY);
-		}
 	}
 
 private:

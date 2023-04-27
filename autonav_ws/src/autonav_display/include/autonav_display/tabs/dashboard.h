@@ -8,6 +8,23 @@
 #include "scr_core/node.h"
 #include "imgui.h"
 
+ImVec4 toStateColor(const SCR::DeviceState &state)
+{
+    switch (state)
+    {
+        case SCR::DeviceState::OFF:
+            return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        case SCR::DeviceState::STANDBY:
+            return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+        case SCR::DeviceState::READY:
+            return ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+        case SCR::DeviceState::OPERATING:
+            return ImVec4(0.0f, 1.0f, 1.0f, 1.0f);
+        default:
+            return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+    }
+}
+
 void ShowStates(SCR::Node *node)
 {
     ImGui::SeparatorText("States");
@@ -30,7 +47,7 @@ void ShowStates(SCR::Node *node)
         }
 
         auto deviceState = node->getDeviceState(*it);
-        ImGui::Text("%s: %s", it->c_str(), toString(deviceState).c_str());
+        ImGui::TextColored(toStateColor(deviceState), "%s: %s", it->c_str(), toString(deviceState).c_str());
     }
 }
 

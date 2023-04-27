@@ -14,6 +14,27 @@ void ShowDebug(SCR::Node *node)
         node->setMobility(!node->getSystemState().mobility);
     }
 
+    // Create a dropdown for the different system states
+    static int systemStateIndex = 0;
+    const char *systemStates[] = {"Disabled", "Autonomous", "Manual", "Shutdown"};
+    if (ImGui::BeginCombo("System State", systemStates[systemStateIndex]))
+    {
+        for (int i = 0; i < IM_ARRAYSIZE(systemStates); i++)
+        {
+            bool isSelected = (systemStateIndex == i);
+            if (ImGui::Selectable(systemStates[i], isSelected))
+            {
+                systemStateIndex = i;
+                node->setSystemState(static_cast<SCR::SystemState>(i));
+            }
+            if (isSelected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
     ImGui::Text("Wants Keyboard Input: %s", ImGui::GetIO().WantCaptureKeyboard ? "true" : "false");
     ImGui::Text("Wants Mouse Input: %s", ImGui::GetIO().WantCaptureMouse ? "true" : "false");
     ImGui::Text("Wants Set Mouse Pos: %s", ImGui::GetIO().WantSetMousePos ? "true" : "false");

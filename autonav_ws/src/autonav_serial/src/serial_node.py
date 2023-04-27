@@ -28,33 +28,30 @@ class SerialMotors(Node):
         self.setpointForwardVel = 0.0
         self.currentAngularVel = 0.0
         self.setpointAngularVel = 0.0
-        self.m_can = None
+        self.can = None
         self.lastMotorInput = None
-        self.start = self.getTimeMs()
+        self.start = self.getClockMs()
 
     def configure(self):
-        self.m_motorSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.on_motor_input, 20)
-        self.m_feedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 20)
-        self.m_objectPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 20)
-        self.m_debugPublisher = self.create_publisher(MotorControllerDebug, "/autonav/MotorControllerDebug", 20)
-        self.m_canTimer = self.create_timer(0.5, self.canWorker)
-        self.m_canReadThread = threading.Thread(target=self.canThreadWorker)
-        self.m_canReadThread.daemon = True
-        self.m_canReadThread.start()
+        self.motorInputSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.onMotorInputReceived, 20)
+        self.motorFeedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 20)
+        self.objectDetectionPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 20)
+        self.motorDebugPublisher = self.create_publisher(MotorControllerDebug, "/autonav/MotorControllerDebug", 20)
+        self.canTimer = self.create_timer(0.5, self.canWorker)
+        self.canReadThread = threading.Thread(target=self.canThreadWorker)
+        self.canReadThread.daemon = True
+        self.canReadThread.start()
 
-    def transition(self, old, neww):
-        pass
-
-    def getTimeMs(self):
-        return self.get_clock().now().nanoseconds / 1000000
+    def transition(self, old, updated):
+        return
 
     def canThreadWorker(self):
         while rclpy.ok():
             if self.getDeviceState() != DeviceStateEnum.READY and self.getDeviceState() != DeviceStateEnum.OPERATING:
                 continue
-            if self.m_can is not None:
+            if self.can is not None:
                 try:
-                    msg = self.m_can.recv(timeout=1)
+                    msg = self.can.recv(timeout=1)
                     if msg is not None:
                         self.onCanMessageReceived(msg)
                 except can.CanError:
@@ -68,7 +65,7 @@ class SerialMotors(Node):
             feedback.delta_theta = deltaTheta / 10000.0
             feedback.delta_y = deltaY / 10000.0
             feedback.delta_x = deltaX / 10000.0
-            self.m_feedbackPublisher.publish(feedback)
+            self.motorFeedbackPublisher.publish(feedback)
 
         if arb_id == ESTOP_ID:
             self.setEStop(True)
@@ -85,12 +82,16 @@ class SerialMotors(Node):
             self.setpointForwardVel = setpointForwardVel / 1000.0
             self.currentAngularVel = currentAngularVel / 1000.0
             self.setpointAngularVel = setpointAngularVel / 1000.0
-            self.log(f"50,{self.getTimeMs() - self.start},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
+
+            # Log the CAN_50 message
+            self.log(f"50,{self.getClockMs() - self.start},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
 
         if arb_id == CAN_51:
             leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
             leftMotorOutput /= 1000.0
             rightMotorOutput /= 1000.0
+
+            # Create a MotorControllerDebug message and publish it
             pkg = MotorControllerDebug()
             pkg.current_forward_velocity = self.currentForwardVel
             pkg.forward_velocity_setpoint = self.setpointForwardVel
@@ -98,28 +99,30 @@ class SerialMotors(Node):
             pkg.angular_velocity_setpoint = self.setpointAngularVel
             pkg.left_motor_output = leftMotorOutput
             pkg.right_motor_output = rightMotorOutput
-            pkg.timestamp = (self.getTimeMs() - self.start) * 1.0
-            self.log(f"51,{self.getTimeMs() - self.start},{leftMotorOutput},{rightMotorOutput}")
-            self.m_debugPublisher.publish(pkg)
+            pkg.timestamp = (self.getClockMs() - self.start) * 1.0
+            self.motorDebugPublisher.publish(pkg)
+
+            # Log the CAN_51 message
+            self.log(f"51,{self.getClockMs() - self.start},{leftMotorOutput},{rightMotorOutput}")
 
     def canWorker(self):
         try:
             with open("/dev/autonav-can-835", "r") as f:
                 pass
 
-            if self.m_can is not None:
+            if self.can is not None:
                 return
 
-            self.m_can = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
+            self.can = can.ThreadSafeBus(bustype="slcan", channel="/dev/autonav-can-835", bitrate=100000)
             self.setDeviceState(DeviceStateEnum.OPERATING)
         except:
-            if self.m_can is not None:
-                self.m_can = None
+            if self.can is not None:
+                self.can = None
 
             if self.getDeviceState() != DeviceStateEnum.STANDBY:
                 self.setDeviceState(DeviceStateEnum.STANDBY)
 
-    def on_motor_input(self, input: MotorInput):
+    def onMotorInputReceived(self, input: MotorInput):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
             return
 
@@ -127,9 +130,9 @@ class SerialMotors(Node):
         can_msg = can.Message(arbitration_id=MOTOR_CONTROL_ID, data=packed_data)
 
         try:
-            self.m_can.send(can_msg)
+            self.can.send(can_msg)
         except can.CanError:
-            print("Failed to send motor message :(")
+            self.log("Failed to send MotrInput CAN message")
 
 
 def main():

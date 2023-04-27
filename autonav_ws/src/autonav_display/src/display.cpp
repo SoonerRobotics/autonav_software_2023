@@ -40,9 +40,7 @@ public:
 		this->declare_parameter("fullscreen", false);
 
 		setDeviceState(SCR::DeviceState::OPERATING);
-
-		// Create render thread
-		render_thread = std::thread([this]() { render(); });
+		renderThread = std::thread([this]() { render(); });
 	}
 
 	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
@@ -193,7 +191,7 @@ public:
 	}
 
 private:
-	std::thread render_thread;
+	std::thread renderThread;
 
 	float font_size = 20.0f;
 };

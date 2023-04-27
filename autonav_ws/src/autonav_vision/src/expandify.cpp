@@ -4,10 +4,6 @@
 #include "nav_msgs/msg/map_meta_data.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 
-#include "cv_bridge/cv_bridge.h"
-#include <image_transport/image_transport.hpp>
-#include "opencv4/opencv2/opencv.hpp"
-
 namespace ExpandifyConstants
 {
 	const float VERTICAL_FOV = 2.75;
@@ -55,16 +51,32 @@ public:
 			}
 		}
 
-		mapSubscriber = this->create_subscription<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/raw", 10, std::bind(&Expandify::onConfigSpaceReceived, this, std::placeholders::_1));
-		mapPublisher = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/expanded", 10);
-		imagePublisher = this->create_publisher<sensor_msgs::msg::CompressedImage>("/autonav/cfg_space/expanded/image", 10);
+		rawMapSubscriber = create_subscription<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/raw", 10, std::bind(&Expandify::onConfigSpaceReceived, this, std::placeholders::_1));
+		expandedMapPublisher = create_publisher<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/expanded", 10);
 
 		setDeviceState(SCR::DeviceState::OPERATING);
 	}
 
+	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
+	{
+		if (updated.state == SCR::SystemState::AUTONOMOUS && getDeviceState() == SCR::DeviceState::READY)
+		{
+			setDeviceState(SCR::DeviceState::OPERATING);
+		}
+
+		if (updated.state != SCR::SystemState::AUTONOMOUS && getDeviceState() == SCR::DeviceState::OPERATING)
+		{
+			setDeviceState(SCR::DeviceState::READY);
+		}
+	}
+
 	void onConfigSpaceReceived(const nav_msgs::msg::OccupancyGrid::SharedPtr cfg)
 	{
-		// Create a 80 * 80 1d int array
+		if (getDeviceState() != SCR::DeviceState::OPERATING || getSystemState().state != SCR::SystemState::AUTONOMOUS)
+		{
+			return;
+		}
+
 		std::vector<int8_t> data = std::vector<int8_t>(ExpandifyConstants::MAP_RES * ExpandifyConstants::MAP_RES);
 		std::fill(data.begin(), data.end(), 0);
 
@@ -100,43 +112,12 @@ public:
 		auto newSpace = nav_msgs::msg::OccupancyGrid();
 		newSpace.info = map;
 		newSpace.data = data;
-		mapPublisher->publish(newSpace);
-
-		// Remap data from 0 to 255
-		// for (int i = 0; i < data.size(); i++)
-		// {
-		// 	if (data.at(i) == 0)
-		// 	{
-		// 		data.at(i) = 0;
-		// 	} else if (data.at(i) == 100)
-		// 	{
-		// 		data.at(i) = 255;
-		// 	} else
-		// 	{
-		// 		data.at(i) = 255 - data.at(i);
-		// 	}
-		// }
-
-		// Generate cv image and publish compreseed image
-		// cv::Mat image = cv::Mat(80, 80, CV_8UC1, data.data());
-		// cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
-
-		// cv::circle(image, cv::Point(40, 78), 2, cv::Scalar(255, 0, 0), 2);
-
-		// // Increase image isze
-		// cv::resize(image, image, cv::Size(800, 800), 0, 0, cv::INTER_NEAREST);
-
-		// auto cmpr = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", image).toCompressedImageMsg();
-		// cmpr->header.stamp = this->now();
-		// cmpr->header.frame_id = "autonav_vision_expandifier";
-		// cmpr->format = "jpeg";
-		// imagePublisher->publish(*cmpr);
+		expandedMapPublisher->publish(newSpace);
 	}
 
 private:
-	rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr mapSubscriber;
-	rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mapPublisher;
-	rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr imagePublisher;
+	rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr rawMapSubscriber;
+	rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr expandedMapPublisher;
 
 	nav_msgs::msg::MapMetaData map;
 	

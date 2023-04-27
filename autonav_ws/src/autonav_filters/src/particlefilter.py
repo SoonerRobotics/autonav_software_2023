@@ -21,9 +21,7 @@ class ParticleFilter:
         self.odomNoise = [0.05, 0.05, 0.1]
 
         self.resetParticles()
-
         self.firstGps = None
-        plt.ion()
 
     def resetParticles(self):
         self.particles = [Particle(0, 0, i / self.numParticles * 2 * math.pi) for i in range(self.numParticles)]
@@ -62,8 +60,7 @@ class ParticleFilter:
             self.resetParticles()
             return
 
-        new_particles = random.choices(self.particles, weights=[
-                                       particle.weight / weight_sum for particle in self.particles], k=self.numParticles)
+        new_particles = random.choices(self.particles, weights=[particle.weight / weight_sum for particle in self.particles], k=self.numParticles)
         self.particles = []
 
         for particle in new_particles:
@@ -76,22 +73,3 @@ class ParticleFilter:
 
     def estimate(self):
         pass
-
-    def visualize_particles(self):
-        if not self.node.config.readBool(1) and plt.fignum_exists(1):
-            plt.close(1)
-            return
-
-        if not self.node.config.readBool(1):
-            return
-
-        plt.figure(1)
-        plt.clf()
-
-        # Draw all particles
-        for point in self.particles:
-            plt.quiver(point.x, point.y, math.cos(point.theta), math.sin(
-                point.theta), color='b', scale=10 / point.weight, scale_units='width')
-
-        plt.draw()
-        plt.pause(0.00000001)
