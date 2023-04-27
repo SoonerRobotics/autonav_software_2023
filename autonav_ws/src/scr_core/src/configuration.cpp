@@ -40,7 +40,14 @@ namespace SCR
 	void Configuration::loadLocalPresets()
 	{
 		// Load all presets from the local configuration directory into the presets vector, removing the file extension
-		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration";
+		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/";
+
+		if (!std::filesystem::exists(path))
+		{
+			RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Creating configuration directory: %s", path.c_str());
+			std::filesystem::create_directories(path);
+		}
+
 		for (const auto &entry : std::filesystem::directory_iterator(path))
 		{
 			std::string preset = entry.path().filename().string();
@@ -67,7 +74,7 @@ namespace SCR
 
 	void Configuration::deleteAllPresets()
 	{
-		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration";
+		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/";
 		std::filesystem::remove_all(path);
 		presets.clear();
 		load("default");
@@ -75,9 +82,8 @@ namespace SCR
 
 	void Configuration::save(const std::string& preset)
 	{
-		std::string configPath = "/home/" + std::string(getenv("USER")) + "/.scr/configuration";
-		std::string path = configPath + "/" + preset + ".csv";
-		std::ofstream file(path);
+		std::string configPath = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/";
+		std::string path = configPath + preset + ".csv";
 
 		RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Saving configuration file: %s", path.c_str());
 
@@ -87,15 +93,20 @@ namespace SCR
 			std::filesystem::create_directories(configPath);
 		}
 
+		std::ofstream file(path);
 		for (auto device : cache)
 		{
 			for (auto address : device.second)
 			{
 				file << device.first << "," << (int)address.first << ",";
+				std::string byteStr = "";
 				for (auto byte : address.second)
 				{
-					file << (int)byte << ":";
+					byteStr += std::to_string(byte) + ":";
 				}
+
+				byteStr = byteStr.substr(0, byteStr.size() - 1);
+				file << byteStr;
 				file << std::endl;
 			}
 		}
@@ -126,6 +137,13 @@ namespace SCR
 				return;
 			}	
 		}
+
+		if (loading)
+		{
+			return;
+		}
+
+		loading = true;
 
 		RCUTILS_LOG_INFO("Loading configuration file: %s", path.c_str());
 		std::ifstream file(path);
@@ -161,6 +179,9 @@ namespace SCR
 
 		this->preset = preset;
 		file.close();
+
+		loading = false;
+		RCUTILS_LOG_INFO("Loaded configuration file: %s", path.c_str());
 	}
 
 	std::vector<std::string> Configuration::getPresets()
@@ -304,10 +325,7 @@ namespace SCR
 	{
 		cache.clear();
 
-		scr_msgs::msg::ConfigurationInstruction instruction;
-		instruction.device = id;
-		instruction.opcode = Opcode::GET_ALL;
-		configPublisher->publish(instruction);
+		// For each device on the network, send a GET_ALL request
 	}
 
 	std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> Configuration::getCache()
@@ -350,16 +368,15 @@ namespace SCR
 			cache[instruction->device][instruction->address] = instruction->data;
 		}
 
-		if (instruction->opcode == Opcode::GET_ALL && !amTarget)
+		if (instruction->opcode == Opcode::GET_ALL && amTarget)
 		{
-			auto registers = cache[this->id];
-			for (auto &[address, bits] : registers)
+			for (auto const& [address, bytes] : cache[instruction->device])
 			{
 				scr_msgs::msg::ConfigurationInstruction response;
 				response.device = instruction->device;
 				response.opcode = Opcode::GET_ACK;
 				response.address = address;
-				response.data = bits;
+				response.data = bytes;
 				configPublisher->publish(response);
 			}
 		}

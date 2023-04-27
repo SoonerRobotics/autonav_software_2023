@@ -173,11 +173,10 @@ void ShowVisionConfig(SCR::Configuration *config)
     if (config->hasDevice(hash))
     {
         ImGui::SeparatorText("Manual Control (Steam)");
-        ShowIntOption(config, "Timeout Delay", hash, 0, 100, 60000);
         ShowFloatOption(config, "Steering Deadzone", hash, 1, 0, 1);
         ShowFloatOption(config, "Throttle Deadzone", hash, 2, 0, 1);
-        ShowFloatOption(config, "Max Speed (m/s)", hash, 3, 0, 5);
-        ShowFloatOption(config, "Max Turn Rate (rad/s)", hash, 4, 0, 5);
+        ShowFloatOption(config, "Forward Speed (m/s)", hash, 3, 0, 5);
+        ShowFloatOption(config, "Turn Speed (rad/s)", hash, 4, 0, 5);
     }
 }
 
@@ -185,7 +184,8 @@ void ShowConfiguration(SCR::Node *node)
 {
     if(!node->config.hasLoadedPreset())
     {
-        // node->config.load("default");
+        node->config.load("default");
+        return;
     }
 
     ShowVisionConfig(&node->config);

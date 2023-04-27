@@ -33,8 +33,7 @@ class Configuration:
     def setIntTo(self, device, address, value: int):
         if device not in self.cache:
             self.cache[device] = {}
-        self.cache[device][address] = value.to_bytes(
-            4, byteorder='big', signed=True)
+        self.cache[device][address] = value.to_bytes(4, byteorder='big', signed=True)
         instruction = ConfigurationInstruction()
         instruction.device = device
         instruction.opcode = SET_ACK
@@ -85,13 +84,11 @@ class Configuration:
     def recache(self):
         self.cache = {}
 
-        instruction = ConfigurationInstruction()
-        instruction.device = self.id
-        instruction.opcode = GET_ALL
-        self.publisher.publish(instruction)
-
     def onConfigurationInstruction(self, instruction: ConfigurationInstruction):
         amTarget = instruction.device == self.id
+
+        if instruction.device not in self.cache:
+            self.cache[instruction.device] = {}
 
         if instruction.opcode == GET and amTarget:
             response = ConfigurationInstruction()
@@ -115,7 +112,7 @@ class Configuration:
                 self.cache[instruction.device] = {}
             self.cache[instruction.device][instruction.address] = instruction.data
 
-        if instruction.opcode == GET_ALL and not amTarget and self.id in self.cache:
+        if instruction.opcode == GET_ALL and amTarget and self.id in self.cache:
             for address in self.cache[self.id]:
                 response = ConfigurationInstruction()
                 response.device = self.id

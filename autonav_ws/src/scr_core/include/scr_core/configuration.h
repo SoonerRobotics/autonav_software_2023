@@ -51,6 +51,7 @@ namespace SCR
 			rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher;
             std::vector<std::string> presets;
             std::string preset;
+            bool loading = false;
 
         private:
             enum Opcode
