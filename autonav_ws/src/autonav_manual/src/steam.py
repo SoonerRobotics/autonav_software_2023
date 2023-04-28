@@ -64,16 +64,16 @@ class SteamTranslationNode(Node):
             self.startSteamController()
     
     def onButtonReleased(self, button: SteamControllerButton, msTime: float):
-        if button == SteamControllerButton.B and time > 1500:
+        if button == SteamControllerButton.B and msTime > 1500:
             self.setSystemState(SystemStateEnum.SHUTDOWN)
             
-        if button == SteamControllerButton.START and time > 1500 and self.getSystemState().state != SystemStateEnum.MANUAL:
+        if button == SteamControllerButton.START and msTime > 1500 and self.getSystemState().state != SystemStateEnum.MANUAL:
             self.setSystemState(SystemStateEnum.MANUAL)
             
-        if button == SteamControllerButton.STEAM and time > 1500 and self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
+        if button == SteamControllerButton.STEAM and msTime > 1500 and self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             self.setSystemState(SystemStateEnum.AUTONOMOUS)
             
-        if button == SteamControllerButton.BACK and time > 1500 and self.getSystemState().state != SystemStateEnum.DISABLED:
+        if button == SteamControllerButton.BACK and msTime > 1500 and self.getSystemState().state != SystemStateEnum.DISABLED:
             self.setSystemState(SystemStateEnum.DISABLED)
 
     def onSteamControllerInput(self, _, sci: SteamControllerInput):
