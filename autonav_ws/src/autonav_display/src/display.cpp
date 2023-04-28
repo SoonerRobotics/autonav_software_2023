@@ -202,7 +202,7 @@ public:
 private:
 	std::thread renderThread;
 
-	float font_size = 20.0f;
+	float font_size = 12.0f;
 };
 
 int main(int, char **)
