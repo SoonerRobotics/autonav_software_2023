@@ -80,9 +80,6 @@ class SteamTranslationNode(Node):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
             return
         
-        if self.areAllButtonsPressed():
-            return
-
         msg = SteamInput()
         msg.status = int(sci.status)
         msg.seq = int(sci.seq)
