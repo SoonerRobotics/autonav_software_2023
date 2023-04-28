@@ -90,10 +90,10 @@ class SteamTranslationNode(Node):
         for button in SteamControllerButton:
             msg.buttons.append(bool(sci.buttons & button))
             if self.buttons[button] == 0 and bool(sci.buttons & button):
-                self.buttons[button] = self.get_clock().now().nanoseconds()
+                self.buttons[button] = self.getClockNs()
             if self.buttons[button] > 0 and bool(sci.buttons & button) == False:
                 if self.buttons[button] != 0:
-                    self.onButtonReleased(button, (self.get_clock().now().nanoseconds() - self.buttons[button]) / 1000000)
+                    self.onButtonReleased(button, (self.getClockNs() - self.buttons[button]) / 1000000)
                 self.buttons[button] = 0
         msg.ltrig = float(sci.ltrig) / 255
         msg.rtrig = float(sci.rtrig) / 255

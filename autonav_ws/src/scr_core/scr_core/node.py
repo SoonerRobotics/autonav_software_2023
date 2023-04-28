@@ -105,12 +105,15 @@ class Node(ROSNode):
             return
 
         self.transition(old, state)
+
+    def getClockNs(self) -> int:
+        return self.get_clock().now().to_msg().nanosec
         
     def getClockMs(self) -> int:
-        return self.get_clock().now().nanoseconds / 1000000
+        return self.get_clock().now().to_msg().nanosec / 1000000
     
     def getClockSec(self) -> float:
-        return self.get_clock().now().nanoseconds / 1000000000
+        return self.get_clock().now().to_msg().nanosec / 1000000000
 
     def onDeviceState(self, state: DeviceState):
         self.deviceStates[state.device] = state.state
