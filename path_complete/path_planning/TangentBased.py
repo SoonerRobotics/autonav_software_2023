@@ -77,6 +77,7 @@ class path_planning:
 
 
     def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2):
+        number_of_points = 5
         # go clockwise or counter-clockwise depending on which theta is smaller
         points = []
         dtheta_counter_clockwise = theta2 - theta1
@@ -90,12 +91,12 @@ class path_planning:
         dtheta_clockwise = -1 * ((2 * math.pi) - dtheta_counter_clockwise)
 
         if rotation == "ccw":
-            dtheta5t = dtheta_counter_clockwise / 5
+            dtheta5t = dtheta_counter_clockwise / number_of_points
         elif rotation == "cw":
-            dtheta5t = dtheta_clockwise / 5
+            dtheta5t = dtheta_clockwise / number_of_points
 
         # this for loop draws points along the edge of the avoidance circles
-        for k in range(0, 5):
+        for k in range(0, number_of_points):
             #print(f"dtheta5t * k {dtheta5t * (k)}")
             points.append([(((obstacle[2]+ .25) * (math.cos(theta1 + (dtheta5t * (k))))) + obstacle[0]), (((obstacle[2] + .25) * math.sin(theta1+ (dtheta5t * (k)))) + obstacle[1]), 1, 0])
             #print(f"points is {points}")
