@@ -72,7 +72,7 @@ class Circumscriber(Node):
         upper = (
             255, # UPPER_HUE
             100, # UPPER_SATURATION
-            150, # UPPER_VALUE course simulator: 150
+            160, # UPPER_VALUE course simulator: 150
         )
         mask = cv.inRange(img, lower, upper)
         mask = 255 - mask
@@ -92,8 +92,7 @@ class Circumscriber(Node):
         
         # Convert mask to RGB for preview
         preview_image = mask
-        #cv.imshow("preview_image", preview_image)
-        #cv.waitKey(1000)
+        cv.imshow("preview_image", preview_image)
 
 
         start = time.time()
@@ -146,8 +145,8 @@ class Circumscriber(Node):
         self.get_logger().info(f"Time to draw circles: {end - start}")
 
         # display the image 
-        #cv.imshow("preview_image after circles", preview_image)
-        #cv.waitKey(10000)
+        cv.imshow("preview_image after circles", preview_image)
+        cv.waitKey(5000)
         cv.destroyAllWindows()
         
         # send the obstacles to the path planner

@@ -85,7 +85,7 @@ class path_planning:
 
     def point_adder(self, path, orig_path_length, starting_point, rotation, obstacle, theta1, theta2, safety_d):
         # go clockwise or counter-clockwise depending on which theta is smaller
-        number_of_points = 10
+        number_of_points = 5
         points = []
         dtheta_counter_clockwise = theta2 - theta1
         

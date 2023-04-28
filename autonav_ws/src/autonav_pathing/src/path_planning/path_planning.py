@@ -63,25 +63,32 @@ class PathPlanner(Node):
         test.setpath(self.robo_and_gps_path)
         test.setobstacles(local_obstacles)
         
-        print("chuggin in path_planning")
-        counter = 0
+        self.get_logger().info("chuggin in path_planning")
+        """counter = 0
         while(test.updated == True):
             if counter < 3:
                 test.intersections(direction)
-                #test.path_intersections()
-                #test.delete_inside()
+                test.path_intersections()
+                test.delete_inside()
                 counter = counter + 1
             else:
                 break
 
         print("done chuggin")
-        #test.path_intersections()
-        #test.delete_inside()
+        test.path_intersections()
+        test.delete_inside()"""
+
+        for i in range(1):
+            #print("intersections called")
+            test.intersections(direction)
+            test.path_intersections()
+            test.delete_inside()
 
         return test.final
 
 
     def set_path(self, local_path):
+        self.msg.path_data = []
         for local_waypoints in local_path:
             waypoint = Waypoint()
             waypoint.x, waypoint.y, waypoint.is_generated, waypoint.can_be_deleted = float(local_waypoints[0]), float(local_waypoints[1]), int(local_waypoints[2]), int(local_waypoints[3])
@@ -90,7 +97,7 @@ class PathPlanner(Node):
     def on_position_received(self, position = Position):
         self.robo_position_wp = [position.x, position.y, 0, 2]
         self.robo_position = position 
-        self.get_logger().info(f"Setting the position to {position}")
+        #self.get_logger().info(f"Setting the position to {position}")
 
     def publish_path(self):
         self.publisher.publish(self.msg)
@@ -114,7 +121,7 @@ class PathPlanner(Node):
         self.planned_path = self.path_plan(local_obstacles, direction)
         self.set_path(self.planned_path)
         self.publish_path()
-        #planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
+        planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
 
 
 def isInside(circle_x, circle_y, rad, x, y):

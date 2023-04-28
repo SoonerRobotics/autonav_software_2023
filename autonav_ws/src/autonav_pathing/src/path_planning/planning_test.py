@@ -23,7 +23,7 @@ def planning_test(wpoints, obstacles):
     
     start_time = time.time()
     
-    counter = 0
+    """counter = 0
     print("chuggin in planning test")
     while(testccw.updated == True):
         print(f"counter {counter}")
@@ -37,8 +37,9 @@ def planning_test(wpoints, obstacles):
     print("done chuggin")
 
     testccw.path_intersections()
-    testccw.delete_inside()
-    """for i in range(10):
+    testccw.delete_inside()"""
+
+    for i in range(1):
         #print("intersections called")
         testcw.intersections("cw")
         testcw.path_intersections()
@@ -46,7 +47,7 @@ def planning_test(wpoints, obstacles):
 
         testccw.intersections("ccw")
         testccw.path_intersections()
-        testccw.delete_inside()"""
+        testccw.delete_inside()
     
     execution_time = time.time() - start_time
     
@@ -104,7 +105,6 @@ def planning_test(wpoints, obstacles):
     ax2.set(xlabel='After path planning')
 
     print(f"Entire process time: {execution_time}")
-    print(f"counter {counter}")
     print(f"testccw.updated {testccw.updated}")
     plt.legend()
     plt.show()
