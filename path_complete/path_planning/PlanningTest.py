@@ -12,7 +12,7 @@ def planning_test(wpoints, obstacles):
     testccw = TangentBased.path_planning()
     testccw.setpath(wpoints)
     testccw.setobstacles(obstacles)
-
+    
     # run test.intersections until no new points are added
     
     start_time = time.time()
@@ -23,9 +23,9 @@ def planning_test(wpoints, obstacles):
         testcw.path_intersections()
         testcw.delete_inside()
 
-        testccw.intersections("ccw")
-        testccw.path_intersections()
-        testccw.delete_inside()
+        #testccw.intersections("ccw")
+        #testccw.path_intersections()
+        #testccw.delete_inside()
     
     execution_time = time.time() - start_time
     
@@ -44,8 +44,8 @@ def planning_test(wpoints, obstacles):
             obstacle_circles_2.append(plt.Circle(obstacles[i], obstacles[i][2], fill=False, zorder=2))
     fig, (ax1, ax2) = plt.subplots(1, 2)
 
-    ax1.set_ylim(-10, 10)
-    ax1.set_xlim(-10, 10)
+    ax1.set_ylim(-20, 20)
+    ax1.set_xlim(-20, 20)
 
     for i in range(len(obstacle_circles)):
         ax1.add_artist(obstacle_circles_2[i])
@@ -58,8 +58,8 @@ def planning_test(wpoints, obstacles):
     ex, why = zip(*original_path)
     print(f"original_path {original_path}")
 
-    ax1.set_ylim(-6, 6)
-    ax1.set_xlim(-6, 6)
+    ax1.set_ylim(-20, 20)
+    ax1.set_xlim(-20, 20)
 
     ax1.scatter(ex[0], why[0], label = 'Path start', color= 'Green', zorder=2)
     ax1.scatter(ex[len(ex) - 1], why[len(why) - 1], label = 'Path end', color='Red', zorder = 3)
@@ -80,8 +80,8 @@ def planning_test(wpoints, obstacles):
     #print(f"final path in PATH PLANNING TESTER {final_path}")
     x, y = zip(*final_path)
     
-    ax2.set_ylim(-6, 6)
-    ax2.set_xlim(-6, 6)
+    ax2.set_ylim(-13, 13)
+    ax2.set_xlim(-13, 13)
 
     ax2.scatter(x[0], y[0], label = 'Path start', color= 'Green', zorder=2)
     ax2.scatter(x[len(x) - 1], y[len(y) - 1], label = 'Path end', color='Red', zorder = 3)

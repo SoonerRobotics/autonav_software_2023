@@ -25,7 +25,7 @@ class PathPlanner(Node):
         self.planned_path = []
         self.gps_waypoints = [[0, 10, 0, 2]]
         self.normalized_theta = 0.0
-        self.min_distance = .5
+        self.min_distance = 2
 
     def reset(self):
         self.robo_and_gps_path = [self.robo_position_wp]
@@ -39,7 +39,7 @@ class PathPlanner(Node):
             self.normalized_theta = raw_theta % (-1 * 2 * math.pi)
         # these are flipped because our theta is shifted 90 degrees
         
-        dpx, dpy = self.rotate(self.robo_position_wp[0], self.robo_position_wp[1] + 2, self.robo_position_wp[0], self.robo_position_wp[1])
+        dpx, dpy = self.rotate(self.robo_position_wp[0], self.robo_position_wp[1] + 5, self.robo_position_wp[0], self.robo_position_wp[1])
         drive_point = [dpx, dpy, 1, 1]
         return drive_point
 
@@ -81,7 +81,7 @@ class PathPlanner(Node):
         for i in range(1):
             #print("intersections called")
             test.intersections(direction)
-            test.path_intersections()
+            #test.path_intersections()
             test.delete_inside()
 
         return test.final
@@ -110,9 +110,10 @@ class PathPlanner(Node):
         self.set_unplanned_path()
         for obstacle in obstacles_data:
             x = ((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0]
-            y = ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1] + self.min_distance
+            y = ((obstacle.center_y) * self.pixels_to_meters[0]) + self.robo_position_wp[1] # + self.min_distance
             x, y = self.rotate(x,y, self.robo_position_wp[0], self.robo_position_wp[1])
             rad = obstacle.radius * self.pixels_to_meters[1]
+
             #local_obstacles.append([((obstacle.center_x - (640/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[0], ((obstacle.center_y - (480/2)) * self.pixels_to_meters[0]) + self.robo_position_wp[1], obstacle.radius * self.pixels_to_meters[1]])
             if rad >= .3:
                 local_obstacles.append([x,y,rad])

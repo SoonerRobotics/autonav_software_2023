@@ -20,7 +20,7 @@ class PurePursuit(Node):
         self.path_subscription = self.create_subscription(Path, '/autonav/Path', self.accept_path, 10)
         self.position_subscription = self.create_subscription(Position, '/autonav/position', self.accept_position, 10)
         self.motor_publisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
-        self.create_timer(0.1, self.onResolve)
+        self.create_timer(3, self.onResolve)
         self.purePursuit = lookahead_finder.PurePursuit()
         self.path_subscription
         self.robo_position = [0.0, 0.0, 0.0]

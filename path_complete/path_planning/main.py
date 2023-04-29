@@ -66,10 +66,10 @@ def get_random_path_planning_simulation():
 if __name__ == "__main__":
     
     # this generates a random set of parameters for the path planner
-    path_test = get_random_path_planning_simulation()
-    path_planning_test.planning_test(path_test[0], path_test[1])
+    #path_test = get_random_path_planning_simulation()
+    #path_planning_test.planning_test(path_test[0], path_test[1])
     
     # commented out is a hardcoded test
-    #waypoints = [(1,0), (2,2), (3,3)]
-    #obstacles = [(1.5, 1.5), (5, 5)]
-    #path_planning_test.planning_test(waypoints, obstacles, .5)
+    waypoints = [(0,0, 2, 0), (0,5), (0,10, 2, 0)]
+    obstacles = [[-1.6187500000000001, 2.9875000000000003, 0.5083333333333333], [-1.6187500000000001, 2.9875000000000003, 0.5083333333333333], [1.14375, 1.7125000000000001, 0.7166666666666667], [1.14375, 1.7125000000000001, 0.7166666666666667], [0.1375, 1.25625, 0.7666666666666666], [0.1375, 1.25625, 0.7666666666666666], [-0.9187500000000001, 0.7250000000000001, 0.375], [-0.9187500000000001, 0.7250000000000001, 0.375]]
+    path_planning_test.planning_test(waypoints, obstacles)

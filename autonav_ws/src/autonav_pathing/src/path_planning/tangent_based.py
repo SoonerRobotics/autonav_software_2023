@@ -359,7 +359,7 @@ class path_planning:
                         print(f"theta2t_arg {theta2t_arg}")"""
 
                         #print("adding points from double intersection")
-                        working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg, .01)
+                        working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg, .1)
         
         if rotation == "cw":
             #print("Seeing rotation as cw")

@@ -22,6 +22,11 @@ class path_planning:
         self.path = list.copy()
         self.final = list.copy()
 
+        # additions
+        self.clockwise = list.copy()
+        self.counter_clockwise = list.copy()
+        self.final = list.copy()
+
     def setobstacles(self, list):
         self.obstacles = list
     
@@ -209,7 +214,7 @@ class path_planning:
         for deletes in for_deletion:
             if deletes in working_path:
                 if deletes[2] != 2:
-                    #print("Deleting a waypoint")
+                    #print(f"Deleting a waypoint {deletes}")
                     working_path.remove(deletes)
         
         #print(f"PATH LENGTH AFTER DELETION: {len(working_path)}")
@@ -351,7 +356,7 @@ class path_planning:
                         print(f"theta2t_arg {theta2t_arg}")"""
 
                         #print("adding points from double intersection")
-                        working_path = self.point_adder(working_path, original_path_length, i,  rotation, self.obstacles[j], theta1t_arg, theta2t_arg)
+                        working_path = self.point_adder(working_path, original_path_length, i, rotation, self.obstacles[j], theta1t_arg, theta2t_arg)
 
                     """# this part is really not working
                     # Definitely necessary for good accuracy with lots of obstacle clumps
