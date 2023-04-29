@@ -6,6 +6,7 @@ from scr_core.performance import Performance
 from rclpy.node import Node as ROSNode
 from std_msgs.msg import Empty
 from scr_core import hash
+import time
 import signal
 import os
 
@@ -107,13 +108,13 @@ class Node(ROSNode):
         self.transition(old, state)
 
     def getClockNs(self) -> int:
-        return self.get_clock().now().to_msg().nanosec
+        return time.time() * 1000000
         
     def getClockMs(self) -> int:
-        return self.get_clock().now().to_msg().nanosec / 1000000
+        return time.time() * 1000
     
     def getClockSec(self) -> float:
-        return self.get_clock().now().to_msg().nanosec / 1000000000
+        return time.time()
 
     def onDeviceState(self, state: DeviceState):
         self.deviceStates[state.device] = state.state

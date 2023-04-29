@@ -38,6 +38,10 @@ void ShowImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
         
     // Render
     ImGui::Image((void *)(intptr_t)texture, ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1));
+
+    // Cleanup
+    glDeleteTextures(1, &texture);
+    cv_ptr.reset();
 }
 
 void ShowVision(SCR::Node *node)

@@ -30,15 +30,15 @@ static void glfw_error_callback(int error, const char *description)
 class DisplayNode : public SCR::Node
 {
 public:
-	DisplayNode() : SCR::Node("autonav_display") {}
+	DisplayNode() : SCR::Node("autonav_display") {
+		this->declare_parameter("default_preset", "default");
+		this->declare_parameter("fullscreen", false);
+	}
 
 	~DisplayNode() {}
 
 	void configure() override
 	{
-		this->declare_parameter("default_preset", "default");
-		this->declare_parameter("fullscreen", false);
-
 		setDeviceState(SCR::DeviceState::OPERATING);
 		renderThread = std::thread([this]() { render(); });
 	}
@@ -62,7 +62,8 @@ public:
 
 		const char *glsl_version = "#version 130";
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | The Weeb Wagon", NULL, NULL);
+		const bool fullscreen = this->get_parameter("fullscreen").as_bool();
+		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | The Weeb Wagon", !fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
 		if (window == nullptr)
 		{
 			return false;
@@ -94,11 +95,7 @@ public:
 		ImGui_ImplOpenGL3_DestroyFontsTexture();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 
-		if (this->get_parameter("fullscreen").as_bool())
-		{
-			glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
-		}
-
+		ImGui::GetStyle().WindowRounding = 0.0f;
 		return true;
 	}
 
@@ -110,7 +107,6 @@ public:
 			return;
 		}
 
-		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		while (!glfwWindowShouldClose(window) && rclcpp::ok())
 		{
 			performance.start("Display Render");
@@ -121,9 +117,10 @@ public:
 			ImGui::NewFrame();
 
 			const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoBringToFrontOnFocus;
+			const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 			ImGui::Begin("Autonav 2023 | The Weeb Wagon", NULL, flags);
-			ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-			ImGui::SetWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Always);
+			ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Once);
+			ImGui::SetWindowSize(ImVec2(mode->width, mode->height), ImGuiCond_Once);
 
 			if (ImGui::BeginTabBar("##primarytabbar", ImGuiTabBarFlags_None))
 			{

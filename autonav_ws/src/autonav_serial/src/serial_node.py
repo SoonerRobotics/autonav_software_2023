@@ -125,17 +125,9 @@ class SerialMotors(Node):
                 self.setDeviceState(DeviceStateEnum.STANDBY)
 
     def onSafetyLightsReceived(self, lights: SafetyLights):
-        bit1 = 1 if lights.autonomous else 0
-        bit2 = 1 if lights.preset & 0b100 else 0
-        bit3 = 1 if lights.preset & 0b010 else 0
-        bit4 = 1 if lights.preset & 0b001 else 0
-        bit5 = 1 if lights.color & 0b1000 else 0
-        bit6 = 1 if lights.color & 0b0100 else 0
-        bit7 = 1 if lights.color & 0b0010 else 0
-        bit8 = 1 if lights.color & 0b0001 else 0
-
-        packed_data = struct.pack("B", (bit1 << 7) | (bit2 << 6) | (bit3 << 5) | (bit4 << 4) | (bit5 << 3) | (bit6 << 2) | (bit7 << 1) | bit8)
+        packed_data = struct.pack("hhh", 1 if lights.autonomous else 0, lights.preset, lights.color)
         can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=packed_data)
+
         try:
             self.can.send(can_msg)
         except can.CanError:
