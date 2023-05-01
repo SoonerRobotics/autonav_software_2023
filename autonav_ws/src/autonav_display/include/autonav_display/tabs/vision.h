@@ -9,8 +9,10 @@
 #include "scr_core/node.h"
 #include "imgui.h"
 
-void ShowImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
+void ShowImage(int id, const sensor_msgs::msg::CompressedImage::SharedPtr msg)
 {
+    static std::map<int, GLuint> textures;
+
     // Decompress using cv_bridge
     cv_bridge::CvImagePtr cv_ptr;
     try
@@ -28,7 +30,16 @@ void ShowImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
     auto height = mat.rows;
 
     GLuint texture;
-    glGenTextures(1, &texture);
+    if (textures.find(id) == textures.end())
+    {
+        glGenTextures(1, &texture);
+        textures[id] = texture;
+    }
+    else
+    {
+        texture = textures[id];
+    }
+    
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -38,10 +49,6 @@ void ShowImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
         
     // Render
     ImGui::Image((void *)(intptr_t)texture, ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1));
-
-    // Cleanup
-    glDeleteTextures(1, &texture);
-    cv_ptr.reset();
 }
 
 void ShowVision(SCR::Node *node)
@@ -72,16 +79,16 @@ void ShowVision(SCR::Node *node)
 
     if (rawImage != nullptr)
     {
-        ShowImage(rawImage);
+        ShowImage(0, rawImage);
     }
 
     if (filteredImage != nullptr)
     {
-        ShowImage(filteredImage);
+        ShowImage(1, filteredImage);
     }
 
     if (depthImage != nullptr)
     {
-        ShowImage(depthImage);
+        ShowImage(2, depthImage);
     }
 }
