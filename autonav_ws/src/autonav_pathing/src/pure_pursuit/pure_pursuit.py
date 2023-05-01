@@ -44,8 +44,8 @@ class PurePursuit(Node):
         path = lookahead_finder.PurePursuit()
         path.setpath(local_path)
         lookahead = None
-        radius = .7
-        while lookahead == None and radius <= 4.0:
+        radius = 1.2
+        while lookahead == None:
             lookahead = path.get_lookahead_point(local_path[0][0], local_path[0][1], radius)
         
         return lookahead
@@ -77,12 +77,12 @@ class PurePursuit(Node):
         
         cur_pos = (self.robo_position[0], self.robo_position[1])
         lookahead = None
-        radius = 0.7
+        radius = 1.2
         while lookahead is None and radius <= 4.0:
             lookahead = self.purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
             radius *= 1.2
 
-        pursuit_test.pursuit_test(cur_pos, self.local_path, radius)
+        #pursuit_test.pursuit_test(cur_pos, self.local_path, radius)
         self.get_logger().info(f"Received lookahead -> {lookahead}")
         self.get_logger().info(f"The robots position is {self.robo_position}")
         

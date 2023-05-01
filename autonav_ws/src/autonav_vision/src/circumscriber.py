@@ -42,7 +42,7 @@ class Circumscriber(Node):
         msg = Obstacles()
         for local_obstacles in local_obstacle_list:
             obstacle = Obstacle()
-            if local_obstacles[1] >= 240:
+            if local_obstacles[1] > 240:
                 obstacle.center_x, obstacle.center_y, obstacle.radius = local_obstacles[0], local_obstacles[1] - 2 * (local_obstacles[1] - 240), local_obstacles[2]
             else:
                 obstacle.center_x, obstacle.center_y, obstacle.radius = local_obstacles[0], local_obstacles[1] + 2 * (240 - local_obstacles[1]), local_obstacles[2]
@@ -105,7 +105,7 @@ class Circumscriber(Node):
         # define how many sections of the image you want to search for objects in
         # grid sizes need to be square numbers
         
-        sections = 3
+        sections = 6
         grid_sections = sections ** 2
         fractional_w = int(w // sections)
         fractional_h = int(h // sections)
@@ -146,7 +146,7 @@ class Circumscriber(Node):
 
         # display the image 
         cv.imshow("preview_image after circles", preview_image)
-        cv.waitKey(5000)
+        #cv.waitKey(5000)
         cv.destroyAllWindows()
         
         # send the obstacles to the path planner

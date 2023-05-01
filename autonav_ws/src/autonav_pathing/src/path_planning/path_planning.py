@@ -78,10 +78,10 @@ class PathPlanner(Node):
         test.path_intersections()
         test.delete_inside()"""
 
-        for i in range(1):
+        for i in range(10):
             #print("intersections called")
             test.intersections(direction)
-            #test.path_intersections()
+            test.path_intersections()
             test.delete_inside()
 
         return test.final
@@ -104,7 +104,7 @@ class PathPlanner(Node):
         self.get_logger().info(f"publishing {self.msg} as Path to /autonav/Path")
 
     def on_obstacles_received(self, Obstacles):
-        direction = "ccw" # change later based on pose
+        direction = "cw" # change later based on pose
         local_obstacles = []
         obstacles_data = Obstacles.obstacles_data
         self.set_unplanned_path()
@@ -122,7 +122,7 @@ class PathPlanner(Node):
         self.planned_path = self.path_plan(local_obstacles, direction)
         self.set_path(self.planned_path)
         self.publish_path()
-        planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
+        #planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
 
 
 def isInside(circle_x, circle_y, rad, x, y):

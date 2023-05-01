@@ -15,9 +15,9 @@ def planning_test(wpoints, obstacles):
     testcw.setpath(wpoints)
     testcw.setobstacles(obstacles)
     
-    testccw = tangent_based.path_planning()
-    testccw.setpath(wpoints)
-    testccw.setobstacles(obstacles)
+    #testccw = tangent_based.path_planning()
+    #testccw.setpath(wpoints)
+    #testccw.setobstacles(obstacles)
 
     # run test.intersections until no new points are added
     
@@ -39,15 +39,16 @@ def planning_test(wpoints, obstacles):
     testccw.path_intersections()
     testccw.delete_inside()"""
 
-    for i in range(1):
+    print(f"chuggin in planning_test")
+    for i in range(10):
         #print("intersections called")
         testcw.intersections("cw")
-        #testcw.path_intersections()
+        testcw.path_intersections()
         testcw.delete_inside()
 
-        testccw.intersections("ccw")
+        #testccw.intersections("ccw")
         #testccw.path_intersections()
-        testccw.delete_inside()
+        #testccw.delete_inside()
     
     execution_time = time.time() - start_time
     
@@ -55,7 +56,7 @@ def planning_test(wpoints, obstacles):
 
     # here
     print(f"Start test, testcw.final {testcw.final}")
-    print(f"Start test, testccw.final {testccw.final}")
+    print(f"Start test, testccw.final {testcw.final}")
     obstacle_circles = []
     obstacle_circles_2 = []
     for i in range(len(obstacles)):
@@ -72,8 +73,8 @@ def planning_test(wpoints, obstacles):
         ax2.add_patch(obstacle_circles[i])
 
     original_path = []
-    for i in range(len(testccw.path)):
-        original_path.append(testccw.path[i][0:2])
+    for i in range(len(testcw.path)):
+        original_path.append(testcw.path[i][0:2])
 
     ex, why = zip(*original_path)
     print(f"original_path {original_path}")
@@ -91,9 +92,9 @@ def planning_test(wpoints, obstacles):
     final_path = []
 
 
-    for i in range(len(testccw.final)):
+    for i in range(len(testcw.final)):
         #print(f"test.final[i] {test.final[i]}")
-        final_path.append(testccw.final[i][0:2])
+        final_path.append(testcw.final[i][0:2])
     #print(f"final path in PATH PLANNING TESTER {final_path}")
     x, y = zip(*final_path)
 
