@@ -82,7 +82,7 @@ class PurePursuit(Node):
             lookahead = self.purePursuit.get_lookahead_point(cur_pos[0], cur_pos[1], radius)
             radius *= 1.2
 
-        #pursuit_test.pursuit_test(cur_pos, self.local_path, radius)
+        pursuit_test.pursuit_test(cur_pos, self.local_path, radius)
         self.get_logger().info(f"Received lookahead -> {lookahead}")
         self.get_logger().info(f"The robots position is {self.robo_position}")
         
@@ -95,10 +95,10 @@ class PurePursuit(Node):
             return
         
         if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:  
-            angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
+            angle_diff = math.atan2(lookahead[0] - cur_pos[0], lookahead[1] - cur_pos[1])
             error = self.getAngleDifference(angle_diff, self.robo_position[2]) / math.pi
             forward_speed = 0.7 * (1 - abs(angle_diff)) ** 5
-            motor_pkt.forward_velocity = error
+            motor_pkt.forward_velocity = forward_speed
             motor_pkt.angular_velocity = clamp(error * 2.0, -1.5, 1.5)  
         else:
             if self.backCount == -1:
