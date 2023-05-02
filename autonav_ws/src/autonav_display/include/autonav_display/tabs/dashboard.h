@@ -8,6 +8,15 @@
 #include "scr_core/node.h"
 #include "imgui.h"
 
+ImVec4 fromRGBHex(std::string hex, float alpha)
+{
+    return ImVec4(
+        (float)std::stoi(hex.substr(0, 2), nullptr, 16) / 255.0f,
+        (float)std::stoi(hex.substr(2, 2), nullptr, 16) / 255.0f,
+        (float)std::stoi(hex.substr(4, 2), nullptr, 16) / 255.0f,
+        alpha);
+}
+
 ImVec4 toStateColor(const SCR::DeviceState &state)
 {
     switch (state)
@@ -15,11 +24,11 @@ ImVec4 toStateColor(const SCR::DeviceState &state)
         case SCR::DeviceState::OFF:
             return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
         case SCR::DeviceState::STANDBY:
-            return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+            return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
         case SCR::DeviceState::READY:
-            return ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+            return fromRGBHex("005C14", 1.0f);
         case SCR::DeviceState::OPERATING:
-            return ImVec4(0.0f, 1.0f, 1.0f, 1.0f);
+            return ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
         default:
             return ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
     }

@@ -1,3 +1,5 @@
+#define IMGUI_ENABLE_FREETYPE
+
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "std_msgs/msg/header.h"
@@ -6,6 +8,7 @@
 
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "imgui_freetype.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -95,6 +98,8 @@ public:
 		ImGui_ImplOpenGL3_DestroyFontsTexture();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 
+		ImGui::GetStyle().AntiAliasedFill = false;
+
 		ImGui::GetStyle().WindowRounding = 0.0f;
 		return true;
 	}
@@ -177,7 +182,9 @@ public:
 			int display_w, display_h;
 			glfwGetFramebufferSize(window, &display_w, &display_h);
 			glViewport(0, 0, display_w, display_h);
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			// generate color based on theme
+			ImVec4 clear_color = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+			glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 			glClear(GL_COLOR_BUFFER_BIT);
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			glfwSwapBuffers(window);
