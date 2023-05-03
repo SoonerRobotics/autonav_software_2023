@@ -18,17 +18,9 @@ class DeadReckoningFilter:
         self.xSum = self.xSum + feedback.delta_x * math.cos(self.thetaSum) + feedback.delta_y * math.sin(self.thetaSum)
         self.ySum = self.ySum + feedback.delta_x * math.sin(self.thetaSum) + feedback.delta_y * math.cos(self.thetaSum)
         self.thetaSum += feedback.delta_theta
-        self.estimate()
+        self.broadcastEstimate()
 
-    def updateGPS(self, msg: GPSFeedback):
-        if msg.gps_fix <= 0 and msg.is_locked == False:
-            return
-
-        self.lastLat = msg.latitude
-        self.lastLong = msg.longitude
-        self.estimate()
-
-    def estimate(self):
+    def broadcastEstimate(self):
         msg = Position()
         offset = 1
         if self.node.getSystemState().is_simulator:

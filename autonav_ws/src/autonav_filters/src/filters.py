@@ -22,11 +22,12 @@ class ParticleFilterNode(Node):
         self.reckoning = DeadReckoningFilter(self)
 
     def configure(self):
-        self.config.setInt(0, FilterType.DEAD_RECKONING)
+        self.config.setInt(0, FilterType.PARTICLE_FILTER)
 
         self.create_subscription(GPSFeedback, "/autonav/gps", self.onGPSReceived, 20)
         self.create_subscription(MotorFeedback, "/autonav/MotorFeedback", self.onMotorFeedbackReceived, 20)
         self.positionPublisher = self.create_publisher(Position, "/autonav/position", 20)
+        self.collecting = True
 
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
@@ -40,9 +41,16 @@ class ParticleFilterNode(Node):
             
         if old.state == SystemStateEnum.AUTONOMOUS and updated.state != SystemStateEnum.AUTONOMOUS:
             self.pf.resetParticles()
+            self.collecting = True
             
         if old.state != SystemStateEnum.MANUAL and updated.state == SystemStateEnum.MANUAL:
             self.onReset()
+
+        if updated.mobility:
+            self.collecting = False
+
+        if not updated.mobility:
+            self.collecting = True
 
     def onGPSReceived(self, msg: GPSFeedback):
         if msg.gps_fix == 0 and msg.is_locked == False:
@@ -50,9 +58,7 @@ class ParticleFilterNode(Node):
 
         filterType = self.config.getInt(0)
         if filterType == FilterType.PARTICLE_FILTER:
-            self.pf.updateGPS(msg)
-        elif filterType == FilterType.DEAD_RECKONING:
-            self.reckoning.updateGPS(msg)
+            self.pf.updateGPS(msg, self.collecting)
 
     def onMotorFeedbackReceived(self, msg: MotorFeedback):
         filterType = self.config.getInt(0)

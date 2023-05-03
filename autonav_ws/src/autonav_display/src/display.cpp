@@ -66,7 +66,7 @@ public:
 		const char *glsl_version = "#version 130";
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		const bool fullscreen = this->get_parameter("fullscreen").as_bool();
-		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | The Weeb Wagon", !fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
+		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | The Weeb Wagon", fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
 		if (window == nullptr)
 		{
 			return false;
@@ -87,7 +87,7 @@ public:
 		ImGuiIO &io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-		ImGui::StyleColorsDark();
+		ImGui::StyleColorsLight();
 
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init(glsl_version);
@@ -206,7 +206,7 @@ public:
 private:
 	std::thread renderThread;
 
-	float font_size = 12.0f;
+	float font_size = 32.0f;
 };
 
 int main(int, char **)
