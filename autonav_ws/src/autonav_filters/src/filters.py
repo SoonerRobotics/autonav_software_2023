@@ -22,7 +22,7 @@ class ParticleFilterNode(Node):
         self.reckoning = DeadReckoningFilter(self)
 
     def configure(self):
-        self.config.setInt(0, FilterType.PARTICLE_FILTER)
+        self.config.setInt(0, FilterType.DEAD_RECKONING)
 
         self.create_subscription(GPSFeedback, "/autonav/gps", self.onGPSReceived, 20)
         self.create_subscription(MotorFeedback, "/autonav/MotorFeedback", self.onMotorFeedbackReceived, 20)
