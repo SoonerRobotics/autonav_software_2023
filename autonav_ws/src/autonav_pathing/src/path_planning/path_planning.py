@@ -21,6 +21,7 @@ class PathPlanner(Node):
         self.position = 0
 
     def set_path(self, local_path):
+        self.msg = Path()
         for local_waypoints in local_path:
             waypoint = Waypoint()
             waypoint.x, waypoint.y, waypoint.is_generated, waypoint.can_be_deleted = float(local_waypoints[0]), float(local_waypoints[1]), int(local_waypoints[2]), int(local_waypoints[3])
@@ -42,6 +43,9 @@ class PathPlanner(Node):
         self.get_logger().info(f"I heard {local_obstacles} as the local obstacles")
         planning_test.planning_test([[0,0,0,2], [100, 0, 0, 2]], local_obstacles)
 
+    def publish_path(self):
+        self.publisher.publish(self.msg)
+        self.get_logger().info(f"publishing {self.msg} as Path to /autonav/Path")
 
 def isInside(circle_x, circle_y, rad, x, y):
     if ((x - circle_x) * (x - circle_x) +
@@ -114,11 +118,8 @@ def main(args=None):
 
     pathccw.path_intersections()
     pathccw.delete_inside()
-
     print(f"PATHCCW.FINAL {pathccw.final}")
     path_planner.set_path(pathccw.final)"""
-
-
     rclpy.spin(path_planner)
     path_planner.destroy_node
     rclpy.shutdown

@@ -1,0 +1,173 @@
+#ifndef DIFFERENTIAL_DRIVE_H
+#define DIFFERENTIAL_DRIVE_H
+
+#include "motor_with_encoder.h"
+
+class DifferentialDrive {
+
+public:
+    DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_period);
+
+    void setup();
+
+    void setOutput(float forward_velocity, float angular_velocity);
+
+    void pulseLeftEncoder();
+    void pulseRightEncoder();
+
+    void updateState(float& delta_x_out, float& delta_y_out, float& delta_theta_out);
+
+    float* getPulsesPerRadian();
+    float* getWheelRadius();
+    float* getWheelbaseLength();
+
+    float* getVelocitykP();
+    float* getVelocitykI();
+    float* getVelocitykD();
+
+    float* getAngularkP();
+    float* getAngularkI();
+    float* getAngularkD();
+
+private:
+    MotorWithEncoder left_motor_;
+    MotorWithEncoder right_motor_;
+
+    float update_period_ = 0.02f;
+    float pulses_per_radian_ = 600.0f * 20.0f / 16.8f;
+    float wheel_radius_ = 0.135f;
+    float wheelbase_length_ = 0.45f;
+
+    float forward_velocity_setpoint_;
+    float angular_velocity_setpoint_;
+
+    float computeVelocityPID_(float velocity_setpoint, float velocity_current);
+    float velocity_kP_ = 0.1;
+    float velocity_kI_ = 1.0;
+    float velocity_kD_ = 0;
+    float velocity_integrator_ = 0;
+    float velocity_previous_error_ = 0;
+
+    float computeAngularPID_(float angular_setpoint, float angular_current);
+    float angular_kP_ = 0.1;
+    float angular_kI_ = 0.4;
+    float angular_kD_ = 0;
+    float angular_integrator_ = 0;
+    float angular_previous_error_ = 0;
+
+    float pulsesToRadians_(int pulses);
+};
+
+inline DifferentialDrive::DifferentialDrive(MotorWithEncoder left_motor, MotorWithEncoder right_motor, float update_period)
+    : update_period_(update_period), left_motor_(left_motor), right_motor_(right_motor) {}
+
+inline void DifferentialDrive::setup() {
+  left_motor_.setup();
+  right_motor_.setup();
+}
+
+inline void DifferentialDrive::setOutput(float forward_velocity, float angular_velocity) {
+    forward_velocity_setpoint_ = forward_velocity;
+    angular_velocity_setpoint_ = angular_velocity;
+}
+
+inline void DifferentialDrive::pulseLeftEncoder() {
+    left_motor_.pulseEncoder();
+}
+
+inline void DifferentialDrive::pulseRightEncoder() {
+    right_motor_.pulseEncoder();
+}
+
+inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_out, float& delta_theta_out) {
+    float left_motor_angular_distance = left_motor_.getPulses() / pulses_per_radian_;
+    float right_motor_angular_distance = right_motor_.getPulses() / pulses_per_radian_;
+
+    float distance_estimate = (wheel_radius_ / 2.0f) * (right_motor_angular_distance + left_motor_angular_distance);
+    float rotation_estimate = (wheel_radius_ / wheelbase_length_) * (right_motor_angular_distance - left_motor_angular_distance);
+
+    float velocity_estimate = distance_estimate / update_period_;
+    float angular_estimate = rotation_estimate / update_period_;
+
+    float velocity_control = computeVelocityPID_(forward_velocity_setpoint_, velocity_estimate);
+    float angular_control = computeAngularPID_(angular_velocity_setpoint_, angular_estimate);
+
+    if (abs(forward_velocity_setpoint_) < 0.05 && abs(angular_velocity_setpoint_) < 0.05 && abs(velocity_estimate) < 0.05 && abs(angular_estimate) < 0.05) {
+      // estop fix
+      left_motor_.setOutput(0);
+      right_motor_.setOutput(0);
+      velocity_integrator_ = 0;
+      angular_integrator_ = 0;
+    } else {
+      left_motor_.setOutput(velocity_control - angular_control);
+      right_motor_.setOutput(velocity_control + angular_control);
+    }
+
+    delta_x_out += distance_estimate * cos(delta_theta_out);
+    delta_y_out += distance_estimate * sin(delta_theta_out);
+    delta_theta_out += rotation_estimate;
+}
+
+inline float DifferentialDrive::pulsesToRadians_(int pulses) {
+    return (int)(pulses);
+}
+
+inline float DifferentialDrive::computeVelocityPID_(float velocity_setpoint, float velocity_current) {
+    float velocity_error = velocity_setpoint - velocity_current;
+
+    velocity_integrator_ += velocity_error * update_period_;
+    float velocity_derivative = (velocity_error - velocity_previous_error_) / update_period_;
+
+    velocity_previous_error_ = velocity_error;
+
+    return velocity_kP_ * velocity_error + velocity_kI_ * velocity_integrator_ + velocity_kD_ * velocity_derivative;
+}
+
+inline float DifferentialDrive::computeAngularPID_(float angular_setpoint, float angular_current) {
+    float angular_error = angular_setpoint - angular_current;
+
+    angular_integrator_ += angular_error * update_period_;
+    float angular_derivative = (angular_error - angular_previous_error_) / update_period_;
+
+    angular_previous_error_ = angular_error;
+
+    return angular_kP_ * angular_error + angular_kI_ * angular_integrator_ + angular_kD_ * angular_derivative;
+}
+
+inline float* DifferentialDrive::getPulsesPerRadian() {
+    return &pulses_per_radian_;
+}
+
+inline float* DifferentialDrive::getWheelRadius() {
+    return &wheel_radius_;
+}
+
+inline float* DifferentialDrive::getWheelbaseLength() {
+    return &wheelbase_length_;
+}
+
+inline float* DifferentialDrive::getVelocitykP() {
+    return &velocity_kP_;
+}
+
+inline float* DifferentialDrive::getVelocitykI() {
+    return &velocity_kI_;
+}
+
+inline float* DifferentialDrive::getVelocitykD() {
+    return &velocity_kD_;
+}
+
+inline float* DifferentialDrive::getAngularkP() {
+    return &angular_kP_;
+}
+
+inline float* DifferentialDrive::getAngularkI() {
+    return &angular_kI_;
+}
+
+inline float* DifferentialDrive::getAngularkD() {
+    return &angular_kD_;
+}
+
+#endif

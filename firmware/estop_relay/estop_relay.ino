@@ -8,6 +8,8 @@
 #include <SPI.h>
 #include <RHSoftwareSPI.h>
 
+#include "estop_common.h"
+
 #define RADIO_RESET 7
 #define RADIO_MISO 8
 #define RADIO_CS 9
@@ -23,11 +25,12 @@
 
 #define PICO_OUT 26
 
-#define GLOBAL_PASSWORD "CRABCAKES"
-
 RHSoftwareSPI spi;
 RH_RF95 rf95(RADIO_CS, RADIO_INT, spi);
 ACAN2515 can(CAN_CS, SPI, CAN_INT);
+
+// Parameters
+static const int receive_timeout_ms = 2000;
 
 
 const uint32_t QUARTZ = 8 * 1000 * 1000;
@@ -36,11 +39,7 @@ bool isConnected = false;
 unsigned long lastAck = 0;
 unsigned long lastHandshake = 0;
 
-struct RadioPacket {
-  unsigned char id;
-  char password[sizeof(GLOBAL_PASSWORD)];
-  char message[16];
-};
+unsigned long lastReceivedMessageMillis = 0;
 
 RadioPacket toSend;
 CANMessage frame;
@@ -101,6 +100,10 @@ void setup() {
 
 void loop() {
 
+  if (ESTOP) {
+    return;
+  }
+
   if (rf95.available()) {
 
     uint8_t buf[sizeof(RadioPacket)];
@@ -112,56 +115,50 @@ void loop() {
 
         if (strcmp(GLOBAL_PASSWORD, msg.password) == 0) {
 
-            if (msg.id == 0) {
+            lastReceivedMessageMillis = millis();
 
-              if (msg.message[0] == 1) {
+            // Signal
+            if (msg.id == MSG_SIGNAL_ID) {
+
+              if (msg.signal == ESTOP_SIGNAL) {
 
                 digitalWrite(PICO_OUT, LOW);
+                ESTOP = true;
+                digitalWrite(LED_BUILTIN, HIGH);
 
                 frame.id = 0x0;
-                const bool ok = can.tryToSend(frame);
-
-                if (ok) {
-                  Serial.println("ESTOP");
-                  ESTOP = true;
-                  digitalWrite(LED_BUILTIN, HIGH);
-                }
-
+                can.tryToSend(frame);
               }
 
-              if (msg.message[0] == 2) {
+              if (msg.signal == MOB_STOP_SIGNAL) {
                 frame.id = 0x1;
-                const bool ok = can.tryToSend(frame);
-                if (ok) {
-                  Serial.println("MOBILITY STOP");
-                }
+                can.tryToSend(frame);
               }
 
-              if (msg.message[0] == 3) {
+              if (msg.signal == MOB_START_SIGNAL) {
                 frame.id = 0x9;
-                const bool ok = can.tryToSend(frame);
-                if (ok) {
-                  Serial.println("MOBILITY START");
-                }
+                can.tryToSend(frame);
               }
 
-              toSend.id = 9;
-              lastAck = millis();
+              toSend.id = MSG_SIGNAL_REPLY_ID;
+              toSend.signal = msg.signal;
               rf95.send((uint8_t*)&toSend, sizeof(toSend));
               rf95.waitPacketSent();
 
             }
 
-            if (!isConnected && msg.id == 2) {
-              Serial.println("Handshake Ack");
+            // Handshake
+            if (!isConnected && msg.id == MSG_INIT_HANDSHAKE_ID) {
               isConnected = true;
-              lastAck = millis();
+
+              toSend.id = MSG_HANDSHAKE_REPLY_ID;
+              rf95.send((uint8_t*)&toSend, sizeof(toSend));
+              rf95.waitPacketSent();
             }
 
-            if (isConnected && msg.id == 3) {
-              Serial.println("Heartbeat");
-              toSend.id = 4;
-              lastAck = millis();
+            // Heartbeat
+            if (isConnected && msg.id == MSG_INIT_HEARTBEAT_ID) {
+              toSend.id = MSG_HEARTBEAT_REPLY_ID;
               rf95.send((uint8_t*)&toSend, sizeof(toSend));
               rf95.waitPacketSent();
             }
@@ -169,26 +166,16 @@ void loop() {
       }
   }
 
-  if (!isConnected && !ESTOP && (millis() - lastHandshake) > 400) {
-
-    lastHandshake = millis();
-    toSend.id = 1;
-    rf95.send((uint8_t*)&toSend, sizeof(toSend));
-    rf95.waitPacketSent();
-
-  }
-
-  if (isConnected && (millis() - lastAck) > 5000) {
+  // EStop if we haven't received anything in a while
+  if (isConnected && (millis() - lastReceivedMessageMillis) > receive_timeout_ms) {
 
     digitalWrite(PICO_OUT, LOW);
-    digitalWrite(LED_BUILTIN, HIGH);
-    frame.id = 0x0;
-    const bool ok = can.tryToSend(frame);
-    if (ok) {
-      Serial.println("ESTOP (5 seconds)");
-    }
-    isConnected = false;
     ESTOP = true;
-    
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    frame.id = 0x0;
+    can.tryToSend(frame);
+
+    isConnected = false;
   }
 }

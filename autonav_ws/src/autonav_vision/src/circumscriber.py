@@ -13,7 +13,6 @@ from sensor_msgs.msg import CompressedImage
 from autonav_msgs.msg import Obstacle 
 from autonav_msgs.msg import Obstacles
 
-
 bridge = CvBridge()
 
 class Register(IntEnum):
@@ -157,7 +156,6 @@ class Circumscriber(Node):
         
         # send the obstacles to the path planner
         self.publish_obstacles(obstacles)
-
         preview_msg = bridge.cv2_to_compressed_imgmsg(preview_image)
         preview_msg.header = image.header
         preview_msg.format = "jpeg"
