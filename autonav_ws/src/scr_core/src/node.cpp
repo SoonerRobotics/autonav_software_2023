@@ -21,8 +21,10 @@ namespace SCR
 
 		// Configuration
 		auto configurationSubscriber = this->create_subscription<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20, std::bind(&Configuration::onConfigurationInstruction, &config, std::placeholders::_1));
+		auto configurationLoadSubscriber = this->create_subscription<std_msgs::msg::String>("/scr/configuration/preset", 20, std::bind(&Configuration::onPresetChanged, &config, std::placeholders::_1));
 		auto configurationPublisher = this->create_publisher<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20);
-		config = Configuration(id, configurationSubscriber, configurationPublisher);
+		auto configurationLoadPublisher = this->create_publisher<std_msgs::msg::String>("/scr/configuration/load", 20);
+		config = Configuration(id, configurationSubscriber, configurationPublisher, configurationLoadSubscriber, configurationLoadPublisher);
 
 		// Performance
 		auto performancePublisher = this->create_publisher<scr_msgs::msg::PerformanceResult>("/scr/performance", 20);
@@ -116,7 +118,9 @@ namespace SCR
 
 	void Node::onDeviceState(const scr_msgs::msg::DeviceState::SharedPtr msg)
 	{
+		bool isNew = deviceStates.find(msg->device) == deviceStates.end();
 		deviceStates[msg->device] = static_cast<DeviceState>(msg->state);
+		onDeviceStateUpdated(msg, isNew && msg->state != SCR::DeviceState::OFF);
 		if (msg->device != getDeviceID())
 		{
 			return;
@@ -135,6 +139,10 @@ namespace SCR
 		UNUSED(old);
 		UNUSED(updated);
 		throw std::runtime_error("Transition function not overridden");
+	}
+	
+	void Node::onDeviceStateUpdated(scr_msgs::msg::DeviceState::SharedPtr msg, bool isNew)
+	{
 	}
 
 	scr_msgs::msg::SystemState Node::getSystemState()
