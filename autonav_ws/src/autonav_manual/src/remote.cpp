@@ -2,7 +2,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
-#include "autonav_libs/common.h"
+#include "scr_core/node.h"
 
 #define MAX_SPEED 1.4
 
@@ -17,19 +17,34 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-class LoggingNode : public Autonav::ROS::AutoNode
+class JoyXboxNode : public SCR::Node
 {
 public:
-	LoggingNode() : AutoNode("autonav_manual_xbox") {}
+	JoyXboxNode() : SCR::Node("autonav_manual_xbox") {}
 
-	void setup() override
+	void configure() override
 	{
-		m_steamSubscription = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 10, std::bind(&LoggingNode::on_joy_received, this, _1));
-		m_motorPublisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
+		steamSubscription = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 10, std::bind(&JoyXboxNode::onJoyReceived, this, _1));
+		motorPublisher = this->create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 10);
+
+		setDeviceState(SCR::DeviceState::READY);
+	}
+
+	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
+	{
+		if (updated.state == SCR::SystemState::MANUAL && getDeviceState() == SCR::DeviceState::READY)
+		{
+			setDeviceState(SCR::DeviceState::OPERATING);
+		}
+
+		if (updated.state != SCR::SystemState::MANUAL && getDeviceState() == SCR::DeviceState::OPERATING)
+		{
+			setDeviceState(SCR::DeviceState::READY);
+		}
 	}
 
 private:
-	void on_joy_received(const sensor_msgs::msg::Joy &msg) const
+	void onJoyReceived(const sensor_msgs::msg::Joy &msg) const
 	{
 		float throttle = 0;
 		float steering = 0;
@@ -47,19 +62,19 @@ private:
 		}
 
 
-		package.left_motor = clamp(throttle - steering * 0.6, -MAX_SPEED, MAX_SPEED);
-		package.right_motor = clamp(throttle + steering * 0.6, -MAX_SPEED, MAX_SPEED);
-		m_motorPublisher->publish(package);
+		package.forward_velocity = throttle;
+		package.angular_velocity = steering;
+		motorPublisher->publish(package);
 	}
 
-	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr m_motorPublisher;
-	rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr m_steamSubscription;
+	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr motorPublisher;
+	rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr steamSubscription;
 };
 
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<LoggingNode>());
+	rclcpp::spin(std::make_shared<JoyXboxNode>());
 	rclcpp::shutdown();
 	return 0;
 }

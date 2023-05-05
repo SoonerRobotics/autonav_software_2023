@@ -3,11 +3,11 @@ Description=Autonav 2023 Service
 
 [Service]
 Type=simple
-User=autonav
+User=scr
 Restart=always
 RestartSec=5s
 Environment="DISPLAY=:0"
-Environment="XAUTHORITY=/home/autonav/.Xauthority"
+Environment="XAUTHORITY=/home/scr/.Xauthority"
 ExecStart=/bin/bash /usr/bin/autonav_service.sh
 
 [Install]

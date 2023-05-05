@@ -12,30 +12,24 @@ find_package(builtin_interfaces REQUIRED)
 
 # generate messages
 set(msg_files
-  "msg/Log.msg"
   "msg/MotorFeedback.msg"
   "msg/MotorInput.msg"
   "msg/IMUData.msg"
   "msg/SteamInput.msg"
-  "msg/ConBusInstruction.msg"
   "msg/GPSFeedback.msg"
-  "msg/DeviceState.msg"
-  "msg/SystemState.msg"
   "msg/Position.msg"
-  "msg/PerfResult.msg"
   "msg/GoalPoint.msg"
   "msg/Waypoint.msg"
+  "msg/ObjectDetection.msg"
   "msg/Path.msg"
-)
-
-set(srv_files
-  "srv/SetSystemState.srv"
-  "srv/SetDeviceState.srv"
+  "msg/Obstacle.msg"
+  "msg/Obstacles.msg"
+  "msg/MotorControllerDebug.msg"
+  "msg/SafetyLights.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
-  ${srv_files}
   DEPENDENCIES builtin_interfaces
 )
 

@@ -3,11 +3,15 @@
 #include "rclcpp/rclcpp.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/steam_input.hpp"
-#include "autonav_libs/common.h"
+#include "scr_core/device_state.h"
+#include "std_msgs/msg/float32.hpp"
+#include "scr_core/node.h"
 
 using std::placeholders::_1;
 
 long lastMessageTime = 0;
+float lastForwardSpeed = 0;
+float lastTurnSpeed = 0;
 
 float clamp(float value, float min, float max)
 {
@@ -20,104 +24,89 @@ float clamp(float value, float min, float max)
 
 enum Registers
 {
-	TIMEOUT_DELAY = 0,
 	STEERING_DEADZONE = 1,
 	THROTTLE_DEADZONE = 2,
-	MAX_SPEED = 3,
-	SPEED_OFFSET = 4
+	FORWARD_SPEED = 3,
+	TURN_SPEED = 4
 };
 
-class JoyNode : public Autonav::ROS::AutoNode
+class SteamJoyNode : public SCR::Node
 {
 public:
-	JoyNode() : AutoNode("autonav_manual_steamcontroller") {}
+	SteamJoyNode() : SCR::Node("autonav_manual_steamcontroller") {}
 
-	void setup() override
+	void configure() override
 	{
-		m_steamSubscription = create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&JoyNode::on_steam_received, this, _1));
-		m_motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
+		steamSubscription = create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&SteamJoyNode::onSteamDataReceived, this, _1));
+		motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 
-		config.write(Registers::TIMEOUT_DELAY, 500);
-		config.write(Registers::STEERING_DEADZONE, 0.04f);
-		config.write(Registers::THROTTLE_DEADZONE, 0.04f);
-		config.write(Registers::MAX_SPEED, 2.2f);
-		config.write(Registers::SPEED_OFFSET, 0.6f);
+		config.set(Registers::STEERING_DEADZONE, 0.04f);
+		config.set(Registers::THROTTLE_DEADZONE, 0.04f);
+		config.set(Registers::FORWARD_SPEED, 1.5f);
+		config.set(Registers::TURN_SPEED, 1.0f);
 
-		setDeviceState(Autonav::State::DeviceState::READY);
+		setDeviceState(SCR::DeviceState::READY);
 	}
 
-	void operate() override
+	void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
 	{
-		m_timer = this->create_wall_timer(std::chrono::milliseconds(1000 / 20), std::bind(&JoyNode::on_timer_elapsed, this));
-	}
-
-	void deoperate() override
-	{
-		m_timer->cancel();
-	}
-
-	void on_timer_elapsed()
-	{
-		long currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-		if (currentTime - lastMessageTime < config.read<int32_t>(Registers::TIMEOUT_DELAY) || getSystemState() != Autonav::State::SystemState::MANUAL)
+		if (updated.state == SCR::SystemState::MANUAL && getDeviceState() == SCR::DeviceState::READY)
 		{
-			return;
+			setDeviceState(SCR::DeviceState::OPERATING);
 		}
 
-		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = 0;
-		package.right_motor = 0;
-		m_motorPublisher->publish(package);
+		if (updated.state != SCR::SystemState::MANUAL && getDeviceState() == SCR::DeviceState::OPERATING)
+		{
+			setDeviceState(SCR::DeviceState::READY);
+		}
 	}
 
-	void on_steam_received(const autonav_msgs::msg::SteamInput &msg)
+	void onSpeedReceived(const std_msgs::msg::Float32::SharedPtr msg)
+	{
+		speed = msg->data;
+	}
+
+	void onSteamDataReceived(const autonav_msgs::msg::SteamInput &msg)
 	{
 		lastMessageTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-
-		if (getSystemState() != Autonav::State::SystemState::MANUAL)
+		if (getSystemState().state != SCR::SystemState::MANUAL || getDeviceState() != SCR::DeviceState::OPERATING)
 		{
 			return;
 		}
 
 		float throttle = 0;
 		float steering = 0;
-		const float deadzone = config.read<float>(Registers::THROTTLE_DEADZONE);
-		const float maxSpeed = config.read<float>(Registers::MAX_SPEED);
-		const float steeringVoid = config.read<float>(Registers::STEERING_DEADZONE);
-		const float offset = config.read<float>(Registers::SPEED_OFFSET);
+		const float throttleDeadzone = config.get<float>(Registers::THROTTLE_DEADZONE);
+		const float steeringDeadzone = config.get<float>(Registers::STEERING_DEADZONE);
 
-		if (abs(msg.rtrig) > deadzone || abs(msg.ltrig) > deadzone)
+		if (abs(msg.ltrig) > throttleDeadzone || abs(msg.rtrig) > throttleDeadzone)
 		{
-			throttle = (1 - msg.rtrig) * maxSpeed * 0.8;
-			throttle = throttle - (1 - msg.ltrig) * maxSpeed * 0.8;
+			throttle = msg.rtrig * config.get<float>(Registers::FORWARD_SPEED);
+			throttle = throttle - msg.ltrig * config.get<float>(Registers::FORWARD_SPEED);
 		}
 
-		if (abs(msg.lpad_x) > steeringVoid)
+		if (abs(msg.lpad_x) > steeringDeadzone)
 		{
-			float real = abs(msg.lpad_x) - steeringVoid;
-			if (msg.lpad_x < 0)
-			{
-				real = -real;
-			}
-
-			steering = real * maxSpeed;
+			steering = msg.lpad_x * config.get<float>(Registers::TURN_SPEED);
 		}
 
-		autonav_msgs::msg::MotorInput package = autonav_msgs::msg::MotorInput();
-		package.left_motor = clamp(-throttle + steering * offset, -maxSpeed, maxSpeed);
-		package.right_motor = clamp(-throttle - steering * offset, -maxSpeed, maxSpeed);
-		m_motorPublisher->publish(package);
+		autonav_msgs::msg::MotorInput input;
+		input.forward_velocity = clamp(throttle, -2.2f, 2.2f);
+		input.angular_velocity = clamp(steering, -3.0f, 3.0f);
+		motorPublisher->publish(input);
 	}
 
-	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr m_motorPublisher;
-	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr m_steamSubscription;
-	rclcpp::TimerBase::SharedPtr m_timer;
+	rclcpp::Publisher<autonav_msgs::msg::MotorInput>::SharedPtr motorPublisher;
+	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr steamSubscription;
+	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr speedSubscription;
+	rclcpp::TimerBase::SharedPtr heartbeatTimer;
+	float speed = 0.6f;
 };
 
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<JoyNode>());
+	rclcpp::spin(std::make_shared<SteamJoyNode>());
 	rclcpp::shutdown();
 	return 0;
 }

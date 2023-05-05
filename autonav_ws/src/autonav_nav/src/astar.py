@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 from autonav_msgs.msg import Position
-from autonav_libs import AutoNode, DeviceStateEnum
-from geometry_msgs.msg import PoseStamped, Point, Pose
+from scr_msgs.msg import SystemState
+from scr_core.node import Node
+from scr_core.state import DeviceStateEnum, SystemStateEnum
+from geometry_msgs.msg import PoseStamped, Point
 from nav_msgs.msg import OccupancyGrid, Path
 import rclpy
 import math
@@ -13,56 +15,65 @@ import time
 
 
 GRID_SIZE = 0.1
-prev_state = (0, 0)
-map_ref = (0, 0, 0)
-path_seq = 0
 cost_map = None
 best_pos = (0, 0)
 waypoints = []
-first_waypoints_time = -1
 verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
-orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
-sim_waypoints = [(35.19488, -97.43862)]
+MAP_RES = 100
+
+# orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
+orig_waypoints = []
+# sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
+sim_waypoints = []
 
 
 def get_angle_diff(to_angle, from_angle):
     delta = to_angle - from_angle
     delta = (delta + math.pi) % (2 * math.pi) - math.pi
-    
     return delta
 
 
-class AStarNode(AutoNode):
+class AStarNode(Node):
     def __init__(self):
         super().__init__("autonav_nav_astar")
 
         self.m_configSpace = None
-        self.m_position = None
+        self.position = None
 
-    def setup(self):
-        global first_waypoints_time
+    def configure(self):
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
         self.m_mapTimer = self.create_timer(0.3, self.makeMap)
-        
         self.setDeviceState(DeviceStateEnum.READY)
-        self.setDeviceState(DeviceStateEnum.OPERATING)
+        
+    def onReset(self):
+        global cost_map, best_pos, waypoints
+        self.position = None
+        self.m_configSpace = None
+        cost_map = None
+        best_pos = (0, 0)
+        waypoints = []
 
-        first_waypoints_time = time.time()
-
+    def transition(self, old: SystemState, updated: SystemState):
+        if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+            self.setDeviceState(DeviceStateEnum.OPERATING)
+            
+        if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
+            self.setDeviceState(DeviceStateEnum.READY)
+            
     def onPoseReceived(self, msg: Position):
-        self.m_position = msg
+        self.position = msg
         
     def makeMap(self):
-        global cost_map, best_pos, planner, prev_state, map_ref, path_seq
-        if self.m_position is None or cost_map is None:
+        global cost_map, best_pos, planner
+        if self.position is None or cost_map is None:
             return
         
-        robot_pos = (0, 0)
-        path = self.find_path_to_point(robot_pos, (2, 0), cost_map, 80, 80)
+        robot_pos = (MAP_RES // 2, MAP_RES - 4)
+        path = self.find_path_to_point(robot_pos, best_pos, cost_map, MAP_RES, MAP_RES)
         
         if path is not None:
             global_path = Path()
@@ -78,30 +89,26 @@ class AStarNode(AutoNode):
             current = path[current]
             total_path.append(current)
 
+        self.performance.end("A*")
         return total_path[::-1]
         
     def find_path_to_point(self, start, goal, map, width, height):
-        looked_at = np.zeros((80, 80))
-        
-
+        looked_at = np.zeros((MAP_RES, MAP_RES))
         open_set = [start]
-
         path = {}
-
         search_dirs = []
+
+        self.performance.start("A*")
 
         for x in range(-1, 2):
             for y in range(-1, 2):
                 if x == 0 and y == 0:
                     continue
-                search_dirs.append((x,y,math.sqrt(x**2+y**2)))
-
-        # print(search_dirs)
+                search_dirs.append((x,y,math.sqrt(x ** 2 + y ** 2)))
 
         def h(point):
-            return math.sqrt((goal[0] - point[0])**2 + (goal[1] - point[1])**2)
+            return math.sqrt((goal[0] - point[0]) ** 2 + (goal[1] - point[1]) ** 2)
 
-        # assumes adjacent pts
         def d(to_pt, dist):
             return dist + map[to_pt[1] * width + to_pt[0]] / 10
 
@@ -117,14 +124,6 @@ class AStarNode(AutoNode):
 
         fScore = {}
         fScore[start] = h(start)
-
-        def getF(pt):
-            if pt in fScore:
-                return fScore[pt]
-            else:
-                fScore[pt] = 1000000000
-                return 1000000000 # Infinity
-
         next_current = [(1,start)]
         while len(open_set) != 0:
             current = heappop(next_current)[1]
@@ -151,91 +150,70 @@ class AStarNode(AutoNode):
                         heappush(next_current, (fScore[neighbor], neighbor))
                     
     def onConfigSpaceReceived(self, msg: OccupancyGrid):
-        global cost_map, best_pos, planner, prev_state, map_ref, path_seq, first_waypoints_time, waypoints
-        
-        if self.m_position is None:
+        global cost_map, best_pos, planner, waypoints
+        if self.position is None or self.getDeviceState() != DeviceStateEnum.OPERATING or self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             return
 
-        grid_data = msg.data
-        # Replace grid_data with all 0's
-        grid_data = [0 for _ in grid_data]
+        self.performance.start("Smellification")
 
-        # Find the best position
-        temp_best_pos = (40, 78)
-        best_pos_cost = -1000 
+        grid_data = msg.data
+        temp_best_pos = (MAP_RES // 2, MAP_RES - 4)
+        best_pos_cost = -1000
         frontier = set()
-        frontier.add((40,78))
+        frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        if first_waypoints_time > 0 and time.time() > first_waypoints_time:
-            first_waypoints_time = -2
-            waypoints = [pt for pt in (sim_waypoints if self.m_isSimulator else orig_waypoints)]
+        # TODO: Redo the waypoint system
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
-            north_to_gps = (next_waypoint[0] - self.m_position.latitude) * 111086.2
-            west_to_gps = (self.m_position.longitude - next_waypoint[1]) * 81978.2
-            heading_to_gps = math.atan2(west_to_gps,north_to_gps) % (2 * math.pi)
+            north_to_gps = (next_waypoint[0] - self.position.latitude) * 111086.2
+            west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
+            heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
-            # print(f"heading_to_gps: {heading_to_gps*180/math.pi:0.01f}")
-
-            if north_to_gps**2 + west_to_gps**2 <= 1:
-                # mobi_start_publisher.publish(Bool(False))
+            if north_to_gps ** 2 + west_to_gps ** 2 <= 1:
                 waypoints.pop(0)
-
-        # sys.stdout.flush()
-        # best_heading_err = 0
 
         depth = 0
         while depth < 50 and len(frontier) > 0:
             curfrontier = copy.copy(frontier)
             for pos in curfrontier:
-                x = pos[0] # left to right
-                y = pos[1] # top to botom
-                # Cost at a point is sum of
-                # - Negative X value (encourage forward)
-                # - Positive Y value (discourage left/right)
-                # - Heading
-                cost = (80 - y) * 1.3 + depth * 2.2
+                x = pos[0]
+                y = pos[1]
+                cost = (MAP_RES - y) * 1.3 + depth * 2.2
 
                 if len(waypoints) > 0:
-                    heading_err_to_gps = abs(get_angle_diff(self.m_position.theta + math.atan2(40-x,80-y), heading_to_gps)) * 180 / math.pi
+                    heading_err_to_gps = abs(get_angle_diff(self.position.theta + math.atan2(MAP_RES // 2- x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
                     cost -= max(heading_err_to_gps, 10)
 
                 if cost > best_pos_cost:
                     best_pos_cost = cost
                     temp_best_pos = pos
-                    # best_heading_err = heading_err_to_gps
 
                 frontier.remove(pos)
-                explored.add(x + 80 * y)
+                explored.add(x + MAP_RES * y)
 
-                # Look left/right for good points
-                if y > 1 and grid_data[x + 80 * (y-1)] < 50 and x + 80 * (y-1) not in explored:
+                if y > 1 and grid_data[x + MAP_RES * (y-1)] < 50 and x + MAP_RES * (y-1) not in explored:
                     frontier.add((x, y-1))
 
-                # Look forward/back for good points
-                if x < 79 and grid_data[x + 1 + 80 * y] < 50 and x + 1 + 80 * y not in explored:
+                if x < 79 and grid_data[x + 1 + MAP_RES * y] < 50 and x + 1 + MAP_RES * y not in explored:
                     frontier.add((x+1, y))
-                if x > 0 and grid_data[x - 1 + 80 * y] < 50 and x - 1 + 80 * y not in explored:
+                if x > 0 and grid_data[x - 1 + MAP_RES * y] < 50 and x - 1 + MAP_RES * y not in explored:
                     frontier.add((x-1, y))
 
             depth += 1
 
-        # print(f"best_heading_err: {best_heading_err:0.01f}")
-
-        # map_reference = (curEKF.x, curEKF.y, curEKF.yaw)
-        map_reference = (0,0,0)
         cost_map = grid_data
         best_pos = temp_best_pos
-        map_init = False
+
+        self.performance.end("Smellification")
         
 def pathToGlobalPose(robot, pp0, pp1):
-    x = (80 - pp1) * verticalCameraRange / 80
-    y = (40 - pp0) * horizontalCameraRange / 80
-    dx = map_ref[0]
-    dy = map_ref[1]
-    psi = map_ref[2]
+    x = (MAP_RES - pp1) * verticalCameraRange / MAP_RES
+    y = (MAP_RES // 2 - pp0) * horizontalCameraRange / MAP_RES
+    dx = 0
+    dy = 0
+    psi = 0
     
     new_x = x * math.cos(psi) + y * math.sin(psi) + dx
     new_y = x * math.sin(psi) + y * math.cos(psi) + dy

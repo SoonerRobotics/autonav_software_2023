@@ -4,8 +4,16 @@
         <!-- <param name="coalesce_interval" value="0.05" /> -->
         <param name="deadzone" value="0.1" />
     </node>
-    <node pkg="autonav_logging" exec="logging" name="autonav_logging" />>
-    <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" />
-    <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial_core" />
-    <node pkg="autonav_manual" exec="remote" name="autonav_remote" />
+    <node pkg="scr_state" exec="statemanager" >
+        <param name="required_nodes" value="[autonav_display]" />
+    </node>
+    <node pkg="scr_logging" exec="logging" />
+    <node pkg="autonav_display" exec="primary_display" output="screen" />
+    <node pkg="autonav_serial" exec="camera.py" name="autonav_serial_camera">
+        <param name="device_id" value="2" />
+    </node>
+    <node pkg="autonav_serial" exec="imu.py" />
+    <node pkg="autonav_serial" exec="serial_node.py" />
+    <node pkg="autonav_filters" exec="filters.py" />
+    <node pkg="autonav_vision" exec="transformations.py" />
 </launch>

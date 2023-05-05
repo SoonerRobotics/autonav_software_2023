@@ -1,0 +1,7 @@
+float32 current_forward_velocity 0
+float32 forward_velocity_setpoint 0
+float32 current_angular_velocity 0
+float32 angular_velocity_setpoint 0
+float32 left_motor_output 0
+float32 right_motor_output 0
+float32 timestamp 0

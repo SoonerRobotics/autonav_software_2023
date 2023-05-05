@@ -8,10 +8,11 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(autonav_msgs REQUIRED)
-find_package(autonav_libs REQUIRED)
+find_package(scr_core REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(scr_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4 NO_DEFAULT_PATH)
@@ -52,7 +53,8 @@ ament_export_targets(export_imgui HAS_LIBRARY_TARGET)
 add_executable(primary_display src/display.cpp)
 ament_target_dependencies(primary_display
   autonav_msgs
-  autonav_libs
+  scr_msgs
+  scr_core
   rclcpp
   cv_bridge
   image_transport
@@ -76,25 +78,26 @@ install(FILES
   ${IMGUI_DIR}/backends/imgui_impl_glfw.h
   ${IMGUI_DIR}/backends/imgui_impl_opengl3.h
 
-  ${IMGUI_PLOTS_DIR}/implot.h
-  ${IMGUI_PLOTS_DIR}/implot_internal.h
-
   DESTINATION include
 )
 
 install(TARGETS imgui EXPORT export_imgui
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS primary_display
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+target_include_directories(primary_display PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 install(DIRECTORY ${IMGUI_DIR}/misc/fonts DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY fonts DESTINATION share/${PROJECT_NAME})
-
 ament_package()

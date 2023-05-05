@@ -1,0 +1,15 @@
+<launch>
+    <node pkg="scr_state" exec="statemanager" />
+    <node pkg="scr_logging" exec="logging" />
+    <node pkg="autonav_serial" exec="camera.py" name="autonav_serial_camera">
+        <param name="device_id" value="2" />
+    </node>
+    <node pkg="autonav_serial" exec="imu.py" name="autonav_serial_imu" />
+    <node pkg="autonav_serial" exec="serial_node.py" name="autonav_serial_core" />
+    <node pkg="autonav_vision" exec="transformations.py" />
+    <node pkg="autonav_vision" exec="expandify" />
+    <node pkg="autonav_filters" exec="filters.py" />
+    <node pkg="autonav_nav" exec="astar.py" />
+    <node pkg="autonav_nav" exec="path_resolver.py" />
+    <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
+</launch>

@@ -1,2 +1,0 @@
-string file
-string data
