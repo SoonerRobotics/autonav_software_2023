@@ -135,6 +135,22 @@ void ShowVisionConfig(SCR::Configuration *config)
     {
         ImGui::SeparatorText("Path Planning (A*)");
         ShowFloatOption(config, "Waypoint Pop Distance", hash, 0, 0.1f, 10.0f);
+        if (ImGui::BeginCombo("Direction", config->get<int>(hash, 1) == 0 ? "North" : config->get<int>(hash, 1) == 1 ? "South" : "Misc"))
+        {
+            if (ImGui::Selectable("North", config->get<int>(hash, 1) == 0))
+            {
+                config->set<int>(hash, 1, 0);
+            }
+            if (ImGui::Selectable("South", config->get<int>(hash, 1) == 1))
+            {
+                config->set<int>(hash, 1, 1);
+            }
+            if (ImGui::Selectable("Misc", config->get<int>(hash, 1) == 2))
+            {
+                config->set<int>(hash, 1, 2);
+            }
+            ImGui::EndCombo();
+        }
     }
 
     hash = SCR::hash("autonav_serial_camera");

@@ -23,13 +23,17 @@ horizontalCameraRange = 3
 
 MAP_RES = 80
 CONFIG_WAYPOINT_POP_DISTANCE = 0
+CONFIG_WAYPOINT_DIRECTION = 1
 
-# orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
-orig_waypoints = []
-# sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
-sim_waypoints = [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)]
-# sim_waypoints = []
+### Waypoints for navigation, the first index is northbound waypoints, the second index is southbound waypoints, a 3rd index can be added for misc waypoints
+# Practice Waypoints: (42.6682124,-83.2214582), (42.667928,-83.2214451), (42.6679601,-83.2214332) | North, Mid, South
+# AutoNav Waypoints: (42.6682697,-83.2193403),(42.6681767,-83.2193612),(42.6680772,-83.2193592),(42.6679277,-83.2193449) | North, North Ramp, South Ramp, SOuth
 
+# orig_waypoints = [[(42.6682697,-83.2193403),(42.6681767,-83.2193612),(42.6680772,-83.2193592),(42.6679277,-83.2193449)], [(42.6679277,-83.2193449),(42.6680772,-83.2193592),(42.6681767,-83.2193612),(42.6682697,-83.2193403)], [(42.6682124,-83.2214582), (42.667928,-83.2214451), (42.6679601,-83.2214332)]]
+competition_waypoints = [[], [], []]
+
+# simulation_waypoints = [[(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], []]
+simulation_waypoints = [[], [], []]
 
 def get_angle_diff(to_angle, from_angle):
     delta = to_angle - from_angle
@@ -46,6 +50,7 @@ class AStarNode(Node):
 
     def configure(self):
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
+        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
 
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
@@ -64,7 +69,8 @@ class AStarNode(Node):
     def transition(self, old: SystemState, updated: SystemState):
         global waypoints
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
-            waypoints = sim_waypoints if updated.is_simulator else orig_waypoints
+            direction_index = self.config.getInt(CONFIG_WAYPOINT_DIRECTION)
+            waypoints = simulation_waypoints[direction_index] if updated.is_simulator else competition_waypoints[direction_index]
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
