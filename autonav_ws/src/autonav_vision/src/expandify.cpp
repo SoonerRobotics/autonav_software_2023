@@ -8,8 +8,8 @@ namespace ExpandifyConstants
 {
 	const float VERTICAL_FOV = 2.75;
 	const float HORIZONTAL_FOV = 3;
-	const float MAP_RES_F = 100.0f;
-	const int MAP_RES = 100;
+	const float MAP_RES_F = 80.0f;
+	const int MAP_RES = 80;
 }
 
 struct Circle

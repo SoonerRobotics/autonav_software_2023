@@ -130,6 +130,13 @@ void ShowVisionConfig(SCR::Configuration *config)
         ShowFloatOption(config, "Radius Max", hash, 4, 0, 3);
     }
 
+    hash = SCR::hash("autonav_nav_astar");
+    if (config->hasDevice(hash))
+    {
+        ImGui::SeparatorText("Path Planning (A*)");
+        ShowFloatOption(config, "Waypoint Pop Distance", hash, 0, 0.1f, 10.0f);
+    }
+
     hash = SCR::hash("autonav_serial_camera");
     if (config->hasDevice(hash))
     {

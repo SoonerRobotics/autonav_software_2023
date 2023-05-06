@@ -21,12 +21,14 @@ waypoints = []
 verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
-MAP_RES = 100
+MAP_RES = 80
+CONFIG_WAYPOINT_POP_DISTANCE = 0
 
 # orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
 orig_waypoints = []
 # sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
-sim_waypoints = []
+sim_waypoints = [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)]
+# sim_waypoints = []
 
 
 def get_angle_diff(to_angle, from_angle):
@@ -43,6 +45,8 @@ class AStarNode(Node):
         self.position = None
 
     def configure(self):
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
+
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
@@ -58,7 +62,9 @@ class AStarNode(Node):
         waypoints = []
 
     def transition(self, old: SystemState, updated: SystemState):
+        global waypoints
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+            waypoints = sim_waypoints if updated.is_simulator else orig_waypoints
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
@@ -163,7 +169,7 @@ class AStarNode(Node):
         frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        # TODO: Redo the waypoint system
+        grid_data = [0] * len(msg.data)
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
@@ -171,7 +177,8 @@ class AStarNode(Node):
             west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
             heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
-            if north_to_gps ** 2 + west_to_gps ** 2 <= 1:
+            self.log("Heading to GPS: " + str(heading_to_gps * 180 / math.pi) + " | (" + str(north_to_gps) + ", " + str(west_to_gps) + ")")
+            if north_to_gps ** 2 + west_to_gps ** 2 <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
                 waypoints.pop(0)
 
         depth = 0
@@ -183,7 +190,7 @@ class AStarNode(Node):
                 cost = (MAP_RES - y) * 1.3 + depth * 2.2
 
                 if len(waypoints) > 0:
-                    heading_err_to_gps = abs(get_angle_diff(self.position.theta + math.atan2(MAP_RES // 2- x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
+                    heading_err_to_gps = abs(get_angle_diff(self.position.theta + math.atan2(MAP_RES // 2 - x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
                     cost -= max(heading_err_to_gps, 10)
 
                 if cost > best_pos_cost:
