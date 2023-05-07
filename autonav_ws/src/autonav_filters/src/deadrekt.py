@@ -1,4 +1,5 @@
 from autonav_msgs.msg import MotorFeedback, GPSFeedback, Position
+from scr_core.state import SystemMode
 import math
 
 class DeadReckoningFilter:
@@ -26,7 +27,7 @@ class DeadReckoningFilter:
     def broadcastEstimate(self):
         msg = Position()
         offset = 1
-        if self.node.getSystemState().is_simulator:
+        if self.node.getSystemState().mode == SystemMode.SIMULATION:
             offset = 9.84251968503937
         msg.x = self.xSum / offset
         msg.y = self.ySum / offset

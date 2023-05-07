@@ -3,7 +3,7 @@
 from autonav_msgs.msg import Position
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
-from scr_core.state import DeviceStateEnum, SystemStateEnum
+from scr_core.state import DeviceStateEnum, SystemStateEnum, SystemMode
 from geometry_msgs.msg import PoseStamped, Point
 from nav_msgs.msg import OccupancyGrid, Path
 import rclpy
@@ -21,7 +21,7 @@ verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
 MAP_RES = 80
-CONFIG_WAYPOINT_POP_DISTANCE = 0, # The distance until the waypoint has been reached
+CONFIG_WAYPOINT_POP_DISTANCE = 0 # The distance until the waypoint has been reached
 CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc
 CONFIG_WAYPOINT_ACTIVATION_DISTANCE = 2 # The distance from the robot to the next waypoint that will cause the robot to start using waypoints
 
@@ -48,8 +48,8 @@ practice_waypoints = [
 practice_waypoints = [[], [], []]
 
 simulation_waypoints = [
-    [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], 
-    [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], 
+    [(35.19490051, -97.43902588), (35.19476318, -97.43901825), (35.19472885, -97.43901825), (35.19459152, -97.43902588)], 
+    [(35.19459152, -97.43902588), (35.19472885, -97.43901825), (35.19476318, -97.43901825), (35.19490051, -97.43902588)], 
     []
 ]
 simulation_waypoints = [[], [], []]
@@ -68,14 +68,15 @@ class AStarNode(Node):
         self.position = None
 
     def configure(self):
-        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
-        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
-        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5)
-
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
         self.m_mapTimer = self.create_timer(0.3, self.makeMap)
+
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
+        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
+        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5)
+
         self.setDeviceState(DeviceStateEnum.READY)
         
     def onReset(self):
@@ -88,7 +89,7 @@ class AStarNode(Node):
 
     def getWaypointsForDirection(self):
         direction_index = self.config.getInt(CONFIG_WAYPOINT_DIRECTION)
-        return simulation_waypoints[direction_index] if self.getSystemState().is_simulator else competition_waypoints[direction_index]
+        return simulation_waypoints[direction_index] if self.getSystemState().mode == SystemMode.SIMULATION else competition_waypoints[direction_index] if self.getSystemState().mode == SystemMode.COMPETITION else practice_waypoints[direction_index]
 
     def transition(self, old: SystemState, updated: SystemState):
         global waypoints
@@ -197,15 +198,17 @@ class AStarNode(Node):
         frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        grid_data = [0] * len(msg.data)
+        # grid_data = [0] * len(msg.data)
 
         if len(waypoints) == 0:
-            wpt = self.getWaypointsForDirection()[0]
-            north_to_gps = (wpt[0] - self.position.latitude) * 111086.2
-            west_to_gps = (self.position.longitude - wpt[1]) * 81978.2
-            distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
-            if distanceToWaypoint <= self.config.getFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE):
-                waypoints = self.getWaypointsForDirection()
+            wpts = self.getWaypointsForDirection()
+            if len(wpts) > 0:
+                wpt = wpts[0]
+                north_to_gps = (wpt[0] - self.position.latitude) * 111086.2
+                west_to_gps = (self.position.longitude - wpt[1]) * 81978.2
+                distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
+                if distanceToWaypoint <= self.config.getFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE):
+                    waypoints = wpts
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
