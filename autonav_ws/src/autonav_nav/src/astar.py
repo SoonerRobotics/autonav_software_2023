@@ -87,11 +87,13 @@ class AStarNode(Node):
         best_pos = (0, 0)
         waypoints = []
 
+    def getWaypointsForDirection(self):
+        direction_index = self.config.getInt(CONFIG_WAYPOINT_DIRECTION)
+        return simulation_waypoints[direction_index] if self.getSystemState().is_simulator else competition_waypoints[direction_index]
+
     def transition(self, old: SystemState, updated: SystemState):
         global waypoints
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
-            direction_index = self.config.getInt(CONFIG_WAYPOINT_DIRECTION)
-            waypoints = simulation_waypoints[direction_index] if updated.is_simulator else competition_waypoints[direction_index]
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
@@ -197,6 +199,14 @@ class AStarNode(Node):
         explored = set()
 
         grid_data = [0] * len(msg.data)
+
+        if len(waypoints) == 0:
+            wpt = self.getWaypointsForDirection()[0]
+            north_to_gps = (wpt[0] - self.position.latitude) * 111086.2
+            west_to_gps = (self.position.longitude - wpt[1]) * 81978.2
+            distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
+            if distanceToWaypoint <= self.config.getFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE):
+                waypoints = self.getWaypointsForDirection()
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
