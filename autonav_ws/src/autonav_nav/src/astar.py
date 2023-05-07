@@ -22,17 +22,37 @@ verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
 MAP_RES = 80
-CONFIG_WAYPOINT_POP_DISTANCE = 0
-CONFIG_WAYPOINT_DIRECTION = 1
+CONFIG_WAYPOINT_POP_DISTANCE = 0, # The distance until the waypoint has been reached
+CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc
+CONFIG_WAYPOINT_ACTIVATION_DISTANCE = 2 # The distance from the robot to the next waypoint that will cause the robot to start using waypoints
 
 ### Waypoints for navigation, the first index is northbound waypoints, the second index is southbound waypoints, a 3rd index can be added for misc waypoints
-# Practice Waypoints: (42.6682124,-83.2214582), (42.667928,-83.2214451), (42.6679601,-83.2214332) | North, Mid, South
-# AutoNav Waypoints: (42.6682697,-83.2193403),(42.6681767,-83.2193612),(42.6680772,-83.2193592),(42.6679277,-83.2193449) | North, North Ramp, South Ramp, SOuth
+# Practice Waypoints: (42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556) | North, Mid, South
+# AutoNav Waypoints: (42.6682697222,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417) | North, North Ramp, South Ramp, South
+## The distance from north to north ramp is about 16.6 meters
+## The ramp is about 5m
+## The distance from south ramp to south is about 16.76 meters
+## The total distance from north to south is about 38.045 meters
 
-# orig_waypoints = [[(42.6682697,-83.2193403),(42.6681767,-83.2193612),(42.6680772,-83.2193592),(42.6679277,-83.2193449)], [(42.6679277,-83.2193449),(42.6680772,-83.2193592),(42.6681767,-83.2193612),(42.6682697,-83.2193403)], [(42.6682124,-83.2214582), (42.667928,-83.2214451), (42.6679601,-83.2214332)]]
-competition_waypoints = [[], [], []]
+competition_waypoints = [
+    [(42.6682697222,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417)], 
+    [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028)], 
+    []
+]
+# competition_waypoints = [[], [], []]
 
-# simulation_waypoints = [[(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], []]
+practice_waypoints = [
+    [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)],
+    [(42.6679600583,-83.2184326556),(42.6680859611,-83.2184456444),(42.668222,-83.218472)],
+    []
+]
+practice_waypoints = [[], [], []]
+
+simulation_waypoints = [
+    [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], 
+    [(35.19478989, -97.43856812), (35.19480515, -97.43852997), (35.19487762, -97.43852997)], 
+    []
+]
 simulation_waypoints = [[], [], []]
 
 def get_angle_diff(to_angle, from_angle):
@@ -51,6 +71,7 @@ class AStarNode(Node):
     def configure(self):
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
+        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5)
 
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
