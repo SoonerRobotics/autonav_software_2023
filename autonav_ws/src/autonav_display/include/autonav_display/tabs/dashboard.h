@@ -112,7 +112,7 @@ void ShowDashboard(SCR::Node *node)
     }
 
     ImGui::Text("State: %s", toString(static_cast<SCR::SystemState>(node->getSystemState().state)).c_str());
-    ImGui::Text("Is Simulator: %s", node->getSystemState().is_simulator ? "Yes" : "No");
+    ImGui::Text("Mode: %s", toString(static_cast<SCR::SystemMode>(node->getSystemState().mode)).c_str());
     ImGui::Text("Mobility: %s", node->getSystemState().mobility ? "Enabled" : "Disabled");
     ImGui::Text("EStop: %s", node->getSystemState().estop ? "Yes" : "No");
 

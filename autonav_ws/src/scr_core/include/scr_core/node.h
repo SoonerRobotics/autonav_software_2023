@@ -13,6 +13,7 @@
 #include "performance.h"
 #include "device_state.h"
 #include "system_state.h"
+#include "system_mode.h"
 #include <stdint.h>
 #include <string.h>
 #include "utils.h"
@@ -28,8 +29,9 @@ namespace SCR
 
 		void setSystemState(SystemState state);
 		void setDeviceState(DeviceState state);
-		void setEStop(bool state);
+		void setSystemMode(SystemMode mode);
 		void setMobility(bool state);
+		void setEStop(bool state);
 
 		Configuration config;
 		Performance performance;

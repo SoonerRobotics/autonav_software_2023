@@ -1,4 +1,4 @@
 uint8 state
-bool is_simulator
+uint8 mode
 bool mobility
 bool estop

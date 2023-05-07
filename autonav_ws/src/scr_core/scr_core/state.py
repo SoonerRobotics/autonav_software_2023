@@ -13,3 +13,9 @@ class SystemStateEnum(IntEnum):
     AUTONOMOUS = 1
     MANUAL = 2
     SHUTDOWN = 3
+
+
+class SystemMode(IntEnum):
+    COMPETITION = 0
+    SIMULATION = 1
+    PRACTICE = 2

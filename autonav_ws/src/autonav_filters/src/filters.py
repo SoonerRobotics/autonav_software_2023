@@ -59,6 +59,8 @@ class ParticleFilterNode(Node):
         filterType = self.config.getInt(0)
         if filterType == FilterType.PARTICLE_FILTER:
             self.pf.updateGPS(msg, self.collecting)
+        elif filterType == FilterType.DEAD_RECKONING:
+            self.reckoning.updateGPS(msg)
 
     def onMotorFeedbackReceived(self, msg: MotorFeedback):
         filterType = self.config.getInt(0)

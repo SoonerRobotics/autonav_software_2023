@@ -3,7 +3,7 @@
 from autonav_msgs.msg import Position
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
-from scr_core.state import DeviceStateEnum, SystemStateEnum
+from scr_core.state import DeviceStateEnum, SystemStateEnum, SystemMode
 from geometry_msgs.msg import PoseStamped, Point
 from nav_msgs.msg import OccupancyGrid, Path
 import rclpy
@@ -11,7 +11,6 @@ import math
 import copy
 from heapq import heappush, heappop
 import numpy as np
-import time
 
 
 GRID_SIZE = 0.1
@@ -21,13 +20,40 @@ waypoints = []
 verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
-MAP_RES = 100
+MAP_RES = 80
+CONFIG_WAYPOINT_POP_DISTANCE = 0 # The distance until the waypoint has been reached
+CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc
+CONFIG_WAYPOINT_ACTIVATION_DISTANCE = 2 # The distance from the robot to the next waypoint that will cause the robot to start using waypoints
+CONFIG_USE_WAYPOINTS = 3 # 0 for no waypoints, 1 for waypoints
 
-# orig_waypoints = [(42.66792771,-83.21932764),(42.66807663,-83.21935916),(42.66826972,-83.21934030)]
-orig_waypoints = []
-# sim_waypoints = [(35.19487762, -97.43902588), (35.19476700, -97.43901825), (35.19472504, -97.43901825)]
-sim_waypoints = []
+### Waypoints for navigation, the first index is northbound waypoints, the second index is southbound waypoints, a 3rd index can be added for misc waypoints
+# Practice Waypoints: (42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556) | North, Mid, South
+# AutoNav Waypoints: (42.6682697222,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417) | North, North Ramp, South Ramp, South
+## The distance from north to north ramp is about 16.6 meters
+## The ramp is about 5m
+## The distance from south ramp to south is about 16.76 meters
+## The total distance from north to south is about 38.045 meters
 
+competition_waypoints = [
+    [(42.6682697222,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417)], 
+    [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028)], 
+    []
+]
+# competition_waypoints = [[], [], []]
+
+practice_waypoints = [
+    [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)],
+    [(42.6679600583,-83.2184326556),(42.6680859611,-83.2184456444),(42.668222,-83.218472)],
+    []
+]
+# practice_waypoints = [[], [], []]
+
+simulation_waypoints = [
+    [(35.19496918, -97.43855286), (35.19490051, -97.43902588), (35.19476318, -97.43901825), (35.19472885, -97.43901825), (35.19459152, -97.43902588)], 
+    [(35.19459152, -97.43902588), (35.19472885, -97.43901825), (35.19476318, -97.43901825), (35.19490051, -97.43902588)], 
+    [(35.19474411, -97.43852997), (35.19474792, -97.43863678), (35.19484711, -97.43865967), (35.19494247, -97.43875885)]
+]
+# simulation_waypoints = [[], [], []]
 
 def get_angle_diff(to_angle, from_angle):
     delta = to_angle - from_angle
@@ -47,6 +73,12 @@ class AStarNode(Node):
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
         self.m_mapTimer = self.create_timer(0.3, self.makeMap)
+
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
+        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
+        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5)
+        self.config.setBool(CONFIG_USE_WAYPOINTS, False)
+
         self.setDeviceState(DeviceStateEnum.READY)
         
     def onReset(self):
@@ -57,11 +89,17 @@ class AStarNode(Node):
         best_pos = (0, 0)
         waypoints = []
 
+    def getWaypointsForDirection(self):
+        direction_index = self.config.getInt(CONFIG_WAYPOINT_DIRECTION)
+        return simulation_waypoints[direction_index] if self.getSystemState().mode == SystemMode.SIMULATION else competition_waypoints[direction_index] if self.getSystemState().mode == SystemMode.COMPETITION else practice_waypoints[direction_index]
+
     def transition(self, old: SystemState, updated: SystemState):
+        global waypoints
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
+            waypoints = []
             self.setDeviceState(DeviceStateEnum.READY)
             
     def onPoseReceived(self, msg: Position):
@@ -163,7 +201,18 @@ class AStarNode(Node):
         frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        # TODO: Redo the waypoint system
+        if self.config.getBool(CONFIG_USE_WAYPOINTS) == True:
+            grid_data = [0] * len(msg.data)
+
+        if len(waypoints) == 0:
+            wpts = self.getWaypointsForDirection()
+            if len(wpts) > 0:
+                wpt = wpts[0]
+                north_to_gps = (wpt[0] - self.position.latitude) * 111086.2
+                west_to_gps = (self.position.longitude - wpt[1]) * 81978.2
+                distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
+                if distanceToWaypoint <= self.config.getFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE):
+                    waypoints = wpts
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
@@ -171,7 +220,7 @@ class AStarNode(Node):
             west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
             heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
-            if north_to_gps ** 2 + west_to_gps ** 2 <= 1:
+            if north_to_gps ** 2 + west_to_gps ** 2 <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
                 waypoints.pop(0)
 
         depth = 0
@@ -183,7 +232,7 @@ class AStarNode(Node):
                 cost = (MAP_RES - y) * 1.3 + depth * 2.2
 
                 if len(waypoints) > 0:
-                    heading_err_to_gps = abs(get_angle_diff(self.position.theta + math.atan2(MAP_RES // 2- x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
+                    heading_err_to_gps = abs(get_angle_diff(self.position.theta + math.atan2(MAP_RES // 2 - x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
                     cost -= max(heading_err_to_gps, 10)
 
                 if cost > best_pos_cost:

@@ -10,7 +10,7 @@ void ShowPreferences(SCR::Node *node, float *font_size)
 
 	// Create dropdown for theme
 	static const char *themes[] = {"Dark", "Light", "Classic"};
-	static int theme_index = 0;
+	static int theme_index = 1;
 	if (ImGui::Combo("Theme", &theme_index, themes, IM_ARRAYSIZE(themes)))
 	{
 		if (theme_index == 0) {
