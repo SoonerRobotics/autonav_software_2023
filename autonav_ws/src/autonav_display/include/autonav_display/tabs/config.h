@@ -135,6 +135,8 @@ void ShowVisionConfig(SCR::Configuration *config)
     {
         ImGui::SeparatorText("Path Planning (A*)");
         ShowFloatOption(config, "Waypoint Pop Distance", hash, 0, 0.1f, 10.0f);
+        ShowFloatOption(config, "Waypoint Activiation Distance", hash, 2, 0.0f, 30.0f);
+        ShowBoolOption(config, "Only Use Waypoints", hash, 3);
         if (ImGui::BeginCombo("Direction", config->get<int>(hash, 1) == 0 ? "North" : config->get<int>(hash, 1) == 1 ? "South" : "Misc"))
         {
             if (ImGui::Selectable("North", config->get<int>(hash, 1) == 0))

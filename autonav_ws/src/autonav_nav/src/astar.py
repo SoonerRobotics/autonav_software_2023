@@ -24,6 +24,7 @@ MAP_RES = 80
 CONFIG_WAYPOINT_POP_DISTANCE = 0 # The distance until the waypoint has been reached
 CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc
 CONFIG_WAYPOINT_ACTIVATION_DISTANCE = 2 # The distance from the robot to the next waypoint that will cause the robot to start using waypoints
+CONFIG_USE_WAYPOINTS = 3 # 0 for no waypoints, 1 for waypoints
 
 ### Waypoints for navigation, the first index is northbound waypoints, the second index is southbound waypoints, a 3rd index can be added for misc waypoints
 # Practice Waypoints: (42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556) | North, Mid, South
@@ -45,14 +46,14 @@ practice_waypoints = [
     [(42.6679600583,-83.2184326556),(42.6680859611,-83.2184456444),(42.668222,-83.218472)],
     []
 ]
-practice_waypoints = [[], [], []]
+# practice_waypoints = [[], [], []]
 
 simulation_waypoints = [
     [(35.19490051, -97.43902588), (35.19476318, -97.43901825), (35.19472885, -97.43901825), (35.19459152, -97.43902588)], 
     [(35.19459152, -97.43902588), (35.19472885, -97.43901825), (35.19476318, -97.43901825), (35.19490051, -97.43902588)], 
-    []
+    [(35.19474411, -97.43852997), (35.19474792, -97.43863678), (35.19484711, -97.43865967), (35.19494247, -97.43875885)]
 ]
-simulation_waypoints = [[], [], []]
+# simulation_waypoints = [[], [], []]
 
 def get_angle_diff(to_angle, from_angle):
     delta = to_angle - from_angle
@@ -76,6 +77,7 @@ class AStarNode(Node):
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5)
+        self.config.setBool(CONFIG_USE_WAYPOINTS, False)
 
         self.setDeviceState(DeviceStateEnum.READY)
         
@@ -97,6 +99,7 @@ class AStarNode(Node):
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
+            waypoints = []
             self.setDeviceState(DeviceStateEnum.READY)
             
     def onPoseReceived(self, msg: Position):
@@ -198,7 +201,8 @@ class AStarNode(Node):
         frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        # grid_data = [0] * len(msg.data)
+        if self.config.getBool(CONFIG_USE_WAYPOINTS) == True:
+            grid_data = [0] * len(msg.data)
 
         if len(waypoints) == 0:
             wpts = self.getWaypointsForDirection()
