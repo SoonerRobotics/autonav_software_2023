@@ -11,7 +11,6 @@ import math
 import copy
 from heapq import heappush, heappop
 import numpy as np
-import time
 
 
 GRID_SIZE = 0.1
@@ -214,7 +213,6 @@ class AStarNode(Node):
             west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
             heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
-            self.log("Heading to GPS: " + str(heading_to_gps * 180 / math.pi) + " | (" + str(north_to_gps) + ", " + str(west_to_gps) + ")")
             if north_to_gps ** 2 + west_to_gps ** 2 <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
                 waypoints.pop(0)
 
