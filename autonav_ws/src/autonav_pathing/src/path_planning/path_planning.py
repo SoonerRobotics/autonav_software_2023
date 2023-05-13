@@ -122,7 +122,7 @@ class PathPlanner(Node):
         self.planned_path = self.path_plan(local_obstacles, direction)
         self.set_path(self.planned_path)
         self.publish_path()
-        #planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
+        planning_test.planning_test(self.robo_and_gps_path, local_obstacles)
 
 
 def isInside(circle_x, circle_y, rad, x, y):

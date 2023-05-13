@@ -67,7 +67,7 @@ class Circumscriber(Node):
         lower = (
             0, # LOWER_HUE
             0, # LOWER_SATURATION
-            35, #LOWER_VALUE course simulator: 35
+            55, #LOWER_VALUE course simulator: 35
         )
         upper = (
             255, # UPPER_HUE
@@ -105,7 +105,7 @@ class Circumscriber(Node):
         # define how many sections of the image you want to search for objects in
         # grid sizes need to be square numbers
         
-        sections = 6
+        sections = 4
         grid_sections = sections ** 2
         fractional_w = int(w // sections)
         fractional_h = int(h // sections)
@@ -137,7 +137,7 @@ class Circumscriber(Node):
                 #center = (int(x), int(y))
                 radius = int(radius)
                 obstacles.append([center[0], center[1], radius])
-                preview_image = cv.circle(preview_image, center, radius, (0,0,255), 2)
+                preview_image = cv.circle(preview_image, center, radius, (255,255,0), 2)
                 obstacles.append((center[0], center[1], radius))
 
         # for testing whole or partial images
@@ -145,8 +145,9 @@ class Circumscriber(Node):
         self.get_logger().info(f"Time to draw circles: {end - start}")
 
         # display the image 
+        preview_image = cv.bitwise_not(preview_image)
         cv.imshow("preview_image after circles", preview_image)
-        #cv.waitKey(5000)
+        cv.waitKey(5000)
         cv.destroyAllWindows()
         
         # send the obstacles to the path planner
