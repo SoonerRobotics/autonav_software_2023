@@ -145,7 +145,7 @@ class Circumscriber(Node):
         self.get_logger().info(f"Time to draw circles: {end - start}")
 
         # display the image 
-        preview_image = cv.bitwise_not(preview_image)
+        # only for design report: preview_image = cv.bitwise_not(preview_image)
         cv.imshow("preview_image after circles", preview_image)
         cv.waitKey(5000)
         cv.destroyAllWindows()
