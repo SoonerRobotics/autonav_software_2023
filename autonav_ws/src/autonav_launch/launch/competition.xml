@@ -2,7 +2,12 @@
     <node pkg="scr_state" exec="statemanager" >
         <param name="required_nodes" value="[autonav_display]" />
     </node>
-    <node pkg="scr_logging" exec="logging" />
+    <node pkg="scr_logging" exec="logging">
+        <param name="log_to_console" value="true" />
+    </node>
+    <node pkg="scr_configuration" exec="config">
+        <param name="preset" value="pepe" />
+    </node>
     <node pkg="autonav_display" exec="primary_display" output="screen">
         <param name="fullscreen" value="true" />
         <param name="default_preset" value="competition" />

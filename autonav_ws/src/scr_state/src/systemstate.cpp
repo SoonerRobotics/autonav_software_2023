@@ -20,10 +20,19 @@ public:
 		stateTimer = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&StateSystemNode::onStateTick, this));
 
 		declare_parameter("forced_state", "");
+		requiredNodes = declare_parameter("required_nodes", std::vector<std::string>());
+		if (std::find(requiredNodes.begin(), requiredNodes.end(), "scr_logging") == requiredNodes.end())
+		{
+			requiredNodes.push_back("scr_logging");
+		}
+		if (std::find(requiredNodes.begin(), requiredNodes.end(), "scr_configuration") == requiredNodes.end())
+		{
+			requiredNodes.push_back("scr_configuration");
+		}
+
 		declare_parameter("required_nodes", std::vector<std::string>());
 		declare_parameter("mode", 0);
 		declare_parameter("override_mobility", false);
-		requiredNodes = get_parameter("required_nodes").as_string_array();
 
 		state = scr_msgs::msg::SystemState();
 		state.state = SCR::SystemState::DISABLED;
@@ -57,6 +66,16 @@ public:
 		{
 			return true;
 		}
+
+		if (node.find("scr_configuration") != std::string::npos)
+		{
+			return false;
+		}
+
+		if (node.find("scr_logging") != std::string::npos)
+		{
+			return false;
+		}	
 
 		if (node.find("autonav") != std::string::npos)
 		{

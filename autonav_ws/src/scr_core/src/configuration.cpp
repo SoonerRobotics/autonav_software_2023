@@ -15,11 +15,19 @@ namespace SCR
 		loadLocalPresets();
 	}
 
-	Configuration::Configuration(int64_t id, rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber, rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher)
+	Configuration::Configuration(
+		int64_t id, 
+		rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber, 
+		rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher, 
+		rclcpp::Subscription<std_msgs::msg::String>::SharedPtr loadSubscription,
+		rclcpp::Publisher<std_msgs::msg::String>::SharedPtr loadPublisher
+	)
 	{
 		this->id = id;
 		this->configSubscriber = configSubscriber;
 		this->configPublisher = configPublisher;
+		this->loadSubscription = loadSubscription;
+
 		loadLocalPresets();
 	}
 
@@ -120,68 +128,14 @@ namespace SCR
 
 	void Configuration::load(const std::string& preset)
 	{
-		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".csv";
-		if (!std::filesystem::exists(path))
-		{
-			if (preset != "default")
-			{
-				RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Configuration file not found. Loading default configuration.");
-				load("default");
-				return;
-			}
-			else
-			{
-				RCLCPP_INFO(rclcpp::get_logger("scr_core"), "No configuration file found. Creating default configuration.");
-				this->preset = "default";
-				save("default");
-				return;
-			}	
-		}
+		std_msgs::msg::String msg;
+		msg.data = preset;
+		
+	}
 
-		if (loading)
-		{
-			return;
-		}
-
-		loading = true;
-
-		RCUTILS_LOG_INFO("Loading configuration file: %s", path.c_str());
-		std::ifstream file(path);
-		std::string line;
-
-		while (getline(file, line))
-		{
-			std::vector<std::string> tokens;
-			std::string token;
-			std::istringstream tokenStream(line);
-			while (std::getline(tokenStream, token, ','))
-			{
-				tokens.push_back(token);
-			}
-
-			int64_t device = std::stoll(tokens[0]);
-			uint8_t address = std::stoi(tokens[1]);
-
-			std::vector<uint8_t> bytes;
-			std::istringstream byteStream(tokens[2]);
-			while (std::getline(byteStream, token, ':'))
-			{
-				bytes.push_back(std::stoi(token));
-			}
-
-			scr_msgs::msg::ConfigurationInstruction instruction;
-			instruction.device = device;
-			instruction.address = address;
-			instruction.opcode = Opcode::SET;
-			instruction.data = bytes;
-			configPublisher->publish(instruction);
-		}
-
-		this->preset = preset;
-		file.close();
-
-		loading = false;
-		RCUTILS_LOG_INFO("Loaded configuration file: %s", path.c_str());
+	void Configuration::onPresetChanged(std_msgs::msg::String::SharedPtr msg)
+	{
+		this->preset = msg->data;
 	}
 
 	std::vector<std::string> Configuration::getPresets()
@@ -318,6 +272,28 @@ namespace SCR
 		instruction.opcode = Opcode::SET;
 		instruction.address = address;
 		instruction.data = std::vector<uint8_t>{(uint8_t)value};
+		configPublisher->publish(instruction);
+	}
+
+	template<>
+	void Configuration::set(uint8_t address, std::vector<uint8_t> bytes)
+	{
+		scr_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = id;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = bytes;
+		configPublisher->publish(instruction);
+	}
+
+	template<>
+	void Configuration::set(int64_t device, uint8_t address, std::vector<uint8_t> bytes)
+	{
+		scr_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = device;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = bytes;
 		configPublisher->publish(instruction);
 	}
 

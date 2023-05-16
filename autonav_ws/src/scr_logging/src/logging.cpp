@@ -69,15 +69,13 @@ void append_to_file(const std::string &node, const std::string &contents)
 	out.close();
 }
 
-class LoggingNode : public SCR::Node
+class ConfigurationNode : public SCR::Node
 {
 public:
-	LoggingNode() : SCR::Node("scr_logging")
+	ConfigurationNode() : SCR::Node("scr_logging")
 	{
-		logSubscriber = this->create_subscription<scr_msgs::msg::Log>("/scr/logging", 10, std::bind(&LoggingNode::on_log_received, this, _1));
-
-		this->declare_parameter<bool>("log_to_console", false);
-		this->get_parameter("log_to_console", logToConsole);
+		logSubscriber = this->create_subscription<scr_msgs::msg::Log>("/scr/logging", 10, std::bind(&ConfigurationNode::onLogReceived, this, _1));
+		logToConsole = this->declare_parameter<bool>("log_to_console", false);
 	}
 
 	void configure() override
@@ -92,12 +90,13 @@ public:
 	}
 
 private:
-	void on_log_received(const scr_msgs::msg::Log &msg) const
+	void onLogReceived(const scr_msgs::msg::Log &msg) const
 	{
 		if (logToConsole)
 		{
 			RCLCPP_INFO(this->get_logger(), "[%s] %s", msg.node.c_str(), msg.data.c_str());
 		}
+		
 		append_to_file(msg.node, msg.data);
 	}
 
@@ -108,7 +107,7 @@ private:
 int main(int argc, char *argv[])
 {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<LoggingNode>());
+	rclcpp::spin(std::make_shared<ConfigurationNode>());
 	rclcpp::shutdown();
 	return 0;
 }

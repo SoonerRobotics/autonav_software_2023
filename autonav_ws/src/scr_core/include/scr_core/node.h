@@ -50,6 +50,7 @@ namespace SCR
 		virtual void configure();
 		virtual void onReset();
 		virtual void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated);
+		virtual void onDeviceStateUpdated(const scr_msgs::msg::DeviceState::SharedPtr msg, bool isNew);
 
 	private:
 		void onResetInternal(const std_msgs::msg::Empty::SharedPtr msg);
