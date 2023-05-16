@@ -60,6 +60,7 @@ namespace SCR
 		request->state = this->state.state;
 		request->estop = state;
 		request->mobility = this->state.mobility;
+		request->mode = this->state.mode;
 		systemStateClient->async_send_request(request);
 	}
 
@@ -69,6 +70,7 @@ namespace SCR
 		request->state = this->state.state;
 		request->estop = this->state.estop;
 		request->mobility = state;
+		request->mode = this->state.mode;
 		systemStateClient->async_send_request(request);
 	}
 
@@ -79,6 +81,17 @@ namespace SCR
 		request->state = static_cast<uint8_t>(state);
 		request->estop = this->state.estop;
 		request->mobility = this->state.mobility;
+		request->mode = this->state.mode;
+		systemStateClient->async_send_request(request);
+	}
+
+	void Node::setSystemMode(SystemMode mode)
+	{
+		auto request = std::make_shared<scr_msgs::srv::SetSystemState::Request>();
+		request->state = this->state.state;
+		request->estop = this->state.estop;
+		request->mobility = this->state.mobility;
+		request->mode = static_cast<uint8_t>(mode);
 		systemStateClient->async_send_request(request);
 	}
 

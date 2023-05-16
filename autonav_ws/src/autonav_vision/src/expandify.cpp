@@ -3,13 +3,15 @@
 #include "geometry_msgs/msg/pose.hpp"
 #include "nav_msgs/msg/map_meta_data.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include "cv_bridge/cv_bridge.h"
 
 namespace ExpandifyConstants
 {
 	const float VERTICAL_FOV = 2.75;
 	const float HORIZONTAL_FOV = 3;
-	const float MAP_RES_F = 100.0f;
-	const int MAP_RES = 100;
+	const float MAP_RES_F = 80.0f;
+	const int MAP_RES = 80;
 }
 
 struct Circle
@@ -53,6 +55,7 @@ public:
 
 		rawMapSubscriber = create_subscription<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/raw", 20, std::bind(&Expandify::onConfigSpaceReceived, this, std::placeholders::_1));
 		expandedMapPublisher = create_publisher<nav_msgs::msg::OccupancyGrid>("/autonav/cfg_space/expanded", 20);
+		debugPublisher = create_publisher<sensor_msgs::msg::CompressedImage>("/autonav/cfg_space/expanded/image", 20);
 
 		setDeviceState(SCR::DeviceState::OPERATING);
 	}
@@ -118,12 +121,23 @@ public:
 		newSpace.data = data;
 		expandedMapPublisher->publish(newSpace);
 
+		cv::Mat image = cv::Mat(ExpandifyConstants::MAP_RES, ExpandifyConstants::MAP_RES, CV_8UC1, data.data());
+		cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
+		cv::resize(image, image, cv::Size(800, 800), 0, 0, cv::INTER_NEAREST);
+
+		auto compressed = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", image).toCompressedImageMsg();
+		compressed->header.stamp = this->now();
+		compressed->header.frame_id = "map";
+		compressed->format = "jpeg";
+		debugPublisher->publish(*compressed);
+
 		performance.end("Expandification");
 	}
 
 private:
 	rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr rawMapSubscriber;
 	rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr expandedMapPublisher;
+	rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr debugPublisher;
 
 	nav_msgs::msg::MapMetaData map;
 	

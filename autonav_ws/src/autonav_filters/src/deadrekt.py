@@ -1,4 +1,5 @@
 from autonav_msgs.msg import MotorFeedback, GPSFeedback, Position
+from scr_core.state import SystemMode
 import math
 
 class DeadReckoningFilter:
@@ -12,7 +13,6 @@ class DeadReckoningFilter:
         self.thetaSum = 0.0
         self.lastLat = None
         self.lastLong = None
-        self.recordedPoints = []
 
     def updateMotors(self, feedback: MotorFeedback):
         self.xSum = self.xSum + feedback.delta_x * math.cos(self.thetaSum) + feedback.delta_y * math.sin(self.thetaSum)
@@ -20,11 +20,15 @@ class DeadReckoningFilter:
         self.thetaSum += feedback.delta_theta
         self.broadcastEstimate()
 
+    def updateGPS(self, gps: GPSFeedback):
+        self.lastLat = gps.latitude
+        self.lastLong = gps.longitude
+
     def broadcastEstimate(self):
         msg = Position()
         offset = 1
-        if self.node.getSystemState().is_simulator:
-            offset = 10
+        if self.node.getSystemState().mode == SystemMode.SIMULATION:
+            offset = 9.84251968503937
         msg.x = self.xSum / offset
         msg.y = self.ySum / offset
         msg.theta = self.thetaSum

@@ -30,7 +30,7 @@ class PathResolverNode(Node):
         self.positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
         self.motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         
-        self.config.setFloat(FORWARD_SPEED, 0.3)
+        self.config.setFloat(FORWARD_SPEED, 0.75)
         self.config.setFloat(REVERSE_SPEED, -0.5)
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
@@ -91,9 +91,9 @@ class PathResolverNode(Node):
         if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
-            forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(angle_diff)) ** 8
+            forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
-            inputPacket.angular_velocity = clamp(error * 3.0, -2.0, 2.0)
+            inputPacket.angular_velocity = clamp(error * 2.0, -1.15, 1.15)
         else:
             if self.backCount == -1:
                 self.backCount = 5

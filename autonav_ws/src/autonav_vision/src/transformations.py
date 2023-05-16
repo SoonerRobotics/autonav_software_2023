@@ -22,7 +22,7 @@ g_mapData.origin = Pose()
 g_mapData.origin.position.x = -10.0
 g_mapData.origin.position.y = -10.0
 
-MAP_RES = 100
+MAP_RES = 80
 
 LOWER_HUE = 0
 LOWER_SATURATION = 1

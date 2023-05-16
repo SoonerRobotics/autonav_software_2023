@@ -84,6 +84,11 @@ void ShowVision(SCR::Node *node)
 
     if (filteredImage != nullptr)
     {
+        if (rawImage != nullptr)
+        {
+            ImGui::SameLine();
+        }
+        
         ShowImage(1, filteredImage);
     }
 

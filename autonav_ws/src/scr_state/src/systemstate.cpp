@@ -30,12 +30,13 @@ public:
 			requiredNodes.push_back("scr_configuration");
 		}
 
-		declare_parameter("use_simulator", false);
+		declare_parameter("required_nodes", std::vector<std::string>());
+		declare_parameter("mode", 0);
 		declare_parameter("override_mobility", false);
 
 		state = scr_msgs::msg::SystemState();
 		state.state = SCR::SystemState::DISABLED;
-		state.is_simulator = get_parameter("use_simulator").as_bool();
+		state.mode = get_parameter("mode").as_int();
 		state.estop = false;
 		state.mobility = get_parameter("override_mobility").as_bool();
 
