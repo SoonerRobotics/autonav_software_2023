@@ -31,7 +31,6 @@ class SerialMotors(Node):
         self.setpointAngularVel = 0.0
         self.can = None
         self.lastMotorInput = None
-        self.start = self.getClockMs()
 
     def configure(self):
         self.safetyLightsSubscriber = self.create_subscription(SafetyLights, "/autonav/SafetyLights", self.onSafetyLightsReceived, 20)
@@ -68,6 +67,7 @@ class SerialMotors(Node):
             feedback.delta_y = deltaY / 10000.0
             feedback.delta_x = deltaX / 10000.0
             self.motorFeedbackPublisher.publish(feedback)
+            self.log(f"20,{self.getClockMs()},{feedback.delta_x},{feedback.delta_y},{feedback.delta_theta}")
 
         if arb_id == ESTOP_ID:
             self.setEStop(True)
@@ -86,7 +86,7 @@ class SerialMotors(Node):
             self.setpointAngularVel = setpointAngularVel / 1000.0
 
             # Log the CAN_50 message
-            self.log(f"50,{self.getClockMs() - self.start},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
+            self.log(f"50,{self.getClockMs()},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
 
         if arb_id == CAN_51:
             leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
@@ -101,11 +101,11 @@ class SerialMotors(Node):
             pkg.angular_velocity_setpoint = self.setpointAngularVel
             pkg.left_motor_output = leftMotorOutput
             pkg.right_motor_output = rightMotorOutput
-            pkg.timestamp = (self.getClockMs() - self.start) * 1.0
+            pkg.timestamp = self.getClockMs() * 1.0
             self.motorDebugPublisher.publish(pkg)
 
             # Log the CAN_51 message
-            self.log(f"51,{self.getClockMs() - self.start},{leftMotorOutput},{rightMotorOutput}")
+            self.log(f"51,{self.getClockMs()},{leftMotorOutput},{rightMotorOutput}")
 
     def canWorker(self):
         try:
