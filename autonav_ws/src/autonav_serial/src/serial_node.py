@@ -107,6 +107,15 @@ class SerialMotors(Node):
             # Log the CAN_51 message
             self.log(f"51,{self.getClockMs()},{leftMotorOutput},{rightMotorOutput}")
 
+        if arb_id == OBJECT_DETECTION:
+            # Load in 4 bytes
+            zero, left, middle, right = struct.unpack("BBBB", msg.data)
+            pkg = ObjectDetection()
+            pkg.sensor_1 = left
+            pkg.sensor_2 = middle
+            pkg.sensor_3 = right
+            self.objectDetectionPublisher.publish(pkg)
+
     def canWorker(self):
         try:
             with open("/dev/autonav-can-835", "r") as f:

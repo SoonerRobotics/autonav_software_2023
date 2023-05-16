@@ -30,7 +30,6 @@ public:
 			requiredNodes.push_back("scr_configuration");
 		}
 
-		declare_parameter("required_nodes", std::vector<std::string>());
 		declare_parameter("mode", 0);
 		declare_parameter("override_mobility", false);
 
