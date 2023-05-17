@@ -69,6 +69,9 @@ class SteamTranslationNode(Node):
         self.log(f"Manual -> {button == SteamControllerButton.START}")
         self.log(f"Autonomous -> {button == SteamControllerButton.STEAM}")
         self.log(f"Disabled -> {button == SteamControllerButton.BACK}")
+        self.log(f"System State -> {self.getSystemState().state}")
+        self.log(f"Device State -> {self.getDeviceState()}")
+        self.log(f"System Mode -> {self.getSystemState().mode}")
         self.log("-------------------")
         if button == SteamControllerButton.B and msTime > 1500:
             self.log("go to death -_-")
