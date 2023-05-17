@@ -73,19 +73,19 @@ class SteamTranslationNode(Node):
         self.log(f"Device State -> {self.getDeviceState()}")
         self.log(f"System Mode -> {self.getSystemState().mode}")
         self.log("-------------------")
-        if button == SteamControllerButton.B and msTime > 1.5:
+        if button == SteamControllerButton.B:
             self.log("go to death -_-")
             self.setSystemState(SystemStateEnum.SHUTDOWN)
             
-        if button == SteamControllerButton.START and msTime > 1.5 and self.getSystemState().state != SystemStateEnum.MANUAL:
+        if button == SteamControllerButton.START and self.getSystemState().state != SystemStateEnum.MANUAL:
             self.log("go to manual -_-")
             self.setSystemState(SystemStateEnum.MANUAL)
             
-        if button == SteamControllerButton.STEAM and msTime > 1.5 and self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
+        if button == SteamControllerButton.STEAM and self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             self.log("go to autonomous -_-")
             self.setSystemState(SystemStateEnum.AUTONOMOUS)
             
-        if button == SteamControllerButton.BACK and msTime > 1.5 and self.getSystemState().state != SystemStateEnum.DISABLED:
+        if button == SteamControllerButton.BACK and self.getSystemState().state != SystemStateEnum.DISABLED:
             self.log("go to disabled -_-")
             self.setSystemState(SystemStateEnum.DISABLED)
 
