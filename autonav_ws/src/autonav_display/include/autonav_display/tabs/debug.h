@@ -2,7 +2,7 @@
 #include "scr_core/node.h"
 #include "imgui.h"
 
-void SendSafetyLightsPacket(SCR::Node *node, bool autonomous, bool eco, int mode, int brightness, int red, int green, int blue)
+void SendSafetyLightsPacket(SCR::Node *node, bool autonomous, bool eco, int mode, int brightness, float red, float green, float blue)
 {
     static rclcpp::Publisher<autonav_msgs::msg::SafetyLights>::SharedPtr safetyLightsPublisher = nullptr;
 
@@ -16,9 +16,9 @@ void SendSafetyLightsPacket(SCR::Node *node, bool autonomous, bool eco, int mode
     safetyLights.eco = eco;
     safetyLights.mode = mode;
     safetyLights.brightness = brightness;
-    safetyLights.red = red;
-    safetyLights.green = green;
-    safetyLights.blue = blue;
+    safetyLights.red = red * 255;
+    safetyLights.green = green * 255;
+    safetyLights.blue = blue * 255;
     safetyLightsPublisher->publish(safetyLights);
 }
 
