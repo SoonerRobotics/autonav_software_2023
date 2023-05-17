@@ -149,7 +149,7 @@ class SerialMotors(Node):
         packed_data = SafetyLightsPacket()
         packed_data.autonomous = auto
         packed_data.color = color
-        packed_data.preset = preset
+        packed_data.mode = preset
         can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=bytes(packed_data))
 
         try:
