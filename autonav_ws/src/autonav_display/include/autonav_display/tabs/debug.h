@@ -2,7 +2,7 @@
 #include "scr_core/node.h"
 #include "imgui.h"
 
-void SendSafetyLightsPacket(SCR::Node *node, bool isAuto, int color, int mode)
+void SendSafetyLightsPacket(SCR::Node *node, bool autonomous, bool eco, int mode, int brightness, int red, int green, int blue)
 {
     static rclcpp::Publisher<autonav_msgs::msg::SafetyLights>::SharedPtr safetyLightsPublisher = nullptr;
 
@@ -12,9 +12,13 @@ void SendSafetyLightsPacket(SCR::Node *node, bool isAuto, int color, int mode)
     }
 
     autonav_msgs::msg::SafetyLights safetyLights;
-    safetyLights.autonomous = isAuto;
-    safetyLights.color = color;
-    safetyLights.preset = mode;
+    safetyLights.autonomous = autonomous;
+    safetyLights.eco = eco;
+    safetyLights.mode = mode;
+    safetyLights.brightness = brightness;
+    safetyLights.red = red;
+    safetyLights.green = green;
+    safetyLights.blue = blue;
     safetyLightsPublisher->publish(safetyLights);
 }
 
@@ -55,32 +59,30 @@ void ShowDebug(SCR::Node *node)
 
     ImGui::SeparatorText("Safety Lights");
     static bool autonomous = false;
-    static int colorIndex = 0;
-    const char *colors[] = {"Blank", "Red", "Orange", "Yellow", "Lime", "Green", "Cyan Green", "Cyan", "Light Blue", "Blue", "Violet", "Purple", "Pink", "White Green", "White Red", "White"};
+    static bool eco = false;
     static int modeIndex = 0;
+    static int brightness = 0;
+    static float* color = new float[3]{0.0f, 0.0f, 0.0f};
     const char *modes[] = {"Solid", "Flash", "Fade", "Rainbow"};
 
     if (ImGui::Checkbox("Autonomous", &autonomous))
     {
-        SendSafetyLightsPacket(node, autonomous, colorIndex, modeIndex);
+        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
     }
 
-    if (ImGui::BeginCombo("Color", colors[colorIndex]))
+    if (ImGui::Checkbox("!! ECO MODE !!", &eco))
     {
-        for (int i = 0; i < IM_ARRAYSIZE(colors); i++)
-        {
-            bool isSelected = (colorIndex == i);
-            if (ImGui::Selectable(colors[i], isSelected))
-            {
-                colorIndex = i;
-                SendSafetyLightsPacket(node, autonomous, colorIndex, modeIndex);
-            }
-            if (isSelected)
-            {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndCombo();
+        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+    }
+
+    if (ImGui::ColorEdit3("Color", color))
+    {
+        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+    }
+
+    if (ImGui::SliderInt("Brightness", &brightness, 0, 255))
+    {
+        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
     }
 
     if (ImGui::BeginCombo("Mode", modes[modeIndex]))
@@ -91,7 +93,7 @@ void ShowDebug(SCR::Node *node)
             if (ImGui::Selectable(modes[i], isSelected))
             {
                 modeIndex = i;
-                SendSafetyLightsPacket(node, autonomous, colorIndex, modeIndex);
+                SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
             }
             if (isSelected)
             {

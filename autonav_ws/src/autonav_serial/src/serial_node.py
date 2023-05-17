@@ -25,8 +25,12 @@ CAN_51 = 51
 class SafetyLightsPacket(Structure):
     _fields_ = [
         ("autonomous", c_bool, 1),
-        ("mode", c_uint8, 3),
-        ("color", c_uint8, 4),
+        ("eco", c_uint8, 1),
+        ("mode", c_uint8, 6),
+        ("brightness", c_uint8, 8),
+        ("red", c_uint8, 8),
+        ("green", c_uint8, 8),
+        ("blue", c_uint8, 8)
     ]
 
 
@@ -143,13 +147,17 @@ class SerialMotors(Node):
                 self.setDeviceState(DeviceStateEnum.STANDBY)
 
     def onSafetyLightsReceived(self, lights: SafetyLights):
-        auto = lights.autonomous
-        color = lights.color
-        preset = lights.preset
+        if self.getDeviceState() != DeviceStateEnum.OPERATING:
+            return
+
         packed_data = SafetyLightsPacket()
-        packed_data.autonomous = auto
-        packed_data.color = color
-        packed_data.mode = preset
+        packed_data.autonomous = lights.autonomous
+        packed_data.eco = lights.eco
+        packed_data.mode = lights.mode
+        packed_data.brightness = lights.brightness
+        packed_data.red = lights.red
+        packed_data.green = lights.green
+        packed_data.blue = lights.blue
         can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=bytes(packed_data))
 
         try:
