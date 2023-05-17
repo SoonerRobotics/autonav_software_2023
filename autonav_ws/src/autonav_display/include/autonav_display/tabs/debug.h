@@ -67,22 +67,22 @@ void ShowDebug(SCR::Node *node)
 
     if (ImGui::Checkbox("Autonomous", &autonomous))
     {
-        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+        // SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
     }
 
     if (ImGui::Checkbox("!! ECO MODE !!", &eco))
     {
-        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+        // SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
     }
 
     if (ImGui::ColorEdit3("Color", color))
     {
-        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+        // SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
     }
 
     if (ImGui::SliderInt("Brightness", &brightness, 0, 255))
     {
-        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+        // SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
     }
 
     if (ImGui::BeginCombo("Mode", modes[modeIndex]))
@@ -93,7 +93,7 @@ void ShowDebug(SCR::Node *node)
             if (ImGui::Selectable(modes[i], isSelected))
             {
                 modeIndex = i;
-                SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+                // SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
             }
             if (isSelected)
             {
@@ -101,6 +101,12 @@ void ShowDebug(SCR::Node *node)
             }
         }
         ImGui::EndCombo();
+    }
+
+    if (ImGui::Button("Apply"))
+    {
+        SendSafetyLightsPacket(node, autonomous, eco, modeIndex, brightness, color[0], color[1], color[2]);
+
     }
 
     ImGui::SeparatorText("ImGUI");
