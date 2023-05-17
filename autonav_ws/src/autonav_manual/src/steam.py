@@ -65,6 +65,11 @@ class SteamTranslationNode(Node):
     
     def onButtonReleased(self, button: SteamControllerButton, msTime: float):
         self.log(f"Pressed {button} for {msTime}ms")
+        self.log(f"Death -> {button == SteamControllerButton.B}")
+        self.log(f"Manual -> {button == SteamControllerButton.START}")
+        self.log(f"Autonomous -> {button == SteamControllerButton.STEAM}")
+        self.log(f"Disabled -> {button == SteamControllerButton.BACK}")
+        self.log("-------------------")
         if button == SteamControllerButton.B and msTime > 1500:
             self.log("go to death -_-")
             self.setSystemState(SystemStateEnum.SHUTDOWN)
