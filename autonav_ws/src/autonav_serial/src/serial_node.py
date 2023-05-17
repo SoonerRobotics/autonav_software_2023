@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from ctypes import Structure, c_bool, c_uint8
 import rclpy
 import can
 import threading
@@ -19,6 +20,14 @@ SAFETY_LIGHTS_ID = 13
 
 CAN_50 = 50
 CAN_51 = 51
+
+
+class SafetyLightsPacket(Structure):
+    _fields_ = [
+        ("autonomous", c_bool, 1),
+        ("mode", c_uint8, 3),
+        ("color", c_uint8, 4),
+    ]
 
 
 class SerialMotors(Node):
@@ -134,7 +143,10 @@ class SerialMotors(Node):
                 self.setDeviceState(DeviceStateEnum.STANDBY)
 
     def onSafetyLightsReceived(self, lights: SafetyLights):
-        packed_data = struct.pack("hhh", 1 if lights.autonomous else 0, lights.preset, lights.color)
+        auto = lights.autonomous
+        color = lights.color
+        preset = lights.preset
+        packed_data = SafetyLightsPacket.pack(auto, preset, color)
         can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=packed_data)
 
         try:
