@@ -146,8 +146,11 @@ class SerialMotors(Node):
         auto = lights.autonomous
         color = lights.color
         preset = lights.preset
-        packed_data = SafetyLightsPacket.pack(auto, preset, color)
-        can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=packed_data)
+        packed_data = SafetyLightsPacket()
+        packed_data.autonomous = auto
+        packed_data.color = color
+        packed_data.preset = preset
+        can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=bytes(packed_data))
 
         try:
             self.can.send(can_msg)
