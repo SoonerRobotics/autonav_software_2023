@@ -42,7 +42,7 @@ public:
 
 		config.set(Registers::STEERING_DEADZONE, 0.04f);
 		config.set(Registers::THROTTLE_DEADZONE, 0.04f);
-		config.set(Registers::FORWARD_SPEED, 1.5f);
+		config.set(Registers::FORWARD_SPEED, 1.8f);
 		config.set(Registers::TURN_SPEED, 1.0f);
 
 		setDeviceState(SCR::DeviceState::READY);
@@ -92,7 +92,7 @@ public:
 
 		autonav_msgs::msg::MotorInput input;
 		input.forward_velocity = clamp(throttle, -2.2f, 2.2f);
-		input.angular_velocity = clamp(steering, -3.0f, 3.0f);
+		input.angular_velocity = clamp(steering * 2.35f, -3.14159265f, 3.14159265f);
 		motorPublisher->publish(input);
 	}
 
