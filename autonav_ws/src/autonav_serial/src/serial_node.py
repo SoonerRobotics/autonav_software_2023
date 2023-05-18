@@ -51,8 +51,8 @@ class SerialMotors(Node):
         self.motorDebugPublisher = self.create_publisher(MotorControllerDebug, "/autonav/MotorControllerDebug", 20)
         self.objectDetectionPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 20)
         self.motorFeedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 20)
-        self.conbuSubscriber = self.create_subscription(Conbus, "/autonav/Conbus", self.onConbusReceived, 20)
-        self.conbusPublisher = self.create_publisher(Conbus, "/autonav/Conbus", 20)
+        self.conbuSubscriber = self.create_subscription(Conbus, "/autonav/conbus", self.onConbusReceived, 20)
+        self.conbusPublisher = self.create_publisher(Conbus, "/autonav/conbus", 20)
         self.canTimer = self.create_timer(0.5, self.canWorker)
         self.canReadThread = threading.Thread(target=self.canThreadWorker)
         self.canReadThread.daemon = True

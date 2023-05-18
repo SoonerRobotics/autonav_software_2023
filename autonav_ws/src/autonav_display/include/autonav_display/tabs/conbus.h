@@ -107,8 +107,8 @@ void ShowConbus(SCR::Node *node)
 
 	if (conbusPublisher == nullptr)
 	{
-		conbusPublisher = node->create_publisher<autonav_msgs::msg::Conbus>("conbus", 10);
-		conbusSubscriber = node->create_subscription<autonav_msgs::msg::Conbus>("conbus", 10, [](const autonav_msgs::msg::Conbus::SharedPtr msg) {
+		conbusPublisher = node->create_publisher<autonav_msgs::msg::Conbus>("/autonav/conbus", 10);
+		conbusSubscriber = node->create_subscription<autonav_msgs::msg::Conbus>("/autonav/conbus", 10, [](const autonav_msgs::msg::Conbus::SharedPtr msg) {
 			totalResponses++;
 
 			if (msg->id >= 1100 && msg->id < 1200)
