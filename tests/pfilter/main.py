@@ -1,14 +1,11 @@
 import numpy as np
 from filter import PFilter
-from deadrekt import DeadReckoning
-
-import time
+from typies import Feedback, GPS
 import matplotlib.pyplot as plt
 
 FEEDBACK_FILE = "feedback.csv"
 GPS_FILE = "gps.csv"
 
-# Import feedback.csv and gps.csv
 feedbacks = []
 with open(FEEDBACK_FILE, "r") as f:
 	for line in f.readlines():
@@ -27,29 +24,41 @@ with open(GPS_FILE, "r") as f:
   
 print(f"Loaded {len(feedbacks)} feedbacks and {len(gps)} gps points")
 
-# Both gps and feedback have a timestamp column (the first one), so we can use that to align them. Create a mega array of all the data, add an extra column to indicate which data is from which file, and sort by timestamp.
 data = np.array(feedbacks + gps)
 data = np.hstack((data, np.array([["feedback"]*len(feedbacks) + ["gps"]*len(gps)]).T))
 data = data[data[:,0].argsort()]
+plt.figure(figsize=(15,15))
 
-plt.figure(figsize=(10,10))
-
-pf_poses = []
-dr_poses = []
+newpf_poses = []
+oldpf_poses = []
+rawgps_poses = []
 
 pf = PFilter()
-dr = DeadReckoning()
+first_gps = None
 for row in data:
 	if row[4] == "feedback":
+		feedback = Feedback(float(row[1]), float(row[2]), float(row[3]))
 		if float(row[1]) == 0 and float(row[2]) == 0 and float(row[3]) == 0:
 			continue
-		# pf_pose = pf.feedback(row)
-		dr_pose = dr.feedback(row)
-		dr_poses.append(dr_pose)
+		average = pf.feedback(feedback)
+		if first_gps is not None:
+			gps_x = first_gps.latitude + average[0] / 111086.2
+			gps_y = first_gps.longitude - average[1] / 81978.2
+			newpf_poses.append([gps_x, gps_y])
+
 	else:
-		pf.gps(row)
-  
-plt.plot([x[0] for x in pf_poses], [x[1] for x in pf_poses], label="Particle Filter")
-plt.plot([x[0] for x in dr_poses], [x[1] for x in dr_poses], label="Dead Reckoning")
+		gps = GPS(float(row[1]), float(row[2]))
+		if first_gps is None:
+			first_gps = gps
+   
+		pf.gps(gps)
+		rawgps_poses.append([gps.latitude, gps.longitude])
+
+# Filter out any [0, 0] points
+newpf_poses = [x for x in newpf_poses if x[0] != 0 and x[1] != 0]
+rawgps_poses = [x for x in rawgps_poses if x[0] != 0 and x[1] != 0]
+
+plt.plot([x[0] for x in newpf_poses], [x[1] for x in newpf_poses], label="Particle Filter")
+plt.plot([x[0] for x in rawgps_poses], [x[1] for x in rawgps_poses], label="Raw GPS")
 plt.legend()
 plt.show()
