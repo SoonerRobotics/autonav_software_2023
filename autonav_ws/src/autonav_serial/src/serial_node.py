@@ -182,12 +182,12 @@ class SerialMotors(Node):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
             return
         
-        self.log(f"CONBUS Instruction: {instruction.id} -> {','.join([str(x) for x in instruction.data])}")
-        can_msg = can.Message(arbitration_id = instruction.id, data = instruction.data)
-        try:
-            self.can.send(can_msg)
-        except can.CanError:
-            self.log("Failed to send ConBus CAN message")  
+        # self.log(f"CONBUS Instruction: {instruction.id} -> {','.join([str(x) for x in instruction.data])}")
+        # can_msg = can.Message(arbitration_id = instruction.id, data = instruction.data)
+        # try:
+        #     self.can.send(can_msg)
+        # except can.CanError:
+        #     self.log("Failed to send ConBus CAN message")  
 
     def onMotorInputReceived(self, input: MotorInput):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
