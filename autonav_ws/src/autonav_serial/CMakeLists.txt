@@ -18,6 +18,7 @@ install(PROGRAMS
 	src/serial_node.py
 	src/imu.py
 	src/camera.py
+	src/safety_lights.py
 	DESTINATION lib/${PROJECT_NAME}
 )
 
