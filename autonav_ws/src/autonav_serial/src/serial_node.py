@@ -5,7 +5,7 @@ import rclpy
 import can
 import threading
 import struct
-from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection, MotorControllerDebug, SafetyLights
+from autonav_msgs.msg import MotorInput, MotorFeedback, ObjectDetection, MotorControllerDebug, SafetyLights, Conbus
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum
 
@@ -51,6 +51,8 @@ class SerialMotors(Node):
         self.motorDebugPublisher = self.create_publisher(MotorControllerDebug, "/autonav/MotorControllerDebug", 20)
         self.objectDetectionPublisher = self.create_publisher(ObjectDetection, "/autonav/ObjectDetection", 20)
         self.motorFeedbackPublisher = self.create_publisher(MotorFeedback, "/autonav/MotorFeedback", 20)
+        self.conbuSubscriber = self.create_subscription(Conbus, "/autonav/Conbus", self.onConbusReceived, 20)
+        self.conbusPublisher = self.create_publisher(Conbus, "/autonav/Conbus", 20)
         self.canTimer = self.create_timer(0.5, self.canWorker)
         self.canReadThread = threading.Thread(target=self.canThreadWorker)
         self.canReadThread.daemon = True
@@ -128,6 +130,12 @@ class SerialMotors(Node):
             pkg.sensor_2 = middle
             pkg.sensor_3 = right
             self.objectDetectionPublisher.publish(pkg)
+            
+        if arb_id >= 1000 and arb_id <= 1300:
+            pkg = Conbus()
+            pkg.id = arb_id
+            pkg.data = msg.data
+            self.conbusPublisher.publish(pkg)
 
     def canWorker(self):
         try:
@@ -164,6 +172,16 @@ class SerialMotors(Node):
             self.can.send(can_msg)
         except can.CanError:
             self.log("Failed to send SafetyLights CAN message")
+            
+    def onConbusReceived(self, instruction: Conbus):
+        if self.getDeviceState() != DeviceStateEnum.OPERATING:
+            return
+        
+        can_msg = can.Message(arbitration_id = instruction.id, data = instruction.data)
+        try:
+            self.can.send(can_msg)
+        except can.CanError:
+            self.log("Failed to send ConBus CAN message")  
 
     def onMotorInputReceived(self, input: MotorInput):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
