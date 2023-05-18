@@ -140,8 +140,8 @@ void ShowConbus(SCR::Node *node)
 			}
 		});
 
-		auto motorcontroller_readall = createReadInstruction(MotorController::DeviceID, 0xFF);
-		pendingRequests.push_back(MotorController::DeviceID % 0xFF * 1000 + 100);
+		auto motorcontroller_readall = createReadInstruction(MotorController::DeviceID, MotorController::WHEEL_RADIUS);
+		pendingRequests.push_back(MotorController::DeviceID % MotorController::WHEEL_RADIUS * 1000 + 100);
 		conbusPublisher->publish(motorcontroller_readall);
 	}
 

@@ -1,2 +1,2 @@
 uint32 id
-byte[] data
+uint8[] data
