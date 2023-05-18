@@ -69,7 +69,7 @@ autonav_msgs::msg::Conbus createWriteInstruction(uint8_t device, uint8_t address
 ReadResponse createReadResponse(autonav_msgs::msg::Conbus::SharedPtr msg)
 {
 	auto response = ReadResponse();
-	response.device = msg->id - 1000;
+	response.device = msg->id - 1100;
 	response.address = msg->data[0];
 	response.length = msg->data[1];
 	response.reserved = msg->data[2];
@@ -147,8 +147,8 @@ void ShowConbus(SCR::Node *node)
 
 	if (ImGui::Button("Request Values"))
 	{
-		auto motorcontroller_readall = createReadInstruction(MotorController::DeviceID, 0xFF);
-		pendingRequests.push_back(MotorController::DeviceID % 0xFF * 1000 + 100);
+		auto motorcontroller_readall = createReadInstruction(MotorController::DeviceID, 255);
+		pendingRequests.push_back(MotorController::DeviceID % 255 * 1000 + 100);
 		conbusPublisher->publish(motorcontroller_readall);
 	}
 
