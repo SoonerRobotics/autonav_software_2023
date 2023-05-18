@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import MotorInput, Position
+from autonav_msgs.msg import MotorInput, Position, SafetyLights
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
@@ -17,6 +17,23 @@ RADIUS_MULTIPLIER = 2
 RADIUS_MAX = 3
 RADIUS_START = 4
 
+def hexToRgb(color: str):
+    if color[0] == "#":
+        color = color[1:]
+    return [int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16)]
+
+
+def toSafetyLights(autonomous: bool, eco: bool, mode: int, brightness: int, color: str) -> SafetyLights:
+    pkg = SafetyLights()
+    pkg.mode = mode
+    pkg.autonomous = autonomous
+    pkg.eco = eco
+    pkg.brightness = brightness
+    color = hexToRgb(color)
+    pkg.red = color[0]
+    pkg.green = color[1]
+    pkg.blue = color[2]
+
 
 class PathResolverNode(Node):
     def __init__(self):
@@ -29,6 +46,7 @@ class PathResolverNode(Node):
         self.pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
         self.positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
         self.motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
+        self.safetyLightsPublisher = self.create_publisher(SafetyLights, "/autonav/SafetyLights", 20)
         
         self.config.setFloat(FORWARD_SPEED, 0.75)
         self.config.setFloat(REVERSE_SPEED, -0.5)
@@ -46,6 +64,10 @@ class PathResolverNode(Node):
     def transition(self, old: SystemState, updated: SystemState):
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
             self.setDeviceState(DeviceStateEnum.OPERATING)
+            if updated.mobility == False:
+                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#00A36C"))
+            else:
+                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 0, 0, "#000000"))
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
             self.setDeviceState(DeviceStateEnum.READY)
@@ -53,6 +75,12 @@ class PathResolverNode(Node):
             inputPacket.forward_velocity = 0.0
             inputPacket.angular_velocity = 0.0
             self.motorPublisher.publish(inputPacket)
+            
+        if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING and updated.mobility == False:
+            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#00A36C"))
+            
+        if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING and updated.mobility == True:
+            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 0, 0, "#000000"))
 
     def onPositionReceived(self, msg):
         self.position = msg
@@ -84,11 +112,7 @@ class PathResolverNode(Node):
         inputPacket.forward_velocity = 0.0
         inputPacket.angular_velocity = 0.0
 
-        if lookahead is None:
-            self.motorPublisher.publish(inputPacket)
-            return
-
-        if self.backCount == -1 and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1:
+        if self.backCount == -1 and (lookahead is not None and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1):
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
@@ -97,8 +121,11 @@ class PathResolverNode(Node):
         else:
             if self.backCount == -1:
                 self.backCount = 5
+                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#ff0000"))
             else:
                 self.backCount -= 1
+                if self.backCount == -1:
+                    self.safetyLightsPublisher.publish(toSafetyLights(True, False, 0, 0, "#000000"))
 
             inputPacket.forward_velocity = self.config.getFloat(REVERSE_SPEED)
             inputPacket.angular_velocity = 0.0
