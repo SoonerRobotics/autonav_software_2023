@@ -85,12 +85,15 @@ class SerialMotors(Node):
             self.log(f"20,{self.getClockMs()},{feedback.delta_x},{feedback.delta_y},{feedback.delta_theta}")
 
         if arb_id == ESTOP_ID:
+            self.log(f"Received ESTOP")
             self.setEStop(True)
 
         if arb_id == MOBILITY_STOP_ID:
+            self.log(f"Received Mobiltiy Stop")
             self.setMobility(False)
 
         if arb_id == MOBILITY_START_ID:
+            self.log(f"Received Mobility Start")
             self.setMobility(True)
 
         if arb_id == CAN_50:
@@ -136,6 +139,7 @@ class SerialMotors(Node):
             pkg.id = arb_id
             pkg.data = msg.data
             self.conbusPublisher.publish(pkg)
+            self.log(f"Received CONBUS Instruction: {arb_id} -> {','.join([str(x) for x in msg.data])}")
 
     def canWorker(self):
         try:
@@ -167,6 +171,7 @@ class SerialMotors(Node):
         packed_data.green = lights.green
         packed_data.blue = lights.blue
         can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=bytes(packed_data))
+        self.log(f"Setting SafetyLights: {'Autonomous' if lights.autonomous else 'Manual'},{'Eco' if lights.eco else 'Not Eco'},{lights.mode},{lights.brightness},{lights.red},{lights.green},{lights.blue}")
 
         try:
             self.can.send(can_msg)
@@ -177,6 +182,7 @@ class SerialMotors(Node):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
             return
         
+        self.log(f"CONBUS Instruction: {instruction.id} -> {','.join([str(x) for x in instruction.data])}")
         can_msg = can.Message(arbitration_id = instruction.id, data = instruction.data)
         try:
             self.can.send(can_msg)

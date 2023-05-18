@@ -6,3 +6,4 @@
 #include "tabs/plots.h"
 #include "tabs/performance.h"
 #include "tabs/conbus.h"
+#include "tabs/logs.h"

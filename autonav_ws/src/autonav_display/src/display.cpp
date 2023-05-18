@@ -169,6 +169,11 @@ public:
 					ShowPerformance(this);
 					ImGui::EndTabItem();
 				}
+				if (ImGui::BeginTabItem("Logs"))
+				{
+					ShowLogs(this);
+					ImGui::EndTabItem();
+				}
 				if (ImGui::BeginTabItem("Debug"))
 				{
 					ImGui::BeginChild("scrolling5", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
