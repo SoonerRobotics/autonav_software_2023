@@ -17,6 +17,11 @@ void ShowLogs(SCR::Node *node)
 				return;
 			}
 
+			if (msg->node == "autonav_serial_imu")
+			{
+				return;
+			}
+
 			logs.push_back(*msg);
 			if (logs.size() > 100)
 			{
