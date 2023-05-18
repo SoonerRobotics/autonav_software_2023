@@ -183,7 +183,7 @@ class SerialMotors(Node):
             return
         
         self.log(f"CONBUS Instruction: {instruction.id} -> {','.join([str(x) for x in instruction.data])}")
-        can_msg = can.Message(arbitration_id = instruction.id, data = bytes(instruction.data))
+        can_msg = can.Message(arbitration_id = instruction.id, data = bytearray(instruction.data))
         try:
             self.can.send(can_msg)
         except can.CanError:

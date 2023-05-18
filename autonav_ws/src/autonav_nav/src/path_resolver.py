@@ -29,10 +29,10 @@ def toSafetyLights(autonomous: bool, eco: bool, mode: int, brightness: int, colo
     pkg.autonomous = autonomous
     pkg.eco = eco
     pkg.brightness = brightness
-    color = hexToRgb(color)
-    pkg.red = color[0]
-    pkg.green = color[1]
-    pkg.blue = color[2]
+    colorr = hexToRgb(color)
+    pkg.red = colorr[0]
+    pkg.green = colorr[1]
+    pkg.blue = colorr[2]
 
 
 class PathResolverNode(Node):
