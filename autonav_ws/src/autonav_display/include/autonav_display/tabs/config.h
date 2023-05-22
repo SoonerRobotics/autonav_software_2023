@@ -137,19 +137,20 @@ void ShowVisionConfig(SCR::Configuration *config)
         ShowFloatOption(config, "Waypoint Pop Distance", hash, 0, 0.1f, 10.0f);
         ShowFloatOption(config, "Waypoint Activiation Distance", hash, 2, 0.0f, 30.0f);
         ShowBoolOption(config, "Only Use Waypoints", hash, 3);
-        if (ImGui::BeginCombo("Direction", config->get<int>(hash, 1) == 0 ? "North" : config->get<int>(hash, 1) == 1 ? "South" : "Misc"))
+        std::vector<std::string> directions = {"North", "South", "Misc1", "Misc2", "Misc3", "Misc4", "Misc5"};
+        if (ImGui::BeginCombo("Direction", directions.at(config->get<int>(hash, 1)).c_str()))
         {
-            if (ImGui::Selectable("North", config->get<int>(hash, 1) == 0))
+            for (int i = 0; i < directions.size(); i++)
             {
-                config->set<int>(hash, 1, 0);
-            }
-            if (ImGui::Selectable("South", config->get<int>(hash, 1) == 1))
-            {
-                config->set<int>(hash, 1, 1);
-            }
-            if (ImGui::Selectable("Misc", config->get<int>(hash, 1) == 2))
-            {
-                config->set<int>(hash, 1, 2);
+                bool is_selected = (config->get<int>(hash, 1) == i);
+                if (ImGui::Selectable(directions[i].c_str(), is_selected))
+                {
+                    config->set<int>(hash, 1, i);
+                }
+                if (is_selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
             }
             ImGui::EndCombo();
         }

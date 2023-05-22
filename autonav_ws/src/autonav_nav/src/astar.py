@@ -22,7 +22,7 @@ horizontalCameraRange = 3
 
 MAP_RES = 80
 CONFIG_WAYPOINT_POP_DISTANCE = 0 # The distance until the waypoint has been reached
-CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc
+CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc1, 3 for misc2, 4 for misc3, 5 for misc4, and 6 for misc5
 CONFIG_WAYPOINT_ACTIVATION_DISTANCE = 2 # The distance from the robot to the next waypoint that will cause the robot to start using waypoints
 CONFIG_USE_WAYPOINTS = 3 # 0 for no waypoints, 1 for waypoints
 
@@ -36,15 +36,14 @@ CONFIG_USE_WAYPOINTS = 3 # 0 for no waypoints, 1 for waypoints
 
 competition_waypoints = [
     [(42.6682697222,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417)], 
-    [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028)], 
-    []
+    [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028)]
 ]
 # competition_waypoints = [[], [], []]
 
 practice_waypoints = [
     [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)],
     [(42.6679600583,-83.2184326556),(42.6680859611,-83.2184456444),(42.668222,-83.218472)],
-    []
+    [(35.2104852, -97.44193), (35.2104819, -97.4423302), (35.2106063, -97.4423293), (35.2106045, -97.4421059), (35.2104852, -97.44193)]
 ]
 # practice_waypoints = [[], [], []]
 
