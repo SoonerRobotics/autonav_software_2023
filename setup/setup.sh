@@ -2,8 +2,12 @@
 
 # Check if vectorsecrets.txt exists
 if [ ! -f vectorsecrets.txt ]; then
-    echo "vectorsecrets.txt does not exist. Please create it and try again."
-    exit 1
+    echo "vectorsecrets.txt does not exist. Creating it now:"
+    echo -n "Please enter your login: "
+    read username
+    echo -n "Please enter your password: "
+    read -s password
+    echo -n "machine files.dylanzeml.in login $username password $password" > vectorsecrets.txt
 fi
 
 sudo apt update
@@ -14,6 +18,9 @@ bash vnav.sh
 
 # Steam Controller Dependencies
 bash steam.sh
+
+# Music Dependencies
+bash jams.sh
 
 # ImGUI Dependencies
 sudo apt install libglfw3-dev libglew-dev -y

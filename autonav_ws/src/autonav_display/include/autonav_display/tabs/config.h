@@ -30,6 +30,15 @@ void ShowFloatOption(SCR::Configuration *config, std::string name, int64_t devic
     }
 }
 
+void ShowFloatSlider(SCR::Configuration *config, std::string name, int64_t device, uint8_t address, float min, float max)
+{
+    float value = config->get<float>(device, address);
+    if (ImGui::SliderFloat(name.c_str(), &value, min, max))
+    {
+        config->set<float>(device, address, value);
+    }
+}
+
 void ShowBoolOption(SCR::Configuration *config, std::string name, int64_t device, uint8_t address)
 {
     bool value = config->get<bool>(device, address);
@@ -204,15 +213,33 @@ void ShowVisionConfig(SCR::Configuration *config)
         ShowFloatOption(config, "Forward Speed (m/s)", hash, 3, 0, 5);
         ShowFloatOption(config, "Turn Speed (rad/s)", hash, 4, 0, 5);
     }
+
+    hash = SCR::hash("autonav_serial_jams");
+    if (config->hasDevice(hash))
+    {
+        ImGui::SeparatorText("JAMMIES");
+        std::vector<std::string> songs = { "OU Fight Song", "Peaches", "Good Morning" };
+        if (ImGui::BeginCombo("Song", songs.at(config->get<int>(hash, 0)).c_str()))
+        {
+            for (int i = 0; i < songs.size(); i++)
+            {
+                bool is_selected = (config->get<int>(hash, 0) == i);
+                if (ImGui::Selectable(songs[i].c_str(), is_selected))
+                {
+                    config->set<int>(hash, 0, i);
+                }
+                if (is_selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+        ShowFloatSlider(config, "Volume (dB)", hash, 1, -80, 80);
+    }
 }
 
 void ShowConfiguration(SCR::Node *node)
 {
-    if(!node->config.hasLoadedPreset())
-    {
-        node->config.load("default");
-        return;
-    }
-
     ShowVisionConfig(&node->config);
 }

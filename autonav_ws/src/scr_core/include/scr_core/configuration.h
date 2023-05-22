@@ -58,6 +58,7 @@ namespace SCR
 			rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber;
 			rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr loadSubscription;
+            rclcpp::Publisher<std_msgs::msg::String>::SharedPtr loadPublisher;
             std::vector<std::string> presets;
             std::string preset;
             bool loading = false;

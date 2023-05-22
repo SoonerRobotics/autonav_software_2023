@@ -115,6 +115,7 @@ public:
 				trackedNodes.push_back(node);
 				RCLCPP_INFO(this->get_logger(), "Node added: %s", node.c_str());
 				onNodeAdded(node);
+				publishState();
 			}
 		}
 
@@ -208,6 +209,7 @@ public:
 		state.state = request->state;
 		state.estop = request->estop;
 		state.mobility = request->mobility;
+		state.mode = request->mode;
 		publishState();
 
 		response->ok = true;
@@ -215,7 +217,6 @@ public:
 
 	void onSetDeviceState(const std::shared_ptr<scr_msgs::srv::SetDeviceState::Request> request, std::shared_ptr<scr_msgs::srv::SetDeviceState::Response> response)
 	{
-		publishState();
 		auto deviceState = scr_msgs::msg::DeviceState();
 		deviceState.device = request->device;
 		deviceState.state = request->state;

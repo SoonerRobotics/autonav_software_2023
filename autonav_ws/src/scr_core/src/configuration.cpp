@@ -27,6 +27,8 @@ namespace SCR
 		this->configSubscriber = configSubscriber;
 		this->configPublisher = configPublisher;
 		this->loadSubscription = loadSubscription;
+		this->loadPublisher = loadPublisher;
+		this->preset = "";
 
 		loadLocalPresets();
 	}
@@ -130,7 +132,7 @@ namespace SCR
 	{
 		std_msgs::msg::String msg;
 		msg.data = preset;
-		
+		loadPublisher->publish(msg);
 	}
 
 	void Configuration::onPresetChanged(std_msgs::msg::String::SharedPtr msg)

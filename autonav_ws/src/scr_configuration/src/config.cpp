@@ -144,6 +144,8 @@ public:
 		auto presetMsg = std_msgs::msg::String();
 		presetMsg.data = preset;
 		presetPublisher->publish(presetMsg);
+
+		temporaryCache.erase(msg->device);
 	}
 
 	void configure() override

@@ -19,6 +19,7 @@ install(PROGRAMS
 	src/imu.py
 	src/camera.py
 	src/safety_lights.py
+	src/jams.py
 	DESTINATION lib/${PROJECT_NAME}
 )
 

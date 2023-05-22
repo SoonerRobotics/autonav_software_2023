@@ -33,7 +33,7 @@ class FiltersNode(Node):
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
     def onReset(self):
-        self.pf.resetParticles()
+        self.pf.init_particles()
         self.reckoning.reset()
 
     def transition(self, old: SystemState, updated: SystemState):
@@ -41,7 +41,7 @@ class FiltersNode(Node):
             self.reckoning.reset()
             
         if old.state == SystemStateEnum.AUTONOMOUS and updated.state != SystemStateEnum.AUTONOMOUS:
-            self.pf.resetParticles()
+            self.pf.init_particles()
           
         if old.state != SystemStateEnum.MANUAL and updated.state == SystemStateEnum.MANUAL:
             self.onReset()
