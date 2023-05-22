@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 from ctypes import Structure, c_bool, c_uint8
+from scr_core.state import DeviceStateEnum
 from autonav_msgs.msg import SafetyLights
+from scr_msgs.msg import SystemState
 from scr_core.node import Node
 import threading
 import serial
@@ -30,6 +32,10 @@ class SafetyLightsSerial(Node):
         self.writeQueue = []
         self.writeQueueLock = threading.Lock()
         self.writeThread = threading.Thread(target=self.picoWriteWorker)
+        self.setDeviceState(DeviceStateEnum.OPERATING)
+        
+    def transition(self, old: SystemState, updated: SystemState):
+        pass
 
     def picoWriteWorker(self):
         while rclpy.ok():
