@@ -28,7 +28,8 @@ class Jammies(Node):
         self.audio = None
         
     def getPathToMusic(self, name):
-        return os.path.abspath(f"../deps/songs/{name}")
+        homedir = os.path.expanduser("~")
+        return os.path.abspath(f"{homedir}/autonav_software_2023/deps/songs/{name}")
 
     def playMusic(self):
         if self.config.getBool(CONFIG_MUSIC_DISABLED):

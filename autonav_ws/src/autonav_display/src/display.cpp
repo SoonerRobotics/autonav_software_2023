@@ -216,7 +216,7 @@ public:
 
 private:
 	std::thread renderThread;
-	float font_size = 20.0f;
+	float font_size = 16.0f;
 	bool fullscreen = false;
 };
 
