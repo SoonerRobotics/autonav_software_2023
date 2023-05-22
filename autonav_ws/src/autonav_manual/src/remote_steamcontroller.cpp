@@ -24,10 +24,10 @@ float clamp(float value, float min, float max)
 
 enum Registers
 {
-	STEERING_DEADZONE = 1,
-	THROTTLE_DEADZONE = 2,
-	FORWARD_SPEED = 3,
-	TURN_SPEED = 4
+	STEERING_DEADZONE = 0,
+	THROTTLE_DEADZONE = 1,
+	FORWARD_SPEED = 2,
+	TURN_SPEED = 3
 };
 
 class SteamJoyNode : public SCR::Node

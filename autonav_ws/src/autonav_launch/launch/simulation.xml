@@ -17,4 +17,5 @@
     <node pkg="autonav_filters" exec="filters.py" />
     <node pkg="autonav_manual" exec="steam.py" />
     <node pkg="autonav_manual" exec="steamremote" />
+    <node pkg="autonav_playback" exec="playback.py" />
 </launch>

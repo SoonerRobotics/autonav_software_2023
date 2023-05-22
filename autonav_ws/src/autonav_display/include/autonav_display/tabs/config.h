@@ -5,6 +5,12 @@
 
 void ShowIntOption(SCR::Configuration *config, std::string name, int64_t device, uint8_t address, int min, int max)
 {
+    if (!config->has(device, address))
+    {
+        ImGui::Text("%ld -> %d not found", device, address);
+        return;
+    }
+
     int value = config->get<int>(device, address);
     if (ImGui::InputInt(name.c_str(), &value, 1, 10))
     {
@@ -19,6 +25,12 @@ void ShowIntOption(SCR::Configuration *config, std::string name, int64_t device,
 
 void ShowFloatOption(SCR::Configuration *config, std::string name, int64_t device, uint8_t address, float min, float max)
 {
+    if (!config->has(device, address))
+    {
+        ImGui::Text("%ld -> %d not found", device, address);
+        return;
+    }
+
     float value = config->get<float>(device, address);
     if (ImGui::InputFloat(name.c_str(), &value))
     {
@@ -32,6 +44,12 @@ void ShowFloatOption(SCR::Configuration *config, std::string name, int64_t devic
 
 void ShowFloatSlider(SCR::Configuration *config, std::string name, int64_t device, uint8_t address, float min, float max)
 {
+    if (!config->has(device, address))
+    {
+        ImGui::Text("%ld -> %d not found", device, address);
+        return;
+    }
+
     float value = config->get<float>(device, address);
     if (ImGui::SliderFloat(name.c_str(), &value, min, max))
     {
@@ -41,6 +59,12 @@ void ShowFloatSlider(SCR::Configuration *config, std::string name, int64_t devic
 
 void ShowBoolOption(SCR::Configuration *config, std::string name, int64_t device, uint8_t address)
 {
+    if (!config->has(device, address))
+    {
+        ImGui::Text("%ld -> %d not found", device, address);
+        return;
+    }
+
     bool value = config->get<bool>(device, address);
     if (ImGui::Checkbox(name.c_str(), &value))
     {
@@ -147,7 +171,7 @@ void ShowVisionConfig(SCR::Configuration *config)
         ShowFloatOption(config, "Waypoint Activiation Distance", hash, 2, 0.0f, 30.0f);
         ShowBoolOption(config, "Only Use Waypoints", hash, 3);
         std::vector<std::string> directions = {"North", "South", "Misc1", "Misc2", "Misc3", "Misc4", "Misc5"};
-        if (ImGui::BeginCombo("Direction", directions.at(config->get<int>(hash, 1)).c_str()))
+        if (config->has(hash, 1) && ImGui::BeginCombo("Direction", directions.at(config->get<int>(hash, 1)).c_str()))
         {
             for (int i = 0; i < directions.size(); i++)
             {
@@ -208,10 +232,26 @@ void ShowVisionConfig(SCR::Configuration *config)
     if (config->hasDevice(hash))
     {
         ImGui::SeparatorText("Manual Control (Steam)");
-        ShowFloatOption(config, "Steering Deadzone", hash, 1, 0, 1);
-        ShowFloatOption(config, "Throttle Deadzone", hash, 2, 0, 1);
-        ShowFloatOption(config, "Forward Speed (m/s)", hash, 3, 0, 5);
-        ShowFloatOption(config, "Turn Speed (rad/s)", hash, 4, 0, 5);
+        ShowFloatOption(config, "Steering Deadzone", hash, 0, 0, 1);
+        ShowFloatOption(config, "Throttle Deadzone", hash, 1, 0, 1);
+        ShowFloatOption(config, "Forward Speed (m/s)", hash, 2, 0, 5);
+        ShowFloatOption(config, "Turn Speed (rad/s)", hash, 3, 0, 5);
+    }
+
+    hash = SCR::hash("autonav_playback");
+    if (config->hasDevice(hash))
+    {
+        ImGui::SeparatorText("Playback");
+        ShowBoolOption(config, "Record IMU", hash, 0);
+        ShowBoolOption(config, "Record GPS", hash, 1);
+        ShowBoolOption(config, "Record Position (Estimated)", hash, 2);
+        ShowBoolOption(config, "Record Feedback", hash, 3);
+        ShowBoolOption(config, "Record Object Detection", hash, 4);
+        ShowBoolOption(config, "Record Camera", hash, 5);
+        ShowBoolOption(config, "Record Thresholded Image", hash, 6);
+        ShowBoolOption(config, "Record Expandified Image", hash, 7);
+        ShowBoolOption(config, "Record in Manual", hash, 8);
+        ShowBoolOption(config, "Record in Autonomous", hash, 9);
     }
 
     hash = SCR::hash("autonav_serial_jams");
@@ -219,7 +259,7 @@ void ShowVisionConfig(SCR::Configuration *config)
     {
         ImGui::SeparatorText("JAMMIES");
         std::vector<std::string> songs = { "OU Fight Song", "Peaches", "Good Morning" };
-        if (ImGui::BeginCombo("Song", songs.at(config->get<int>(hash, 0)).c_str()))
+        if (config->has(hash, 0) && ImGui::BeginCombo("Song", songs.at(config->get<int>(hash, 0)).c_str()))
         {
             for (int i = 0; i < songs.size(); i++)
             {

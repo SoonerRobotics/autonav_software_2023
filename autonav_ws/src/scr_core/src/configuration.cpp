@@ -29,6 +29,7 @@ namespace SCR
 		this->loadSubscription = loadSubscription;
 		this->loadPublisher = loadPublisher;
 		this->preset = "";
+		this->presets = {};
 
 		loadLocalPresets();
 	}
@@ -156,6 +157,11 @@ namespace SCR
 	{
 		auto bytes = cache[device][address];
 		return static_cast<int>(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
+	}
+
+	bool Configuration::has(int64_t device, uint8_t address)
+	{
+		return cache[device].find(address) != cache[device].end();
 	}
 
 	template <>

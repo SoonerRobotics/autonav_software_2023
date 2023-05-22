@@ -33,9 +33,9 @@ static void glfw_error_callback(int error, const char *description)
 class DisplayNode : public SCR::Node
 {
 public:
-	DisplayNode() : SCR::Node("autonav_display") {
-		this->declare_parameter("default_preset", "default");
-		this->declare_parameter("fullscreen", false);
+	DisplayNode() : SCR::Node("autonav_display")
+	{
+		fullscreen = this->declare_parameter<bool>("fullscreen", false);
 	}
 
 	~DisplayNode() {}
@@ -65,7 +65,7 @@ public:
 
 		const char *glsl_version = "#version 130";
 		const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		const bool fullscreen = this->get_parameter("fullscreen").as_bool();
+		this->log("Is Fullscreen -> " + std::to_string(fullscreen));
 		window = glfwCreateWindow(mode->width, mode->height, "Autonav 2023 | The Weeb Wagon", fullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
 		if (window == nullptr)
 		{
@@ -98,9 +98,6 @@ public:
 		ImGui_ImplOpenGL3_DestroyFontsTexture();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 
-		ImGui::GetStyle().AntiAliasedFill = false;
-
-		ImGui::GetStyle().WindowRounding = 0.0f;
 		return true;
 	}
 
@@ -202,6 +199,8 @@ public:
 			glfwSwapBuffers(window);
 
 			performance.end("Display Render");
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(33));
 		}
 
 		rclcpp::shutdown();
@@ -217,15 +216,14 @@ public:
 
 private:
 	std::thread renderThread;
-
 	float font_size = 20.0f;
+	bool fullscreen = false;
 };
 
-int main(int, char **)
+int main(int argc, char *argv[])
 {
-	rclcpp::init(0, NULL);
-	auto node = std::make_shared<DisplayNode>();
-	rclcpp::spin(node);
+	rclcpp::init(argc, argv);
+	rclcpp::spin(std::make_shared<DisplayNode>());
 	rclcpp::shutdown();
 	return 0;
 }

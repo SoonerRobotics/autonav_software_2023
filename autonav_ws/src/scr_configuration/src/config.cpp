@@ -131,6 +131,14 @@ public:
 			return;
 		}
 
+		if (temporaryCache.find(msg->device) != temporaryCache.end())
+		{
+			for (auto &[address, bytes] : temporaryCache.at(msg->device))
+			{
+				config.set(msg->device, address, bytes);
+			}
+		}
+
 		if (temporaryCache.find(msg->device) == temporaryCache.end())
 		{
 			return;
@@ -144,8 +152,6 @@ public:
 		auto presetMsg = std_msgs::msg::String();
 		presetMsg.data = preset;
 		presetPublisher->publish(presetMsg);
-
-		temporaryCache.erase(msg->device);
 	}
 
 	void configure() override

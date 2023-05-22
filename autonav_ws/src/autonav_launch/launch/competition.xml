@@ -8,7 +8,7 @@
     <node pkg="scr_configuration" exec="config">
         <param name="preset" value="competition" />
     </node>
-    <node pkg="autonav_display" exec="primary_display" output="screen">
+    <node pkg="autonav_display" exec="primary_display">
         <param name="fullscreen" value="true" />
     </node>
     <node pkg="autonav_serial" exec="imu.py" />
@@ -22,4 +22,5 @@
     <node pkg="autonav_manual" exec="steamremote" />
     <node pkg="autonav_nav" exec="astar.py" />
     <node pkg="autonav_nav" exec="path_resolver.py" />
+    <node pkg="autonav_playback" exec="playback.py" />
 </launch>

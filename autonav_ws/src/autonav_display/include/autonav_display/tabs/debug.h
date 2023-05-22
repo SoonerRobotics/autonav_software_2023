@@ -109,6 +109,8 @@ void ShowDebug(SCR::Node *node)
 
     }
 
+    ImGui::SeparatorText("Parameters");
+
     ImGui::SeparatorText("ImGUI");
     static bool showImGuiDemo = false;
     ImGui::Checkbox("Show ImGui Demo", &showImGuiDemo);

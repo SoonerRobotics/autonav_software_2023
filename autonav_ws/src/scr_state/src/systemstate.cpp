@@ -19,7 +19,6 @@ public:
 		systemStatePublisher = this->create_publisher<scr_msgs::msg::SystemState>("/scr/state/system", 10);
 		stateTimer = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&StateSystemNode::onStateTick, this));
 
-		declare_parameter("forced_state", "");
 		requiredNodes = declare_parameter("required_nodes", std::vector<std::string>());
 		if (std::find(requiredNodes.begin(), requiredNodes.end(), "scr_logging") == requiredNodes.end())
 		{
@@ -30,16 +29,13 @@ public:
 			requiredNodes.push_back("scr_configuration");
 		}
 
-		declare_parameter("mode", 0);
-		declare_parameter("override_mobility", false);
-
 		state = scr_msgs::msg::SystemState();
 		state.state = SCR::SystemState::DISABLED;
-		state.mode = get_parameter("mode").as_int();
+		state.mode = declare_parameter("mode", 0);
 		state.estop = false;
-		state.mobility = get_parameter("override_mobility").as_bool();
+		state.mobility = declare_parameter("override_mobility", false);
 
-		auto forcedState = get_parameter("forced_state").as_string();
+		auto forcedState = declare_parameter("forced_state", "");
 		if (forcedState == "disabled")
 		{
 			state.state = SCR::SystemState::DISABLED;
@@ -113,24 +109,22 @@ public:
 			if (std::find(trackedNodes.begin(), trackedNodes.end(), node) == trackedNodes.end())
 			{
 				trackedNodes.push_back(node);
-				RCLCPP_INFO(this->get_logger(), "Node added: %s", node.c_str());
 				onNodeAdded(node);
 				publishState();
 			}
 		}
 
-		std::vector<std::string> removedNodes;
+		std::vector<std::string> lostNodes;
 		for (auto node : trackedNodes)
 		{
 			if (std::find(nodes.begin(), nodes.end(), node) == nodes.end())
 			{
-				removedNodes.push_back(node);
+				lostNodes.push_back(node);
 			}
 		}
 
-		for (auto node : removedNodes)
+		for (auto node : lostNodes)
 		{
-			RCLCPP_INFO(this->get_logger(), "Node removed: %s", node.c_str());
 			trackedNodes.erase(std::remove(trackedNodes.begin(), trackedNodes.end(), node), trackedNodes.end());
 			onNodeRemoved(node);
 		}

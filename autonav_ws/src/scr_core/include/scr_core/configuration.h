@@ -35,6 +35,8 @@ namespace SCR
             template <typename T>
             void set(int64_t device, uint8_t address, T value);
 
+            bool has(int64_t device, uint8_t address);
+
             void recache();
 			void onConfigurationInstruction(const scr_msgs::msg::ConfigurationInstruction::SharedPtr msg);
 
@@ -54,7 +56,7 @@ namespace SCR
 
         private:
             int64_t id;
-            std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> cache;
+            std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> cache = {};
 			rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber;
 			rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher;
             rclcpp::Subscription<std_msgs::msg::String>::SharedPtr loadSubscription;
