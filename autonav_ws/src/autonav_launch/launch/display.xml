@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="autonav_display" exec="primary_display">
+        <param name="fullscreen" value="true" />
+    </node>
+</launch>
