@@ -22,7 +22,7 @@ void ShowLogs(SCR::Node *node)
 				return;
 			}
 
-			logs.push_back(*msg);
+			logs.insert(logs.begin(), *msg);
 			if (logs.size() > 100)
 			{
 				logs.erase(logs.begin());

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import Position, IMUData
+from autonav_msgs.msg import Position, IMUData, PathingDebug
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum, SystemMode
@@ -65,20 +65,21 @@ class AStarNode(Node):
     def __init__(self):
         super().__init__("autonav_nav_astar")
 
-        self.m_configSpace = None
+        self.configSpace = None
         self.position = None
         self.imu = None
 
     def configure(self):
-        self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
-        self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
-        self.m_imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.onImuReceived, 20)
-        self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
-        self.m_mapTimer = self.create_timer(0.2, self.makeMap)
+        self.configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
+        self.poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
+        self.imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.onImuReceived, 20)
+        self.debugPublisher = self.create_publisher(PathingDebug, "/autonav/debug/astar", 20)
+        self.pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
+        self.mapTimer = self.create_timer(0.2, self.makeMap)
 
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
-        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5)
+        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 1)
         self.config.setBool(CONFIG_USE_WAYPOINTS, False)
         self.config.setBool(CONFIG_USE_IMU_HEADING, True)
 
@@ -90,7 +91,7 @@ class AStarNode(Node):
     def onReset(self):
         global cost_map, best_pos, waypoints
         self.position = None
-        self.m_configSpace = None
+        self.configSpace = None
         cost_map = None
         best_pos = (0, 0)
         waypoints = []
@@ -102,6 +103,8 @@ class AStarNode(Node):
     def transition(self, old: SystemState, updated: SystemState):
         global waypoints
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+            wpts = self.getWaypointsForDirection()
+            waypoints = wpts
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
@@ -127,7 +130,7 @@ class AStarNode(Node):
             global_path.poses = [
                 pathToGlobalPose(robot_pos, pp[0], pp[1]) for pp in path
             ]
-            self.m_pathPublisher.publish(global_path)
+            self.pathPublisher.publish(global_path)
             
     def reconstruct_path(self, path, current):
         total_path = [current]
@@ -213,15 +216,15 @@ class AStarNode(Node):
         if self.config.getBool(CONFIG_USE_WAYPOINTS) == True:
             grid_data = [0] * len(msg.data)
 
-        if len(waypoints) == 0:
-            wpts = self.getWaypointsForDirection()
-            if len(wpts) > 0:
-                wpt = wpts[0]
-                north_to_gps = (wpt[0] - self.position.latitude) * 111086.2
-                west_to_gps = (self.position.longitude - wpt[1]) * 81978.2
-                distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
-                if distanceToWaypoint <= self.config.getFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE):
-                    waypoints = wpts
+        if len(waypoints) > 0:
+            next_waypoint = waypoints[0]
+            north_to_gps = (next_waypoint[0] - self.position.latitude) * 111086.2
+            west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
+            heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
+
+            if math.sqrt(north_to_gps ** 2 + west_to_gps ** 2) <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
+                waypoints.pop(0)
+                self.log("Reached waypoint, %d remaining" % len(waypoints))
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
@@ -229,8 +232,18 @@ class AStarNode(Node):
             west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
             heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
-            if north_to_gps ** 2 + west_to_gps ** 2 <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
-                waypoints.pop(0)
+            debugpkg = PathingDebug()
+            debugpkg.desired_heading = heading_to_gps
+            debugpkg.desired_latitude = next_waypoint[0]
+            debugpkg.desired_longitude = next_waypoint[1]
+            debugpkg.distance_to_destination = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
+            # turn waypoints into 1d array
+            wp1d = []
+            for wp in waypoints:
+                wp1d.append(wp[0])
+                wp1d.append(wp[1])
+            debugpkg.waypoints = wp1d
+            self.debugPublisher.publish(debugpkg)
 
         depth = 0
         while depth < 50 and len(frontier) > 0:

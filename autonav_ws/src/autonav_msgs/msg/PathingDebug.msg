@@ -1,0 +1,5 @@
+float64 desired_heading
+float64 desired_latitude
+float64 desired_longitude
+float64 distance_to_destination
+float64[] waypoints

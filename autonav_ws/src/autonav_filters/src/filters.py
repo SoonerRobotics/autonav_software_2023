@@ -22,7 +22,7 @@ class FiltersNode(Node):
         self.reckoning = DeadReckoningFilter(self)
 
     def configure(self):
-        self.config.setInt(0, FilterType.PARTICLE_FILTER)
+        self.config.setInt(0, FilterType.DEAD_RECKONING)
 
         self.create_subscription(GPSFeedback, "/autonav/gps", self.onGPSReceived, 20)
         self.create_subscription(MotorFeedback, "/autonav/MotorFeedback", self.onMotorFeedbackReceived, 20)
@@ -56,6 +56,8 @@ class FiltersNode(Node):
         filterType = self.config.getInt(0)
         if filterType == FilterType.PARTICLE_FILTER:
             self.pf.gps(msg)
+        elif filterType == FilterType.DEAD_RECKONING:
+            self.reckoning.updateGPS(msg)
 
     def onMotorFeedbackReceived(self, msg: MotorFeedback):
         filterType = self.config.getInt(0)

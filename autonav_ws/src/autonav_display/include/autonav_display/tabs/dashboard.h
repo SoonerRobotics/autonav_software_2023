@@ -1,4 +1,5 @@
 #include "autonav_msgs/msg/motor_feedback.hpp"
+#include "autonav_msgs/msg/pathing_debug.hpp"
 #include "autonav_msgs/msg/gps_feedback.hpp"
 #include "autonav_msgs/msg/motor_input.hpp"
 #include "autonav_msgs/msg/position.hpp"
@@ -77,11 +78,13 @@ void ShowDashboard(SCR::Node *node)
     static rclcpp::Subscription<autonav_msgs::msg::IMUData>::SharedPtr imuSubscriber = nullptr;
     static rclcpp::Subscription<autonav_msgs::msg::MotorInput>::SharedPtr motorInputSubscriber = nullptr;
     static rclcpp::Subscription<autonav_msgs::msg::MotorFeedback>::SharedPtr motorFeedbackSubscriber = nullptr;
+    static rclcpp::Subscription<autonav_msgs::msg::PathingDebug>::SharedPtr pathingDebugSubscriber = nullptr;
     static autonav_msgs::msg::Position position;
     static autonav_msgs::msg::GPSFeedback gps;
     static autonav_msgs::msg::IMUData imu;
     static autonav_msgs::msg::MotorInput motorInput;
     static autonav_msgs::msg::MotorFeedback motorFeedback;
+    static autonav_msgs::msg::PathingDebug pathingDebug;
 
     if (positionSubscriber == nullptr)
     {
@@ -114,6 +117,12 @@ void ShowDashboard(SCR::Node *node)
                 motorFeedback = *msg;
             }
         );
+
+        pathingDebugSubscriber = node->create_subscription<autonav_msgs::msg::PathingDebug>(
+            "autonav/debug/astar", 20, [&](const autonav_msgs::msg::PathingDebug::SharedPtr msg) {
+                pathingDebug = *msg;
+            }
+        );
     }
 
     ImGui::Text("State: %s", toString(static_cast<SCR::SystemState>(node->getSystemState().state)).c_str());
@@ -129,6 +138,19 @@ void ShowDashboard(SCR::Node *node)
     ImGui::Text("Estimated Position: (%.5f, %.5f, %.5f)", position.x, position.y, thetaToHeading(position.theta));
     ImGui::Text("Estimated GPS: (%.8f, %.8f)", position.latitude, position.longitude);
     
+    ImGui::SeparatorText("A* Debug");
+    ImGui::Text("Desired Heading: %.5f", pathingDebug.desired_heading);
+    ImGui::Text("Waypoint (%.9f, %.9f)", pathingDebug.desired_latitude, pathingDebug.desired_longitude);
+    ImGui::Text("Distance to Waypoint: %.5f", pathingDebug.distance_to_destination);
+    // Show a list of waypoints
+    ImGui::Text("Waypoints:");
+    ImGui::Indent();
+    for (int i = 0; i < pathingDebug.waypoints.size(); i += 2)
+    {
+        ImGui::Text("Waypoint %d: (%.9f, %.9f)", i / 2, pathingDebug.waypoints[i], pathingDebug.waypoints[i + 1]);
+    }
+    ImGui::Unindent();
+
     ImGui::SeparatorText("GPS");
     ImGui::Text("GPS: (%.8f, %.8f, %.8f)", gps.latitude, gps.longitude, gps.altitude);
     ImGui::Text("Current Fix: %d", gps.gps_fix);
