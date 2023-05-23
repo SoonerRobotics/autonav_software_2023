@@ -9,6 +9,8 @@ import threading
 import serial
 import rclpy
 import json
+import os
+import time
 
 
 class SafetyLightsPacket(Structure):
@@ -29,27 +31,36 @@ class SafetyLightsSerial(Node):
 
     def configure(self):
         self.safetyLightsSubscriber = self.create_subscription(SafetyLights, "/autonav/SafetyLights", self.onSafetyLightsReceived, 20)
-        self.pico = serial.Serial("/dev/autonav-mc-safetylights", baudrate = 115200)
+        self.pico = None
         self.writeQueue = []
         self.writeQueueLock = threading.Lock()
         self.writeThread = threading.Thread(target=self.picoWriteWorker)
         self.writeThread.start()
-        self.setDeviceState(DeviceStateEnum.OPERATING)
         
     def transition(self, old: SystemState, updated: SystemState):
         pass
 
     def picoWriteWorker(self):
         while rclpy.ok():
-            if not self.pico.is_open or self.pico.in_waiting > 0:
+            does_exist = os.path.exists("/dev/autonav-mc-safetylights")
+            if not does_exist:
+                time.sleep(1)
                 continue
             
-            self.writeQueueLock.acquire()
-            if len(self.writeQueue) > 0:
-                jsonStr = json.dumps(self.writeQueue.pop(0))
-                self.log(jsonStr)
-                self.pico.write(bytes(jsonStr, "utf-8"))
-            self.writeQueueLock.release()
+            self.pico = serial.Serial("/dev/autonav-mc-safetylights", baudrate = 115200)
+            self.setDeviceState(DeviceStateEnum.OPERATING)
+            while self.pico is not None and self.pico.is_open:
+                if not self.pico.is_open or self.pico.in_waiting > 0 or len(self.writeQueue) == 0:
+                    continue
+                
+                self.writeQueueLock.acquire()
+                if len(self.writeQueue) > 0:
+                    jsonStr = json.dumps(self.writeQueue.pop(0))
+                    try:
+                        self.pico.write(bytes(jsonStr, "utf-8"))
+                    except:
+                        self.log(f"Failed to write to serial port: {jsonStr}")
+                self.writeQueueLock.release()
 
     def onSafetyLightsReceived(self, lights: SafetyLights):
         data = {}

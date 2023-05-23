@@ -82,7 +82,6 @@ class IMUNode(Node):
             gps.gps_fix = sensor_register.gps_fix
             gps.satellites = sensor_register.num_sats
             self.gpsPublisher.publish(gps)
-            self.log(f"{self.getClockMs()},{imu.accel_x},{imu.accel_y},{imu.accel_z},{imu.yaw},{imu.pitch},{imu.roll},{imu.angular_x},{imu.angular_y},{imu.angular_z},{gps.latitude},{gps.longitude},{gps.altitude},{gps.gps_fix},{gps.satellites}")
             time.sleep(self.config.getFloat(IMU_READ_RATE))
 
 

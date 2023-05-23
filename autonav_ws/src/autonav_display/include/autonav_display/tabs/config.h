@@ -247,6 +247,8 @@ void ShowVisionConfig(SCR::Configuration *config)
         ShowBoolOption(config, "Record GPS", hash, 1);
         ShowBoolOption(config, "Record Position (Estimated)", hash, 2);
         ShowBoolOption(config, "Record Feedback", hash, 3);
+        ShowBoolOption(config, "Record Motor Feedback (Debug)", hash, 11);
+        ShowBoolOption(config, "Record Motor Input", hash, 10);
         ShowBoolOption(config, "Record Object Detection", hash, 4);
         ShowBoolOption(config, "Record Camera", hash, 5);
         ShowBoolOption(config, "Record Thresholded Image", hash, 6);

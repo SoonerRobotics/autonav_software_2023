@@ -68,7 +68,7 @@ void ShowVision(SCR::Node *node)
             rawImage = msg;
         });
 
-        filteredImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/camera/filtered", 20, [](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
+        filteredImageSubscriber = node->create_subscription<sensor_msgs::msg::CompressedImage>("/autonav/cfg_space/raw/image", 20, [](const sensor_msgs::msg::CompressedImage::SharedPtr msg) {
             filteredImage = msg;
         });
 

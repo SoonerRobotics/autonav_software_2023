@@ -82,7 +82,6 @@ class SerialMotors(Node):
             feedback.delta_y = deltaY / 10000.0
             feedback.delta_x = deltaX / 10000.0
             self.motorFeedbackPublisher.publish(feedback)
-            self.log(f"20,{self.getClockMs()},{feedback.delta_x},{feedback.delta_y},{feedback.delta_theta}")
 
         if arb_id == ESTOP_ID:
             self.log(f"Received ESTOP")
@@ -103,9 +102,6 @@ class SerialMotors(Node):
             self.currentAngularVel = currentAngularVel / 1000.0
             self.setpointAngularVel = setpointAngularVel / 1000.0
 
-            # Log the CAN_50 message
-            self.log(f"50,{self.getClockMs()},{self.currentForwardVel},{self.setpointForwardVel},{self.currentAngularVel},{self.setpointAngularVel}")
-
         if arb_id == CAN_51:
             leftMotorOutput, rightMotorOutput = struct.unpack("hh", msg.data)
             leftMotorOutput /= 1000.0
@@ -122,9 +118,6 @@ class SerialMotors(Node):
             pkg.timestamp = self.getClockMs() * 1.0
             self.motorDebugPublisher.publish(pkg)
 
-            # Log the CAN_51 message
-            self.log(f"51,{self.getClockMs()},{leftMotorOutput},{rightMotorOutput}")
-
         if arb_id == OBJECT_DETECTION:
             # Load in 4 bytes
             zero, left, middle, right = struct.unpack("BBBB", msg.data)
@@ -139,7 +132,6 @@ class SerialMotors(Node):
             pkg.id = arb_id
             pkg.data = msg.data
             self.conbusPublisher.publish(pkg)
-            self.log(f"Received CONBUS Instruction: {arb_id} -> {','.join([str(x) for x in msg.data])}")
 
     def canWorker(self):
         try:

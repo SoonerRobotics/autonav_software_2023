@@ -111,8 +111,8 @@ class AStarNode(Node):
     def onPoseReceived(self, msg: Position):
         self.position = msg
         if self.config.getBool(CONFIG_USE_IMU_HEADING):
-            good_yaw = self.imu.yaw if self.imu.yaw > 0 else self.imu.yaw + 360
-            self.position.theta = self.imu.yaw
+            good_yaw = (self.imu.yaw if self.imu.yaw > 0 else self.imu.yaw + 360) if self.imu is not None else self.position.theta
+            self.position.theta = good_yaw
         
     def makeMap(self):
         global cost_map, best_pos, planner

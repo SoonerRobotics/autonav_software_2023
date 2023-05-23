@@ -54,7 +54,7 @@ class ImageTransformer(Node):
 
         self.cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.rawMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
-        self.filteredImagePublisher = self.create_publisher(CompressedImage, "/autonav/camera/filtered", 1)
+        self.filteredImagePublisher = self.create_publisher(CompressedImage, "/autonav/cfg_space/raw/image", 1)
 
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
