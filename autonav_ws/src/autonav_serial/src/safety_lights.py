@@ -8,6 +8,7 @@ from scr_core.node import Node
 import threading
 import serial
 import rclpy
+import json
 
 
 class SafetyLightsPacket(Structure):
@@ -28,10 +29,11 @@ class SafetyLightsSerial(Node):
 
     def configure(self):
         self.safetyLightsSubscriber = self.create_subscription(SafetyLights, "/autonav/SafetyLights", self.onSafetyLightsReceived, 20)
-        self.pico = serial.Serial(port="COM3", timeout=0)
+        self.pico = serial.Serial("/dev/autonav-mc-safetylights", baudrate = 115200)
         self.writeQueue = []
         self.writeQueueLock = threading.Lock()
         self.writeThread = threading.Thread(target=self.picoWriteWorker)
+        self.writeThread.start()
         self.setDeviceState(DeviceStateEnum.OPERATING)
         
     def transition(self, old: SystemState, updated: SystemState):
@@ -44,20 +46,22 @@ class SafetyLightsSerial(Node):
             
             self.writeQueueLock.acquire()
             if len(self.writeQueue) > 0:
-                self.pico.write(self.writeQueue.pop(0))
+                jsonStr = json.dumps(self.writeQueue.pop(0))
+                self.log(jsonStr)
+                self.pico.write(bytes(jsonStr, "utf-8"))
             self.writeQueueLock.release()
 
     def onSafetyLightsReceived(self, lights: SafetyLights):
-        packet = SafetyLightsPacket()
-        packet.autonomous = lights.autonomous
-        packet.eco = lights.eco
-        packet.mode = lights.mode
-        packet.brightness = lights.brightness
-        packet.red = lights.red
-        packet.green = lights.green
-        packet.blue = lights.blue
+        data = {}
+        data["autonomous"] = lights.autonomous
+        data["eco"] = lights.eco
+        data["mode"] = lights.mode
+        data["brightness"] = lights.brightness
+        data["red"] = lights.red
+        data["green"] = lights.green
+        data["blue"] = lights.blue
         self.writeQueueLock.acquire()
-        self.writeQueue.append(bytes(packet))
+        self.writeQueue.append(data)
         self.writeQueueLock.release()
 
 

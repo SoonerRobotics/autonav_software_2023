@@ -13,8 +13,8 @@ class Particle:
 class ParticleFilter:
     def __init__(self, num_particles = 500, gps_noise = None, feedback_noise = None) -> None:
         self.num_particles = num_particles
-        self.gps_noise = gps_noise if gps_noise is not None else 0.2
-        self.odom_noise = feedback_noise if feedback_noise is not None else [0.05, 0.05, 0.1]
+        self.gps_noise = gps_noise if gps_noise is not None else 0.15
+        self.odom_noise = feedback_noise if feedback_noise is not None else [0.05, 0.05, 0.07]
         self.init_particles()
         self.first_gps = None
         

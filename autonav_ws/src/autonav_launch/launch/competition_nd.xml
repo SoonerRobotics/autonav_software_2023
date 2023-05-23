@@ -12,6 +12,7 @@
     <node pkg="autonav_serial" exec="imu.py" />
     <node pkg="autonav_serial" exec="serial_node.py" />
     <node pkg="autonav_serial" exec="camera.py" />
+    <node pkg="autonav_serial" exec="safety_lights.py" />
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify" />
     <node pkg="autonav_filters" exec="filters.py" />
