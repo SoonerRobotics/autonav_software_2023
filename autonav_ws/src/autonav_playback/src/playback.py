@@ -3,7 +3,7 @@
 from autonav_msgs.msg import IMUData, GPSFeedback, MotorFeedback, MotorInput, Position, MotorControllerDebug, ObjectDetection
 from scr_core.state import DeviceStateEnum, SystemStateEnum, SystemMode
 from sensor_msgs.msg import CompressedImage
-from scr_msgs.msg import SystemState
+from scr_msgs.msg import SystemState, DeviceState
 from scr_core.node import Node, hash
 from datetime import datetime
 import cv_bridge
@@ -30,6 +30,15 @@ CONFIG_RECORD_DEBUGFEEDBACK = 11
 class PlaybackNode(Node):
     def __init__(self):
         super().__init__("autonav_playback")
+        
+        self.startTime = datetime.now().timestamp()
+        self.file = None
+        self.fileName = None
+        self.bridge = cv_bridge.CvBridge()
+        self.HOME_DIR = os.path.expanduser("~")
+        self.thresholdedIndex = 0
+        self.expandifiedIndex = 0
+        self.cameraIndex = 0
 
     def configure(self):
         self.config.setBool(CONFIG_RECORD_IMU, True)
@@ -45,11 +54,6 @@ class PlaybackNode(Node):
         self.config.setBool(CONFIG_RECORD_INPUT, True)
         self.config.setBool(CONFIG_RECORD_DEBUGFEEDBACK, True)
         
-        self.file = None
-        self.fileName = None
-        self.bridge = cv_bridge.CvBridge()
-        self.HOME_DIR = os.path.expanduser("~")
-        
         self.imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.imuCallback, 20)
         self.gpsSubscriber = self.create_subscription(GPSFeedback, "/autonav/gps", self.gpsCallback, 20)
         self.feedbackSubscriber = self.create_subscription(MotorFeedback, "/autonav/MotorFeedback", self.feedbackCallback, 20)
@@ -62,10 +66,6 @@ class PlaybackNode(Node):
         self.expandifiedSpaceSubscriber = self.create_subscription(CompressedImage, "/autonav/cfg_space/expanded/image", self.expandifiedImageCallback, 20)
         self.cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.cameraImageCallback, 20)
         
-        self.thresholdedIndex = 0
-        self.expandifiedIndex = 0
-        self.cameraIndex = 0
-        self.startTime = datetime.now().timestamp()
         self.framerate = 2 if self.getSystemState().mode == SystemMode.SIMULATION else 15
         
         self.setDeviceState(DeviceStateEnum.OPERATING)
@@ -104,7 +104,20 @@ class PlaybackNode(Node):
         self.expandifiedIndex = 0
         self.cameraIndex = 0
         
+        self.writeCurrentSystemState()
+        
         self.log(f"Recording playback data at {BASE_PATH}")
+        
+    def onDeviceState(self, state: DeviceState):
+        super().onDeviceState(state)
+        if state.device == self.id:
+            return
+        
+        self.writeToFile(f"{self.getTimestamp()}, ENTRY_DEVICESTATE, {state.device}, {state.state}")
+        
+        
+    def writeCurrentSystemState(self):
+        self.writeToFile(f"{self.getTimestamp()}, ENTRY_SYSTEMSTATE, {self.getSystemState().state}, {self.getSystemState().mode}, {self.getSystemState().mobility}, {self.getSystemState().estop}")
 
     def closeLogEntry(self):
         if self.file is None:
