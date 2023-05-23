@@ -52,7 +52,7 @@ MotorCommand motorCommand;
 
 MotorWithEncoder leftMotor(leftMotorPwmPin, encoderLeftA, encoderLeftB, true);
 MotorWithEncoder rightMotor(rightMotorPwmPin, encoderRightA, encoderRightB, false);
-DifferentialDrive drivetrain(leftMotor, rightMotor, 0.02);
+DifferentialDrive drivetrain(leftMotor, rightMotor, 0.025);
 
 void configureCan();
 void printCanMsg();
@@ -123,6 +123,8 @@ void setup1(){
   conbus.addRegister(0x31, &collisonBoxDist);
 
   conbus.addRegister(0x40, &sendStatistics);
+
+  conbus.addRegister(0x50, &motor_updates_between_deltaodom);
 }
 void loop() {
   updateTimers();
