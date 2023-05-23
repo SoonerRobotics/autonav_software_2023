@@ -126,8 +126,9 @@ inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_ou
     left_motor_.setOutput(left_motor_output);
     right_motor_.setOutput(right_motor_output);
 
-    delta_x_out += distance_estimate * cos(delta_theta_out);
-    delta_y_out += distance_estimate * sin(delta_theta_out);
+    float estimated_theta = delta_theta_out + 0.5 * rotation_estimate;
+    delta_x_out += distance_estimate * cos(estimated_theta);
+    delta_y_out += distance_estimate * sin(estimated_theta);
     delta_theta_out += rotation_estimate;
 }
 

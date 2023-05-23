@@ -32,10 +32,7 @@ static const byte MCP2515_INT = 7;  // INT output of MCP2515
 
 ACAN2515 can(MCP2515_CS, SPI1, MCP2515_INT);
 
-TickTwo timer1(setFiveMilliSecFlag, 5);      //TODO: CHANGE 5 ms PLACE HOLDERS
-TickTwo timer2(setTwentyMilliSecFlag, 20);      //TODO: CHANGE 10 ms PLACE HOLDERS
-TickTwo timer3(setFiftyMilliSecFlag, 50);  //TODO: CHANGE 50 ms PLACE HOLDERS 
-TickTwo timer4(setFiveHundMilliSecFlag, 500);  //TODO: CHANGE 500 ms
+TickTwo motor_update_timer(setMotorUpdateFlag, 25);
 
 static const uint32_t QUARTZ_FREQUENCY = 8UL * 1000UL * 1000UL;  // 8 MHz
 
@@ -65,7 +62,8 @@ void updateRight();
 void sendCanOdomMsgOut();
 void resetDelta();
 
-bool SEND_CAN_ODOM = false;
+int motor_updates_in_deltaodom = 0;
+int motor_updates_between_deltaodom = 3;
 bool canBlinky = false;
 
 bool useObstacleAvoidance = false;
@@ -94,10 +92,7 @@ void setup() {
   attachInterrupt(encoderLeftA, updateLeft, CHANGE);
   attachInterrupt(encoderRightA, updateRight, CHANGE);
 
-  timer1.start();
-  timer2.start();
-  timer3.start();
-  timer4.start();
+  motor_update_timer.start();
 }
 void setup1(){
   Serial.begin(9600);
@@ -131,27 +126,20 @@ void setup1(){
 }
 void loop() {
   updateTimers();
-  if (TWENTY_MS_FLAG) {
+  if (MOTOR_UPDATE_FLAG) {
 
     drivetrain.updateState(delta_x, delta_y, delta_theta);
+    motor_updates_in_deltaodom++;
 
-    TWENTY_MS_FLAG = false;
-  }
-  if (FIFTY_MS_FLAG ) {
-    SEND_CAN_ODOM = true; //flag to send CAN out
-
-    FIFTY_MS_FLAG = false;
-  }
-  if(FIVE_HUND_MS_FLAG){
-    FIVE_HUND_MS_FLAG = false;
+    MOTOR_UPDATE_FLAG = false;
   }
 }
 void loop1(){
 
-  if (SEND_CAN_ODOM) {
+  if (motor_updates_in_deltaodom >= motor_updates_between_deltaodom) {
+    motor_updates_in_deltaodom = 0;
     sendCanOdomMsgOut();
     resetDelta();
-    SEND_CAN_ODOM = false;
   }
 
   if (conbus_can.isReplyReady()) {
@@ -265,9 +253,6 @@ void resetDelta(){
   delta_theta = 0;
 }
 void updateTimers() {
-  timer1.update();
-  timer2.update();
-  timer3.update();
-  timer4.update();
+  motor_update_timer.update();
 }
 
