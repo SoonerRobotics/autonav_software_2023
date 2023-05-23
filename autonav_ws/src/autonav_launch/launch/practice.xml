@@ -1,7 +1,7 @@
 <launch>
     <node pkg="scr_state" exec="statemanager" >
         <param name="required_nodes" value="[autonav_display]" />
-        <param name="node" value="2" />
+        <param name="mode" value="2" />
     </node>
     <node pkg="scr_logging" exec="logging">
         <param name="log_to_console" value="false" />
