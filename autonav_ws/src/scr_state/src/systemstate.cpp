@@ -203,7 +203,6 @@ public:
 		state.state = request->state;
 		state.estop = request->estop;
 		state.mobility = request->mobility;
-		state.mode = request->mode;
 		publishState();
 
 		response->ok = true;
