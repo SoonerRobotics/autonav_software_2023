@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import Position
+from autonav_msgs.msg import Position, IMUData
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum, SystemMode
@@ -25,6 +25,7 @@ CONFIG_WAYPOINT_POP_DISTANCE = 0 # The distance until the waypoint has been reac
 CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc1, 3 for misc2, 4 for misc3, 5 for misc4, and 6 for misc5
 CONFIG_WAYPOINT_ACTIVATION_DISTANCE = 2 # The distance from the robot to the next waypoint that will cause the robot to start using waypoints
 CONFIG_USE_WAYPOINTS = 3 # 0 for no waypoints, 1 for waypoints
+CONFIG_USE_IMU_HEADING = 4
 
 ### Waypoints for navigation, the first index is northbound waypoints, the second index is southbound waypoints, a 3rd index can be added for misc waypoints
 # Practice Waypoints: (42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556) | North, Mid, South
@@ -66,19 +67,25 @@ class AStarNode(Node):
 
         self.m_configSpace = None
         self.position = None
+        self.imu = None
 
     def configure(self):
         self.m_configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
         self.m_poseSubscriber = self.create_subscription(Position, "/autonav/position", self.onPoseReceived, 20)
+        self.m_imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.onImuReceived, 20)
         self.m_pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
-        self.m_mapTimer = self.create_timer(0.3, self.makeMap)
+        self.m_mapTimer = self.create_timer(0.2, self.makeMap)
 
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5)
         self.config.setBool(CONFIG_USE_WAYPOINTS, False)
+        self.config.setBool(CONFIG_USE_IMU_HEADING, True)
 
         self.setDeviceState(DeviceStateEnum.READY)
+
+    def onImuReceived(self, msg: IMUData):
+        self.imu = msg
         
     def onReset(self):
         global cost_map, best_pos, waypoints
@@ -103,6 +110,9 @@ class AStarNode(Node):
             
     def onPoseReceived(self, msg: Position):
         self.position = msg
+        if self.config.getBool(CONFIG_USE_IMU_HEADING):
+            good_yaw = self.imu.yaw if self.imu.yaw > 0 else self.imu.yaw + 360
+            self.position.theta = self.imu.yaw
         
     def makeMap(self):
         global cost_map, best_pos, planner

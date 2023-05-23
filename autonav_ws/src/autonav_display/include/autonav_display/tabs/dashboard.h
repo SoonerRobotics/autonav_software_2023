@@ -17,6 +17,11 @@ ImVec4 fromRGBHex(std::string hex, float alpha)
         alpha);
 }
 
+double from180To360(double yaw)
+{
+    return yaw > 0 ? yaw : 360.0 + yaw;
+}
+
 ImVec4 toStateColor(const SCR::DeviceState &state)
 {
     switch (state)
@@ -131,7 +136,7 @@ void ShowDashboard(SCR::Node *node)
     ImGui::Text("Satellites: %d", gps.satellites);
 
     ImGui::SeparatorText("IMU");
-    ImGui::Text("Pitch/Roll/Yaw: (%.5f, %.5f, %.5f)", imu.pitch, imu.roll, imu.yaw);
+    ImGui::Text("Pitch/Roll/Yaw: (%.5f, %.5f, %.5f)", imu.pitch, imu.roll, from180To360(imu.yaw));
     ImGui::Text("Acceleration: (%.5f, %.5f, %.5f)", imu.accel_x, imu.accel_y, imu.accel_z);
     ImGui::Text("Angular Velocity: (%.5f, %.5f, %.5f)", imu.angular_x, imu.angular_y, imu.angular_z);
 

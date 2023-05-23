@@ -187,6 +187,7 @@ void ShowVisionConfig(SCR::Configuration *config)
             }
             ImGui::EndCombo();
         }
+        ShowBoolOption(config, "Use IMU Heading", hash, 4);
     }
 
     hash = SCR::hash("autonav_serial_camera");
