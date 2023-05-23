@@ -76,7 +76,7 @@ class PlaybackNode(Node):
     def combineImagesIntoVideo(self, folder, name):
         IMAGES_PATH = os.path.join(self.HOME_DIR, ".scr", "playback", self.fileName, "images", folder)
         SAVE_PATH = os.path.join(self.HOME_DIR, ".scr", "playback", self.fileName)
-        os.system(f"ffmpeg -r {self.framerate} -i {IMAGES_PATH}/%d.jpg -vcodec mpeg4 -y {SAVE_PATH}/{name}.mp4")
+        os.system(f"ffmpeg -r {self.framerate} -i {IMAGES_PATH}/%d.jpg -vcodec libx264 -crf 18  -pix_fmt yuv420p -y {SAVE_PATH}/{name}.mp4")
         
     def createFileName(self):
         time = datetime.now()
