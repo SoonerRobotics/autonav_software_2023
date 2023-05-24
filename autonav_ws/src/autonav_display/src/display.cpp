@@ -143,7 +143,7 @@ public:
 				if (ImGui::BeginTabItem("Configuration"))
 				{
 					ImGui::BeginChild("scrolling3", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-					ShowConfiguration(this);
+					// ShowConfiguration(this);
 					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
