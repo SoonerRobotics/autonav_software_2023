@@ -41,7 +41,7 @@ private:
     MotorWithEncoder left_motor_;
     MotorWithEncoder right_motor_;
 
-    float update_period_ = 0.02f;
+    float update_period_ = 0.025f;
     float pulses_per_radian_ = 600.0f * 20.0f / 16.8f;
     float wheel_radius_ = 0.135f;
     float wheelbase_length_ = 0.45f;
@@ -126,8 +126,9 @@ inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_ou
     left_motor_.setOutput(left_motor_output);
     right_motor_.setOutput(right_motor_output);
 
-    delta_x_out += distance_estimate * cos(delta_theta_out);
-    delta_y_out += distance_estimate * sin(delta_theta_out);
+    float estimated_theta = delta_theta_out + 0.5 * rotation_estimate;
+    delta_x_out += distance_estimate * cos(estimated_theta);
+    delta_y_out += distance_estimate * sin(estimated_theta);
     delta_theta_out += rotation_estimate;
 }
 
