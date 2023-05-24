@@ -9,9 +9,9 @@ import rclpy
 import os
 
 
-CONFIG_MUSIC_OPTION = 0
-CONFIG_MUSIC_VOLUME = 1
-CONFIG_MUSIC_DISABLED = 2
+CONFIG_MUSIC_OPTION = "option"
+CONFIG_MUSIC_VOLUME = "volume"
+CONFIG_MUSIC_DISABLED = "disabled"
 AUDIO_FILES = ["oufightsong.wav", "peaches.wav", "goodmorning.wav"]
 
 

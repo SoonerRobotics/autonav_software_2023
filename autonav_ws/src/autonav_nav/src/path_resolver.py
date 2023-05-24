@@ -11,11 +11,11 @@ import math
 import rclpy
 
 
-FORWARD_SPEED = 0
-REVERSE_SPEED = 1
-RADIUS_MULTIPLIER = 2
-RADIUS_MAX = 3
-RADIUS_START = 4
+FORWARD_SPEED = "forward_speed"
+REVERSE_SPEED = "reverse_speed"
+RADIUS_MULTIPLIER = "radius_multiplier"
+RADIUS_MAX = "radius_max"
+RADIUS_START = "radius_start"
 
 def hexToRgb(color: str):
     if color[0] == "#":
@@ -118,15 +118,12 @@ class PathResolverNode(Node):
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
-            inputPacket.angular_velocity = clamp(error, -0.5, 0.5)
+            inputPacket.angular_velocity = clamp(error * 2, -1.15, 1.15)
         else:
             if self.backCount == -1:
                 self.backCount = 5
-                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#ff0000"))
             else:
                 self.backCount -= 1
-                if self.backCount == -1:
-                    self.safetyLightsPublisher.publish(toSafetyLights(True, False, 0, 0, "#000000"))
 
             inputPacket.forward_velocity = self.config.getFloat(REVERSE_SPEED)
             inputPacket.angular_velocity = 0.0

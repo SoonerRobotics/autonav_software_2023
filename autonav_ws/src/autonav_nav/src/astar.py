@@ -10,7 +10,10 @@ import rclpy
 import math
 import copy
 from heapq import heappush, heappop
+from sensor_msgs.msg import CompressedImage
 import numpy as np
+import cv2
+import cv_bridge
 
 
 GRID_SIZE = 0.1
@@ -20,12 +23,15 @@ waypoints = []
 verticalCameraRange = 2.75
 horizontalCameraRange = 3
 
+bridge = cv_bridge.CvBridge()
+
 MAP_RES = 80
-CONFIG_WAYPOINT_POP_DISTANCE = 0 # The distance until the waypoint has been reached
-CONFIG_WAYPOINT_DIRECTION = 1 # 0 for northbound, 1 for southbound, 2 for misc1, 3 for misc2, 4 for misc3, 5 for misc4, and 6 for misc5
-CONFIG_WAYPOINT_ACTIVATION_DISTANCE = 2 # The distance from the robot to the next waypoint that will cause the robot to start using waypoints
-CONFIG_USE_WAYPOINTS = 3 # 0 for no waypoints, 1 for waypoints
-CONFIG_USE_IMU_HEADING = 4
+CONFIG_WAYPOINT_POP_DISTANCE = "pop_distance" # The distance until the waypoint has been reached
+CONFIG_WAYPOINT_DIRECTION = "direction" # 0 for northbound, 1 for southbound, 2 for misc1, 3 for misc2, 4 for misc3, 5 for misc4, and 6 for misc5
+CONFIG_USE_ONLY_WAYPOINTS = "use_only_waypoints" # 0 for no waypoints, 1 for waypoints
+CONFIG_USE_IMU_HEADING = "use_imu_heading"
+CONFIG_WAYPOINT_ACTIVATION_DISTANCE = "activation_distance" # The distance until the first waypoint is activated
+CONFIG_NORMALIZE_WAYPOINT_DISTANCES = "normalize_waypoint_distances" # 0 for no normalization, 1 for normalization
 
 ### Waypoints for navigation, the first index is northbound waypoints, the second index is southbound waypoints, a 3rd index can be added for misc waypoints
 # Practice Waypoints: (42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556) | North, Mid, South
@@ -49,8 +55,8 @@ practice_waypoints = [
 # practice_waypoints = [[], [], []]
 
 simulation_waypoints = [
-    [(35.19496918, -97.43855286), (35.19498825, -97.43859100), (35.19495392, -97.43881989), (35.19496918, -97.43894196), (35.19493103, -97.43902588), (35.19490051, -97.43902588), (35.19476318, -97.43901825), (35.19472885, -97.43901825), (35.19459152, -97.43902588)], 
-    [(35.19459152, -97.43902588), (35.19472885, -97.43901825), (35.19476318, -97.43901825), (35.19490051, -97.43902588)], 
+    [(35.19496918, -97.43855286), (35.19475331, -97.43860863), (35.19493775, -97.43881094)], 
+    [(35.19496918, -97.43855286), (35.19498780, -97.43859524), (35.19495163, -97.43871339), (35.19495182, -97.43877829), (35.19493406, -97.43879432), (35.19493812, -97.43881810), (35.19495368, -97.43882411), (35.19493357, -97.43902773), (35.19485847, -97.43902381)], 
     [(35.19474411, -97.43852997), (35.19474792, -97.43863678), (35.19484711, -97.43865967), (35.19494247, -97.43875885)]
 ]
 # simulation_waypoints = [[], [], []]
@@ -68,6 +74,7 @@ class AStarNode(Node):
         self.configSpace = None
         self.position = None
         self.imu = None
+        self.lastPath = None
 
     def configure(self):
         self.configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
@@ -75,13 +82,16 @@ class AStarNode(Node):
         self.imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.onImuReceived, 20)
         self.debugPublisher = self.create_publisher(PathingDebug, "/autonav/debug/astar", 20)
         self.pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
+        self.rawConfigSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/raw", self.onRawConfigSpaceReceived, 20)
+        self.pathDebugImagePublisher = self.create_publisher(CompressedImage, "/autonav/debug/astar/image", 20)
         self.mapTimer = self.create_timer(0.2, self.makeMap)
 
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
-        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 2)
-        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 3)
-        self.config.setBool(CONFIG_USE_WAYPOINTS, True)
-        self.config.setBool(CONFIG_USE_IMU_HEADING, True)
+        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
+        self.config.setBool(CONFIG_USE_ONLY_WAYPOINTS, True)
+        self.config.setBool(CONFIG_USE_IMU_HEADING, False)
+        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 5.0)
+        self.config.setBool(CONFIG_NORMALIZE_WAYPOINT_DISTANCES, False)
 
         self.setDeviceState(DeviceStateEnum.READY)
 
@@ -95,16 +105,52 @@ class AStarNode(Node):
         cost_map = None
         best_pos = (0, 0)
         waypoints = []
+        
+    def onRawConfigSpaceReceived(self, msg: OccupancyGrid):
+        if self.lastPath is None:
+            return
+        
+        mat = np.array(msg.data, dtype=np.uint8).reshape((80, 80))
+        mat = cv2.cvtColor(mat, cv2.COLOR_GRAY2BGR)
+        
+        for i in range(len(self.lastPath) - 1):
+            cv2.line(mat, (self.lastPath[i][0], self.lastPath[i][1]), (self.lastPath[i + 1][0], self.lastPath[i + 1][1]), (0, 0, 255), 2)
+            
+        # Resize to 800x800
+        mat = cv2.resize(mat, (800, 800), interpolation=cv2.INTER_NEAREST)
+            
+        msg = CompressedImage()
+        msg.format = "jpeg"
+        msg.data = np.array(cv2.imencode('.jpg', mat)[1]).tobytes()
+        self.pathDebugImagePublisher.publish(msg)
+    
 
     def getWaypointsForDirection(self):
         direction_index = self.config.getInt(CONFIG_WAYPOINT_DIRECTION)
-        return simulation_waypoints[direction_index] if self.getSystemState().mode == SystemMode.SIMULATION else competition_waypoints[direction_index] if self.getSystemState().mode == SystemMode.COMPETITION else practice_waypoints[direction_index]
+        wpts = simulation_waypoints[direction_index] if self.getSystemState().mode == SystemMode.SIMULATION else competition_waypoints[direction_index] if self.getSystemState().mode == SystemMode.COMPETITION else practice_waypoints[direction_index]
+        return self.normalizeWaypoints(wpts) if self.config.getBool(CONFIG_NORMALIZE_WAYPOINT_DISTANCES) else wpts
+
+    def normalizeWaypoints(self, waypoints):
+        # Ensure that the distance between any two waypoint is <= 25.0, if not add points in between
+        new_waypoints = []
+        for i in range(len(waypoints) - 1):
+            new_waypoints.append(waypoints[i])
+            wpt1 = waypoints[i]
+            wpt2 = waypoints[i + 1]
+            north_to_gps = (wpt1[0] - wpt2[0]) * 111086.2
+            west_to_gps = (wpt2[1] - wpt1[1]) * 81978.2
+            distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
+            if distanceToWaypoint > 5.0:
+                num_points = int(distanceToWaypoint / 5.0)
+                for j in range(num_points):
+                    new_waypoints.append((wpt1[0] + (wpt2[0] - wpt1[0]) * (j + 1) / (num_points + 1), wpt1[1] + (wpt2[1] - wpt1[1]) * (j + 1) / (num_points + 1)))
+
+        new_waypoints.append(waypoints[-1])
+        return new_waypoints
 
     def transition(self, old: SystemState, updated: SystemState):
         global waypoints
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
-            wpts = self.getWaypointsForDirection()
-            waypoints = wpts
             self.setDeviceState(DeviceStateEnum.OPERATING)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
@@ -130,6 +176,7 @@ class AStarNode(Node):
             global_path.poses = [
                 pathToGlobalPose(robot_pos, pp[0], pp[1]) for pp in path
             ]
+            self.lastPath = path
             self.pathPublisher.publish(global_path)
             
     def reconstruct_path(self, path, current):
@@ -213,8 +260,26 @@ class AStarNode(Node):
         frontier.add((MAP_RES // 2, MAP_RES - 4))
         explored = set()
 
-        if self.config.getBool(CONFIG_USE_WAYPOINTS) == True:
+        if self.config.getBool(CONFIG_USE_ONLY_WAYPOINTS) == True:
             grid_data = [0] * len(msg.data)
+            
+        if len(waypoints) == 0:
+            wpts = self.getWaypointsForDirection()
+            if len(wpts) > 0:
+                wpt = wpts[0]
+                north_to_gps = (wpt[0] - self.position.latitude) * 111086.2
+                west_to_gps = (self.position.longitude - wpt[1]) * 81978.2
+                distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
+                if distanceToWaypoint <= self.config.getFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE):
+                    waypoints = wpts
+                
+                pathingDebug = PathingDebug()
+                pathingDebug.desired_heading = 0.0
+                pathingDebug.desired_latitude = wpt[0]
+                pathingDebug.desired_longitude = wpt[1]
+                pathingDebug.distance_to_destination = distanceToWaypoint
+                pathingDebug.waypoints = []
+                self.debugPublisher.publish(pathingDebug)
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
@@ -226,24 +291,17 @@ class AStarNode(Node):
                 waypoints.pop(0)
                 self.log("Reached waypoint, %d remaining" % len(waypoints))
 
-        if len(waypoints) > 0:
-            next_waypoint = waypoints[0]
-            north_to_gps = (next_waypoint[0] - self.position.latitude) * 111086.2
-            west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
-            heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
-
-            debugpkg = PathingDebug()
-            debugpkg.desired_heading = heading_to_gps
-            debugpkg.desired_latitude = next_waypoint[0]
-            debugpkg.desired_longitude = next_waypoint[1]
-            debugpkg.distance_to_destination = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
-            # turn waypoints into 1d array
+            pathingDebug = PathingDebug()
+            pathingDebug.desired_heading = heading_to_gps
+            pathingDebug.desired_latitude = next_waypoint[0]
+            pathingDebug.desired_longitude = next_waypoint[1]
+            pathingDebug.distance_to_destination = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
             wp1d = []
             for wp in waypoints:
                 wp1d.append(wp[0])
                 wp1d.append(wp[1])
-            debugpkg.waypoints = wp1d
-            self.debugPublisher.publish(debugpkg)
+            pathingDebug.waypoints = wp1d
+            self.debugPublisher.publish(pathingDebug)
 
         depth = 0
         while depth < 50 and len(frontier) > 0:

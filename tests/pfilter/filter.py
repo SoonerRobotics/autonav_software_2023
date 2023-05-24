@@ -2,6 +2,8 @@ import numpy as np
 import math
 import random
 from typies import Feedback, GPS
+import matplotlib.pyplot as plt
+from math import cos, sin
 
 class Particle:
     def __init__(self, x = 0, y = 0, theta = 0, weight = 1) -> None:
@@ -12,15 +14,15 @@ class Particle:
 
 class PFilter:
     def __init__(self) -> None:
-        self.num_particles = 750
-        self.gps_noise = [0.2]
-        self.odom_noise = [0.05, 0.05, 0.1]
+        self.num_particles = 500
+        self.gps_noise = [0.3]
+        self.odom_noise = [0.05, 0.05, 0.05]
         self.init_particles()
         self.first_gps = None
         
     def init_particles(self):
         self.particles = [Particle(0, 0, i / self.num_particles * 2 * math.pi) for i in range(self.num_particles)]
-    
+
     def feedback(self, feedback: Feedback) -> None:
         sum_x = 0
         sum_y = 0
@@ -66,8 +68,8 @@ class PFilter:
     def resample(self) -> None:
         weights = [particle.weight for particle in self.particles]
         weights_sum = sum(weights)
-        if weights_sum <= 0:
-            return
+        if weights_sum <= 0.00001:
+            weights_sum = 0.00001
         weights = [weight / weights_sum for weight in weights]
         
         new_particles = random.choices(self.particles, weights, k = self.num_particles)

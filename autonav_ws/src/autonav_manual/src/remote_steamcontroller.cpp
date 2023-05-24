@@ -22,12 +22,12 @@ float clamp(float value, float min, float max)
 	return value;
 }
 
-enum Registers
+namespace Registers
 {
-	STEERING_DEADZONE = 0,
-	THROTTLE_DEADZONE = 1,
-	FORWARD_SPEED = 2,
-	TURN_SPEED = 3
+	const std::string STEERING_DEADZONE = "steering_deadzone";
+	const std::string THROTTLE_DEADZONE = "throttle_deadzone";
+	const std::string FORWARD_SPEED = "forward_speed";
+	const std::string TURN_SPEED = "turn_speed";
 };
 
 class SteamJoyNode : public SCR::Node

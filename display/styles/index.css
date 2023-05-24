@@ -1,5 +1,19 @@
+body {
+    position: relative;
+}
+
 .page {
     padding: 0 15px;
+}
+
+.page[data-type="columns"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page[data-type="columns"] > .col {
+    flex: 1;
 }
 
 .divider {
@@ -20,4 +34,38 @@ h5 > span {
 #images {
     display: flex;
     gap: 1rem;
+}
+
+.connecting {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, .5);
+    backdrop-filter: blur(7px);
+
+    top: 0;
+    left: 0;
+    z-index: 999;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.connecting > h3 {
+    margin: 0;
+}
+
+.gap {
+    gap: 1rem;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
 }

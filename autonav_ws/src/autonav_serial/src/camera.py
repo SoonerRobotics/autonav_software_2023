@@ -10,7 +10,7 @@ from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
 import os
 
-REFRESH_RATE = 0
+REFRESH_RATE = "refresh_rate"
 bridge = CvBridge()
 
 

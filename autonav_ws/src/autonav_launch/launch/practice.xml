@@ -1,4 +1,5 @@
 <launch>
+    <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
     <node pkg="scr_state" exec="statemanager" >
         <param name="required_nodes" value="[autonav_display]" />
         <param name="mode" value="2" />

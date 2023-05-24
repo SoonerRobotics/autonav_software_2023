@@ -16,7 +16,6 @@
 #include "system_mode.h"
 #include <stdint.h>
 #include <string.h>
-#include "utils.h"
 #include <map>
 
 namespace SCR
@@ -40,8 +39,7 @@ namespace SCR
 		DeviceState getDeviceState(std::string device);
 		scr_msgs::msg::SystemState getSystemState();
 
-		int64_t getDeviceID();
-		std::map<int64_t, DeviceState> getDeviceStates();
+		std::map<std::string, DeviceState> getDeviceStates();
 
 		void log(const std::string& message);
 		void reset();
@@ -65,9 +63,7 @@ namespace SCR
 		rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr resetSubscriber;
 		rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr resetPublisher;
 		rclcpp::Publisher<scr_msgs::msg::Log>::SharedPtr logPublisher;
-		std::map<int64_t, DeviceState> deviceStates;
+		std::map<std::string, DeviceState> deviceStates;
 		scr_msgs::msg::SystemState state;
-
-		int64_t id;
 	};
 }

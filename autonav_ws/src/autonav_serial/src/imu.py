@@ -10,9 +10,9 @@ from autonav_msgs.msg import GPSFeedback
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
 
-IMU_READ_RATE = 0
-IMU_NOTFOUND_RETRY = 1
-IMU_BADCONNECT_RETRY = 2
+IMU_READ_RATE = "imu_read_rate"
+IMU_NOTFOUND_RETRY = "imu_notfound_retry"
+IMU_BADCONNECT_RETRY = "imu_badconnect_retry"
 
 
 class IMUNode(Node):

@@ -7,27 +7,25 @@ namespace SCR
 {
 	Node::Node(std::string node_name) : rclcpp::Node(node_name)
 	{
-		id = SCR::hash(node_name);
-
 		// State System
-		deviceStates[getDeviceID()] = DeviceState::OFF;
-		systemStateSubscriber = this->create_subscription<scr_msgs::msg::SystemState>("/scr/state/system", 20, std::bind(&Node::onSystemState, this, std::placeholders::_1));
-		deviceStateSubscriber = this->create_subscription<scr_msgs::msg::DeviceState>("/scr/state/device", 20, std::bind(&Node::onDeviceState, this, std::placeholders::_1));
-		resetSubscriber = this->create_subscription<std_msgs::msg::Empty>("/scr/reset", 20, std::bind(&Node::onResetInternal, this, std::placeholders::_1));
+		deviceStates[node_name] = DeviceState::OFF;
+		systemStateSubscriber = this->create_subscription<scr_msgs::msg::SystemState>("/scr/state/system", 100, std::bind(&Node::onSystemState, this, std::placeholders::_1));
+		deviceStateSubscriber = this->create_subscription<scr_msgs::msg::DeviceState>("/scr/state/device", 100, std::bind(&Node::onDeviceState, this, std::placeholders::_1));
+		resetSubscriber = this->create_subscription<std_msgs::msg::Empty>("/scr/reset", 100, std::bind(&Node::onResetInternal, this, std::placeholders::_1));
 		deviceStateClient = this->create_client<scr_msgs::srv::SetDeviceState>("/scr/state/set_device_state");
 		systemStateClient = this->create_client<scr_msgs::srv::SetSystemState>("/scr/state/set_system_state");
-		resetPublisher = this->create_publisher<std_msgs::msg::Empty>("/scr/reset", 20);
-		logPublisher = this->create_publisher<scr_msgs::msg::Log>("/scr/logging", 20);
+		resetPublisher = this->create_publisher<std_msgs::msg::Empty>("/scr/reset", 100);
+		logPublisher = this->create_publisher<scr_msgs::msg::Log>("/scr/logging", 100);
 
 		// Configuration
-		auto configurationSubscriber = this->create_subscription<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20, std::bind(&Configuration::onConfigurationInstruction, &config, std::placeholders::_1));
-		auto configurationLoadSubscriber = this->create_subscription<std_msgs::msg::String>("/scr/configuration/preset", 20, std::bind(&Configuration::onPresetChanged, &config, std::placeholders::_1));
-		auto configurationPublisher = this->create_publisher<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 20);
-		auto configurationLoadPublisher = this->create_publisher<std_msgs::msg::String>("/scr/configuration/load", 20);
-		config = Configuration(id, configurationSubscriber, configurationPublisher, configurationLoadSubscriber, configurationLoadPublisher);
+		auto configurationSubscriber = this->create_subscription<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 100, std::bind(&Configuration::onConfigurationInstruction, &config, std::placeholders::_1));
+		auto configurationLoadSubscriber = this->create_subscription<std_msgs::msg::String>("/scr/configuration/preset", 100, std::bind(&Configuration::onPresetChanged, &config, std::placeholders::_1));
+		auto configurationPublisher = this->create_publisher<scr_msgs::msg::ConfigurationInstruction>("/scr/configuration", 100);
+		auto configurationLoadPublisher = this->create_publisher<std_msgs::msg::String>("/scr/configuration/load", 100);
+		config = Configuration(node_name, configurationSubscriber, configurationPublisher, configurationLoadSubscriber, configurationLoadPublisher);
 
 		// Performance
-		auto performancePublisher = this->create_publisher<scr_msgs::msg::PerformanceResult>("/scr/performance", 20);
+		auto performancePublisher = this->create_publisher<scr_msgs::msg::PerformanceResult>("/scr/performance", 100);
 		performance = Performance(node_name, performancePublisher);
 	}
 
@@ -47,11 +45,6 @@ namespace SCR
 	{
 		UNUSED(msg);
 		onReset();
-	}
-
-	int64_t Node::getDeviceID()
-	{
-		return id;
 	}
 
 	void Node::setEStop(bool state)
@@ -98,7 +91,7 @@ namespace SCR
 	void Node::setDeviceState(DeviceState state)
 	{
 		auto request = std::make_shared<scr_msgs::srv::SetDeviceState::Request>();
-		request->device = getDeviceID();
+		request->device = this->get_name();
 		request->state = static_cast<uint8_t>(state);
 		deviceStateClient->async_send_request(request);
 	}
@@ -134,7 +127,7 @@ namespace SCR
 		bool isNew = deviceStates.find(msg->device) == deviceStates.end();
 		deviceStates[msg->device] = static_cast<DeviceState>(msg->state);
 		onDeviceStateUpdated(msg, isNew && msg->state != SCR::DeviceState::OFF);
-		if (msg->device != getDeviceID())
+		if (msg->device != this->get_name())
 		{
 			return;
 		}
@@ -165,15 +158,15 @@ namespace SCR
 
 	DeviceState Node::getDeviceState()
 	{
-		return deviceStates[getDeviceID()];
+		return deviceStates[this->get_name()];
 	}
 
 	DeviceState Node::getDeviceState(std::string id)
 	{
-		return deviceStates[SCR::hash(id)];
+		return deviceStates[id];
 	}
 
-	std::map<int64_t, DeviceState> Node::getDeviceStates()
+	std::map<std::string, DeviceState> Node::getDeviceStates()
 	{
 		return deviceStates;
 	}

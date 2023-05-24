@@ -4,6 +4,7 @@
 #include "scr_msgs/msg/system_state.hpp"
 #include "scr_core/system_state.h"
 #include "scr_core/device_state.h"
+#include "std_msgs/msg/empty.hpp"
 #include "scr_core/utils.h"
 #include "rclcpp/rclcpp.hpp"
 #include <chrono>
@@ -17,6 +18,8 @@ public:
 		deviceStateService = this->create_service<scr_msgs::srv::SetDeviceState>("/scr/state/set_device_state", std::bind(&StateSystemNode::onSetDeviceState, this, std::placeholders::_1, std::placeholders::_2));
 		deviceStatePublisher = this->create_publisher<scr_msgs::msg::DeviceState>("/scr/state/device", 10);
 		systemStatePublisher = this->create_publisher<scr_msgs::msg::SystemState>("/scr/state/system", 10);
+		broadcastSubscriber = this->create_subscription<std_msgs::msg::Empty>("/scr/state/broadcast", 10, std::bind(&StateSystemNode::onBroadcast, this, std::placeholders::_1));
+
 		stateTimer = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&StateSystemNode::onStateTick, this));
 
 		requiredNodes = declare_parameter("required_nodes", std::vector<std::string>());
@@ -52,6 +55,19 @@ public:
 		else if (forcedState == "shutdown")
 		{
 			state.state = SCR::SystemState::SHUTDOWN;
+		}
+	}
+
+	void onBroadcast(const std_msgs::msg::Empty::SharedPtr _)
+	{
+		publishState();
+
+		for (auto &[id, state] : deviceStates)
+		{
+			auto deviceState = scr_msgs::msg::DeviceState();
+			deviceState.device = id;
+			deviceState.state = state;
+			deviceStatePublisher->publish(deviceState);
 		}
 	}
 
@@ -158,7 +174,7 @@ public:
 		for (auto node : waitingQueue)
 		{
 			auto deviceState = scr_msgs::msg::DeviceState();
-			deviceState.device = SCR::hash(node);
+			deviceState.device = node;
 			deviceState.state = SCR::DeviceState::STANDBY;
 			deviceStatePublisher->publish(deviceState);
 		}
@@ -176,7 +192,7 @@ public:
 		}
 
 		auto deviceState = scr_msgs::msg::DeviceState();
-		deviceState.device = SCR::hash(node);
+		deviceState.device = node;
 		deviceState.state = SCR::DeviceState::STANDBY;
 		deviceStatePublisher->publish(deviceState);
 		publishState();
@@ -186,7 +202,7 @@ public:
 	{
 		// Publish a new device state of standby for them
 		auto deviceState = scr_msgs::msg::DeviceState();
-		deviceState.device = SCR::hash(node);
+		deviceState.device = node;
 		deviceState.state = SCR::DeviceState::OFF;
 		deviceStatePublisher->publish(deviceState);
 
@@ -214,19 +230,23 @@ public:
 		deviceState.device = request->device;
 		deviceState.state = request->state;
 		deviceStatePublisher->publish(deviceState);
+		deviceStates[request->device] = request->state;
 		response->ok = true;
+		publishState();
 	}
 
 private:
 	std::vector<std::string> requiredNodes;
 	std::vector<std::string> trackedNodes;
 	std::vector<std::string> waitingQueue;
+	std::map<std::string, uint8_t> deviceStates;
 	scr_msgs::msg::SystemState state;
 
 	std::shared_ptr<rclcpp::Publisher<scr_msgs::msg::DeviceState>> deviceStatePublisher;
 	std::shared_ptr<rclcpp::Publisher<scr_msgs::msg::SystemState>> systemStatePublisher;
 	std::shared_ptr<rclcpp::Service<scr_msgs::srv::SetSystemState>> systemStateService;
 	std::shared_ptr<rclcpp::Service<scr_msgs::srv::SetDeviceState>> deviceStateService;
+	std::shared_ptr<rclcpp::Subscription<std_msgs::msg::Empty>> broadcastSubscriber;
 	std::shared_ptr<rclcpp::TimerBase> stateTimer;
 };
 

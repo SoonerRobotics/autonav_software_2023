@@ -1,26 +1,29 @@
 from autonav_msgs.msg import MotorFeedback, GPSFeedback, Position
 import numpy as np
-import random
 import math
+import random
 
 class Particle:
-    def __init__(self, x = 0, y = 0, theta = 0, weight = 1):
+    def __init__(self, x = 0, y = 0, theta = 0, weight = 1) -> None:
         self.x = x
         self.y = y
         self.theta = theta
         self.weight = weight
 
 class ParticleFilter:
-    def __init__(self, num_particles = 500, gps_noise = None, feedback_noise = None) -> None:
-        self.num_particles = num_particles
-        self.gps_noise = gps_noise if gps_noise is not None else 0.15
-        self.odom_noise = feedback_noise if feedback_noise is not None else [0.05, 0.05, 0.07]
+    def __init__(self) -> None:
+        self.num_particles = 500
+        self.gps_noise = [0.3]
+        self.odom_noise = [0.05, 0.05, 0.05]
         self.init_particles()
         self.first_gps = None
-        
-    def init_particles(self):
-        self.particles = [Particle(0, 0, i / self.num_particles * 2 * math.pi) for i in range(self.num_particles)]
-    
+
+    def init_particles(self, seedHeading: float = 0.0, useSeedHeading: bool = False):
+        if useSeedHeading:
+            self.particles = [Particle(0, 0, seedHeading + np.random.normal(0, 0.1)) for i in range(self.num_particles)]
+        else:
+            self.particles = [Particle(0, 0, i / self.num_particles * 2 * math.pi) for i in range(self.num_particles)]
+
     def feedback(self, feedback: MotorFeedback) -> list[float]:
         sum_x = 0
         sum_y = 0
@@ -58,7 +61,7 @@ class ParticleFilter:
     
         for particle in self.particles:
             dist_sqrt = np.sqrt((particle.x - gps_x) ** 2 + (particle.y - gps_y) ** 2)
-            particle.weight = math.exp(-dist_sqrt / (2 * self.gps_noise ** 2))
+            particle.weight = math.exp(-dist_sqrt / (2 * self.gps_noise[0] ** 2))
             
         self.resample()
         return [gps_x, gps_y]
@@ -66,8 +69,8 @@ class ParticleFilter:
     def resample(self) -> None:
         weights = [particle.weight for particle in self.particles]
         weights_sum = sum(weights)
-        if weights_sum <= 0:
-            return
+        if weights_sum <= 0.00001:
+            weights_sum = 0.00001
         weights = [weight / weights_sum for weight in weights]
         
         new_particles = random.choices(self.particles, weights, k = self.num_particles)
@@ -79,4 +82,4 @@ class ParticleFilter:
             x = particle.x + rand_x * math.cos(particle.theta) + rand_y * math.sin(particle.theta)
             y = particle.y + rand_x * math.sin(particle.theta) + rand_y * math.cos(particle.theta)
             theta = np.random.normal(particle.theta, self.odom_noise[2]) % (2 * math.pi)
-            self.particles.append(Particle(x, y, theta, particle.weight)) 
+            self.particles.append(Particle(x, y, theta, particle.weight))

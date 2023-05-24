@@ -1,2 +1,2 @@
-int64 device
+string device
 uint8 state

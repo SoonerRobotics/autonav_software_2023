@@ -1,4 +1,5 @@
 <launch>
+    <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
     <node pkg="scr_state" exec="statemanager" />
     <node pkg="scr_logging" exec="logging">
         <param name="log_to_console" value="true" />

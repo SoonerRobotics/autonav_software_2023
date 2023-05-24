@@ -24,16 +24,16 @@ g_mapData.origin.position.y = -10.0
 
 MAP_RES = 80
 
-LOWER_HUE = 0
-LOWER_SATURATION = 1
-LOWER_VALUE = 2
-UPPER_HUE = 3
-UPPER_SATURATION = 4
-UPPER_VALUE = 5
-BLUR = 6
-BLUR_ITERATIONS = 7
-REGION_OF_DISINTEREST_TL = 8
-REGION_OF_DISINTEREST_TR = 9
+LOWER_HUE = "lower_hue"
+LOWER_SATURATION = "lower_saturation"
+LOWER_VALUE = "lower_value"
+UPPER_HUE = "upper_hue"
+UPPER_SATURATION = "upper_saturation"
+UPPER_VALUE = "upper_value"
+BLUR = "blur"
+BLUR_ITERATIONS = "blur_iterations"
+REGION_OF_DISINTEREST_TL = "region_of_disinterest_tl"
+REGION_OF_DISINTEREST_TR = "region_of_disinterest_tr"
 
 
 class ImageTransformer(Node):

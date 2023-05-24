@@ -5,7 +5,7 @@ from rclpy.node import Node
 class Performance:
     def __init__(self, node: Node):
         self.node = node
-        self.publisher = node.create_publisher(PerformanceResult, "/scr/performance", 20)
+        self.publisher = node.create_publisher(PerformanceResult, "/scr/performance", 100)
 
         self.history = {}
         self.timers = {}

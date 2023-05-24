@@ -80,8 +80,8 @@ public:
 				tokens.push_back(token);
 			}
 
-			int64_t device = std::stoll(tokens[0]);
-			uint8_t address = std::stoi(tokens[1]);
+			std::string device = tokens[0];
+			std::string address = tokens[1];
 
 			std::vector<uint8_t> bytes;
 			std::istringstream byteStream(tokens[2]);
@@ -175,7 +175,7 @@ public:
 
 private:
 	std::string preset;
-	std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> temporaryCache;
+	std::map<std::string, std::map<std::string, std::vector<uint8_t>>> temporaryCache;
 
 	rclcpp::Subscription<std_msgs::msg::String>::SharedPtr loadSubscription;
 	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr presetPublisher;

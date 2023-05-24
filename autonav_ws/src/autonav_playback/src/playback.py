@@ -4,7 +4,7 @@ from autonav_msgs.msg import IMUData, GPSFeedback, MotorFeedback, MotorInput, Po
 from scr_core.state import DeviceStateEnum, SystemStateEnum, SystemMode
 from sensor_msgs.msg import CompressedImage
 from scr_msgs.msg import SystemState, DeviceState
-from scr_core.node import Node, hash
+from scr_core.node import Node
 from datetime import datetime
 import cv_bridge
 import shutil
@@ -13,18 +13,18 @@ import cv2
 import os
 
 
-CONFIG_RECORD_IMU = 0
-CONFIG_RECORD_GPS = 1
-CONFIG_RECORD_POSITION = 2
-CONFIG_RECORD_FEEDBACK = 3
-CONFIG_RECORD_OBJECTDETECTION = 4
-CONFIG_RECORD_CAMERA = 5
-CONFIG_RECORD_THRESHOLDED = 6
-CONFIG_RECORD_EXPANDIFIED = 7
-CONFIG_RECORD_MANUAL = 8
-CONFIG_RECORD_AUTONOMOUS = 9
-CONFIG_RECORD_INPUT = 10
-CONFIG_RECORD_DEBUGFEEDBACK = 11
+CONFIG_RECORD_IMU = "record_imu"
+CONFIG_RECORD_GPS = "record_gps"
+CONFIG_RECORD_POSITION = "record_position"
+CONFIG_RECORD_FEEDBACK = "record_feedback"
+CONFIG_RECORD_OBJECTDETECTION = "record_objectdetection"
+CONFIG_RECORD_CAMERA = "record_camera"
+CONFIG_RECORD_THRESHOLDED = "record_thresholded"
+CONFIG_RECORD_EXPANDIFIED = "record_expandified"
+CONFIG_RECORD_MANUAL = "record_manual"
+CONFIG_RECORD_AUTONOMOUS = "record_autonomous"
+CONFIG_RECORD_INPUT = "record_input"
+CONFIG_RECORD_DEBUGFEEDBACK = "record_debugfeedback"
 
 
 class PlaybackNode(Node):
