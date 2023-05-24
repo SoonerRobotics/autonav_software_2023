@@ -1,7 +1,6 @@
 <launch>
     <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
     <node pkg="scr_state" exec="statemanager" >
-        <param name="required_nodes" value="[autonav_display]" />
         <param name="mode" value="1" />
     </node>
     <node pkg="scr_logging" exec="logging">
@@ -9,9 +8,6 @@
     </node>
     <node pkg="scr_configuration" exec="config">
         <param name="preset" value="simulation" />
-    </node>
-    <node pkg="autonav_display" exec="primary_display">
-        <param name="fullscreen" value="true" />
     </node>
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify" />
