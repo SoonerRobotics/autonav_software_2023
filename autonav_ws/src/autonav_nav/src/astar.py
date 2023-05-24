@@ -78,9 +78,9 @@ class AStarNode(Node):
         self.mapTimer = self.create_timer(0.2, self.makeMap)
 
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
-        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
-        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 1)
-        self.config.setBool(CONFIG_USE_WAYPOINTS, False)
+        self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 2)
+        self.config.setFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE, 3)
+        self.config.setBool(CONFIG_USE_WAYPOINTS, True)
         self.config.setBool(CONFIG_USE_IMU_HEADING, True)
 
         self.setDeviceState(DeviceStateEnum.READY)

@@ -49,7 +49,7 @@ class PlaybackNode(Node):
         self.config.setBool(CONFIG_RECORD_CAMERA, True)
         self.config.setBool(CONFIG_RECORD_THRESHOLDED, True)
         self.config.setBool(CONFIG_RECORD_EXPANDIFIED, True)
-        self.config.setBool(CONFIG_RECORD_MANUAL, False)
+        self.config.setBool(CONFIG_RECORD_MANUAL, True)
         self.config.setBool(CONFIG_RECORD_AUTONOMOUS, True)
         self.config.setBool(CONFIG_RECORD_INPUT, True)
         self.config.setBool(CONFIG_RECORD_DEBUGFEEDBACK, True)

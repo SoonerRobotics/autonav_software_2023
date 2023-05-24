@@ -118,7 +118,7 @@ class PathResolverNode(Node):
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
-            inputPacket.angular_velocity = clamp(error * 2.0, -1.15, 1.15)
+            inputPacket.angular_velocity = clamp(error, -0.5, 0.5)
         else:
             if self.backCount == -1:
                 self.backCount = 5
