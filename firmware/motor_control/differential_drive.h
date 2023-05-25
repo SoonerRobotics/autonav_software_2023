@@ -26,6 +26,8 @@ public:
     float* getWheelRadius();
     float* getWheelbaseLength();
     float* getSlewRateLimit();
+    float* getLeftEncoderFactor();
+    float* getRightEncoderFactor();
 
     float* getVelocitykP();
     float* getVelocitykI();
@@ -45,6 +47,8 @@ private:
     float pulses_per_radian_ = 600.0f * 20.0f / 16.8f;
     float wheel_radius_ = 0.135f;
     float wheelbase_length_ = 0.45f;
+    float left_encoder_factor_ = 1.00f;
+    float right_encoder_factor_ = 1.02f;
 
     float forward_velocity_setpoint_;
     float angular_velocity_setpoint_;
@@ -99,8 +103,8 @@ inline void DifferentialDrive::pulseRightEncoder() {
 }
 
 inline void DifferentialDrive::updateState(float& delta_x_out, float& delta_y_out, float& delta_theta_out) {
-    float left_motor_angular_distance = left_motor_.getPulses() / pulses_per_radian_;
-    float right_motor_angular_distance = right_motor_.getPulses() / pulses_per_radian_;
+    float left_motor_angular_distance = left_motor_.getPulses() / pulses_per_radian_ * left_encoder_factor_;
+    float right_motor_angular_distance = right_motor_.getPulses() / pulses_per_radian_ * right_encoder_factor_;
 
     float distance_estimate = (wheel_radius_ / 2.0f) * (right_motor_angular_distance + left_motor_angular_distance);
     float rotation_estimate = (wheel_radius_ / wheelbase_length_) * (right_motor_angular_distance - left_motor_angular_distance);
@@ -182,6 +186,14 @@ inline float* DifferentialDrive::getWheelRadius() {
 
 inline float* DifferentialDrive::getWheelbaseLength() {
     return &wheelbase_length_;
+}
+
+inline float* DifferentialDrive::getLeftEncoderFactor() {
+    return &left_encoder_factor_;
+}
+
+inline float* DifferentialDrive::getRightEncoderFactor() {
+    return &right_encoder_factor_;
 }
 
 inline float* DifferentialDrive::getSlewRateLimit() {

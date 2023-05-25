@@ -108,6 +108,8 @@ void setup1(){
   conbus.addRegister(0x02, drivetrain.getWheelRadius());
   conbus.addRegister(0x03, drivetrain.getWheelbaseLength());
   conbus.addRegister(0x04, drivetrain.getSlewRateLimit());
+  conbus.addRegister(0x05, drivetrain.getLeftEncoderFactor());
+  conbus.addRegister(0x06, drivetrain.getRightEncoderFactor());
 
   conbus.addRegister(0x10, drivetrain.getVelocitykP());
   conbus.addRegister(0x11, drivetrain.getVelocitykI());
