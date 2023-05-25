@@ -1,8 +1,5 @@
 <launch>
-    <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
-    <node pkg="scr_state" exec="statemanager" >
-        <param name="required_nodes" value="[autonav_display]" />
-    </node>
+    <node pkg="scr_state" exec="statemanager" />
     <node pkg="scr_logging" exec="logging">
         <param name="log_to_console" value="true" />
     </node>
@@ -18,7 +15,10 @@
     <node pkg="autonav_serial" exec="safety_lights.py" />
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify" />
-    <node pkg="autonav_filters" exec="filters.py" />
+    <node pkg="autonav_filters" exec="filters.py">
+        <param name="latitude_length" value="110944.21" />
+        <param name="longitude_length" value="91065.46" />
+    </node>
     <node pkg="autonav_manual" exec="steam.py" />
     <node pkg="autonav_manual" exec="steamremote" />
     <node pkg="autonav_playback" exec="playback.py" />

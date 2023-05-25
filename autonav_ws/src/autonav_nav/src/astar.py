@@ -75,6 +75,9 @@ class AStarNode(Node):
         self.position = None
         self.imu = None
         self.lastPath = None
+        
+        self.latitudeLength = self.declare_parameter("latitude_length", 111086.2).get_parameter_value().double_value
+        self.longitudeLength = self.declare_parameter("longitude_length", 81978.2).get_parameter_value().double_value
 
     def configure(self):
         self.configSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/expanded", self.onConfigSpaceReceived, 20)
@@ -137,8 +140,8 @@ class AStarNode(Node):
             new_waypoints.append(waypoints[i])
             wpt1 = waypoints[i]
             wpt2 = waypoints[i + 1]
-            north_to_gps = (wpt1[0] - wpt2[0]) * 111086.2
-            west_to_gps = (wpt2[1] - wpt1[1]) * 81978.2
+            north_to_gps = (wpt1[0] - wpt2[0]) * self.latitudeLength
+            west_to_gps = (wpt2[1] - wpt1[1]) * self.longitudeLength
             distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
             if distanceToWaypoint > 5.0:
                 num_points = int(distanceToWaypoint / 5.0)
@@ -267,8 +270,8 @@ class AStarNode(Node):
             wpts = self.getWaypointsForDirection()
             if len(wpts) > 0:
                 wpt = wpts[0]
-                north_to_gps = (wpt[0] - self.position.latitude) * 111086.2
-                west_to_gps = (self.position.longitude - wpt[1]) * 81978.2
+                north_to_gps = (wpt[0] - self.position.latitude) * self.latitudeLength
+                west_to_gps = (self.position.longitude - wpt[1]) * self.longitudeLength
                 distanceToWaypoint = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
                 if distanceToWaypoint <= self.config.getFloat(CONFIG_WAYPOINT_ACTIVATION_DISTANCE):
                     waypoints = wpts
@@ -283,8 +286,8 @@ class AStarNode(Node):
 
         if len(waypoints) > 0:
             next_waypoint = waypoints[0]
-            north_to_gps = (next_waypoint[0] - self.position.latitude) * 111086.2
-            west_to_gps = (self.position.longitude - next_waypoint[1]) * 81978.2
+            north_to_gps = (next_waypoint[0] - self.position.latitude) * self.latitudeLength
+            west_to_gps = (self.position.longitude - next_waypoint[1]) * self.longitudeLength
             heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
             if math.sqrt(north_to_gps ** 2 + west_to_gps ** 2) <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):

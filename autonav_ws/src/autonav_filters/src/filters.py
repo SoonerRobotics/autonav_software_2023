@@ -24,10 +24,14 @@ class FiltersNode(Node):
     def __init__(self):
         super().__init__("autonav_filters")
 
-        self.pf = ParticleFilter()
-        self.reckoning = DeadReckoningFilter()
         self.lastIMUReceived = None
         self.firstGps = None
+        
+        self.latitudeLength = self.declare_parameter("latitude_length", 111086.2).get_parameter_value().double_value
+        self.longitudeLength = self.declare_parameter("longitude_length", 81978.2).get_parameter_value().double_value
+        
+        self.pf = ParticleFilter(self.latitudeLength, self.longitudeLength)
+        self.reckoning = DeadReckoningFilter()
         
         self.onReset()
 
@@ -96,8 +100,8 @@ class FiltersNode(Node):
 
         
         if self.firstGps is not None:
-            gps_x = self.firstGps.latitude + position.x / 111086.2
-            gps_y = self.firstGps.longitude - position.y / 81978.2
+            gps_x = self.firstGps.latitude + position.x / self.latitudeLength
+            gps_y = self.firstGps.longitude - position.y / self.longitudeLength
             position.latitude = gps_x
             position.longitude = gps_y
         

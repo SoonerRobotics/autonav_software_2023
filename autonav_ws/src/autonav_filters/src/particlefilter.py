@@ -11,12 +11,15 @@ class Particle:
         self.weight = weight
 
 class ParticleFilter:
-    def __init__(self) -> None:
+    def __init__(self, latitudeLength, longitudeLength) -> None:
         self.num_particles = 500
         self.gps_noise = [0.3]
         self.odom_noise = [0.05, 0.05, 0.05]
         self.init_particles()
         self.first_gps = None
+        
+        self.latitudeLength = latitudeLength
+        self.longitudeLength = longitudeLength
 
     def init_particles(self, seedHeading: float = 0.0, useSeedHeading: bool = False):
         if useSeedHeading:
@@ -56,8 +59,8 @@ class ParticleFilter:
         if self.first_gps is None:
             self.first_gps = gps
             
-        gps_x = (gps.latitude - self.first_gps.latitude) * 111086.2
-        gps_y = (self.first_gps.longitude - gps.longitude) * 81978.2
+        gps_x = (gps.latitude - self.first_gps.latitude) * self.latitudeLength
+        gps_y = (self.first_gps.longitude - gps.longitude) * self.longitudeLength
     
         for particle in self.particles:
             dist_sqrt = np.sqrt((particle.x - gps_x) ** 2 + (particle.y - gps_y) ** 2)
