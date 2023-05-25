@@ -66,9 +66,9 @@ void ShowStates(SCR::Node *node)
     }
 }
 
-float thetaToHeading(float theta)
+double thetaToHeading(double theta)
 {
-    return fmod(360.0 + (theta * 180 / M_PI), 360.0);
+    return fmod(theta * 180 / M_PI, 360.0);
 }
 
 void ShowDashboard(SCR::Node *node)
@@ -139,7 +139,7 @@ void ShowDashboard(SCR::Node *node)
     ImGui::Text("Estimated GPS: (%.8f, %.8f)", position.latitude, position.longitude);
     
     ImGui::SeparatorText("A* Debug");
-    ImGui::Text("Desired Heading: %.5f", pathingDebug.desired_heading);
+    ImGui::Text("Desired Heading: %.5f", thetaToHeading(pathingDebug.desired_heading));
     ImGui::Text("Waypoint (%.9f, %.9f)", pathingDebug.desired_latitude, pathingDebug.desired_longitude);
     ImGui::Text("Distance to Waypoint: %.5f", pathingDebug.distance_to_destination);
     // Show a list of waypoints
@@ -158,7 +158,7 @@ void ShowDashboard(SCR::Node *node)
     ImGui::Text("Satellites: %d", gps.satellites);
 
     ImGui::SeparatorText("IMU");
-    ImGui::Text("Pitch/Roll/Yaw: (%.5f, %.5f, %.5f)", imu.pitch, imu.roll, from180To360(imu.yaw));
+    ImGui::Text("Pitch/Roll/Yaw: (%.5f, %.5f, %.5f)", imu.pitch, imu.roll, imu.yaw);
     ImGui::Text("Acceleration: (%.5f, %.5f, %.5f)", imu.accel_x, imu.accel_y, imu.accel_z);
     ImGui::Text("Angular Velocity: (%.5f, %.5f, %.5f)", imu.angular_x, imu.angular_y, imu.angular_z);
 

@@ -32,7 +32,7 @@ class FiltersNode(Node):
         self.onReset()
 
     def configure(self):
-        self.config.setInt(CONFIG_FILTER_TYPE, FilterType.DEAD_RECKONING)
+        self.config.setInt(CONFIG_FILTER_TYPE, FilterType.PARTICLE_FILTER)
         self.config.setFloat(CONFIG_DEGREE_OFFSET, 107.0)
         self.config.setBool(CONFIG_SEED_HEADING, False)
 
@@ -92,7 +92,8 @@ class FiltersNode(Node):
         position = Position()
         position.x = averages[0] / (1.0 if self.getSystemState().mode != SystemMode.SIMULATION else 9.84251968503937)
         position.y = averages[1] / (1.0 if self.getSystemState().mode != SystemMode.SIMULATION else 9.84251968503937)
-        position.theta = averages[2]
+        position.theta = (-1 * math.pi * 2 + averages[2]) * 1
+
         
         if self.firstGps is not None:
             gps_x = self.firstGps.latitude + position.x / 111086.2
