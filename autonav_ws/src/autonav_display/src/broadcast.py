@@ -19,7 +19,7 @@ class BroadcastNode(Node):
 		super().__init__("autonav_display_broadcast")
 
 		self.port = self.declare_parameter("port", 8023).get_parameter_value().integer_value
-		self.host = self.declare_parameter("host", "localhost").get_parameter_value().string_value
+		self.host = self.declare_parameter("host", "0.0.0.0").get_parameter_value().string_value
 		self.sendQueue = []
 		self.sendQueueLock = threading.Lock()
 		self.connectedClients = 0
