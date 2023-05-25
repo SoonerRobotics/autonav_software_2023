@@ -9,9 +9,7 @@
     <node pkg="scr_configuration" exec="config">
         <param name="preset" value="simulation" />
     </node>
-    <node pkg="autonav_display" exec="primary_display">
-        <param name="fullscreen" value="true" />
-    </node>
+    <node pkg="autonav_display" exec="broadcast.py" />
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify" />
     <node pkg="autonav_filters" exec="filters.py">

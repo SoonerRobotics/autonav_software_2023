@@ -1,50 +1,644 @@
+var systemState = {
+    state: 0,
+    mode: 0,
+    mobility: false,
+    estop: false
+}
+var preferences = {
+    gpsFormat: "LL",
+    host: "localhost",
+    port: 8023,
+}
+var config = {}
+var conbus = {};
+var deviceStates = {};
+var logs = [];
+
+var addressKeys = {
+    "autonav_serial_imu": {
+        "internal_title": "[Serial] IMU",
+        "imu_read_rate": "float",
+        "imu_notfound_retry": "float",
+        "imu_badconnect_retry": "float"
+    },
+
+    "autonav_serial_camera": {
+        "internal_title": "[Serial] Camera",
+        "refresh_rate": "int",
+    },
+
+    "autonav_vision_transformer": {
+        "internal_title": "[Vision] Transformer",
+        "lower_hue": "int",
+        "lower_saturation": "int",
+        "lower_value": "int",
+        "upper_hue": "int",
+        "upper_saturation": "int",
+        "upper_value": "int",
+        "blur": "int",
+        "blur_iterations": "int",
+    },
+
+    "autonav_filters": {
+        "internal_title": "[Localization] Filters",
+        "filter_type": {
+            0: "Deadreckoning",
+            1: "Particle Filter"
+        },
+        "degree_offset": "float",
+        "seed_heading": "bool",
+    },
+
+    "autonav_manual_steamcontroller": {
+        "internal_title": "[Manual] Steam Controller",
+        "forward_speed": "float",
+        "steering_deadzone": "float",
+        "throttle_deadzone": "float",
+        "turn_speed": "float",
+    },
+
+    "autonav_nav_astar": {
+        "internal_title": "[Navigation] A*",
+        "pop_distance": "float",
+        "direction": {
+            0: "North",
+            1: "South",
+            2: "Misc 1",
+            3: "Misc 2",
+            4: "Misc 3",
+            5: "Misc 4",
+            6: "Misc 5",
+        },
+        "use_only_waypoints": "bool",
+        "waypoint_delay": "float",
+    },
+
+    "autonav_nav_resolver": {
+        "internal_title": "[Navigation] Resolver",
+        "forward_speed": "float",
+        "reverse_speed": "float",
+        "radius_multiplier": "float",
+        "radius_max": "float",
+        "radius_start": "float",
+    },
+
+    "autonav_playback": {
+        "internal_title": "[Playback]",
+        "record_imu": "bool",
+        "record_gps": "bool",
+        "record_position": "bool",
+        "record_feedback": "bool",
+        "record_objectdetection": "bool",
+        "record_manual": "bool",
+        "record_autonomous": "bool",
+        "record_input": "bool",
+        "record_debugfeedback": "bool",
+    }
+}
+
+var conbusDevices = {
+    0x10: {
+        title: "Motor Controller",
+        registers: {
+            0x0: {
+                title: "Update Period",
+                type: "float",
+            },
+            0x1: {
+                title: "Pulses Per Radian",
+                type: "float",
+            },
+            0x2: {
+                title: "Wheel Radius",
+                type: "float",
+            },
+            0x3: {
+                title: "Wheel Base Length",
+                type: "float",
+            },
+            0x4: {
+                title: "Slew Rate Limit",
+                type: "float",
+            },
+            0x5: {
+                title: "Left Encoder Factor",
+                type: "float",
+            },
+            0x6: {
+                title: "Right Encoder Factor",
+                type: "float",
+            },
+            0x10: {
+                title: "Velocity Kp",
+                type: "float",
+            },
+            0x11: {
+                title: "Velocity Ki",
+                type: "float",
+            },
+            0x12: {
+                title: "Velocity Kd",
+                type: "float",
+            },
+            0x13: {
+                title: "Velocity Kf",
+                type: "float",
+            },
+            0x20: {
+                title: "Angular Kp",
+                type: "float",
+            },
+            0x21: {
+                title: "Angular Ki",
+                type: "float",
+            },
+            0x22: {
+                title: "Angular Kd",
+                type: "float",
+            },
+            0x23: {
+                title: "Angular Kf",
+                type: "float",
+            },
+            0x30: {
+                title: "Use Obstacle Avoidance",
+                type: "bool",
+            },
+            0x31: {
+                title: "Collision Box Distance",
+                type: "float",
+            },
+            0x40: {
+                title: "Send Statistics",
+                type: "bool",
+            },
+        }
+    }
+}
+
+function getBytesView(bytes) {
+    var buffer = new ArrayBuffer(4);
+    var view = new DataView(buffer);
+    bytes.forEach(function (b, i) {
+        view.setUint8(i, b);
+    });
+    return view;
+}
+
+function fromBytesToFloat(bytes) {
+    return getBytesView(bytes).getFloat32(0, true);
+}
+
+function fromBytesToInt(bytes) {
+    return getBytesView(bytes).getInt32(0, false);
+}
+
+function fromBytesToBool(bytes) {
+    return getBytesView(bytes).getUint8(0) == 1;
+}
+
+function transferImageToElement(id, data) {
+    const img = document.getElementById(id);
+    img.src = "data:image/jpeg;base64," + data;
+}
+
+function fromFloatToBytes(value) {
+    var buffer = new ArrayBuffer(4);
+    var view = new DataView(buffer);
+    view.setFloat32(0, value, true);
+    return new Uint8Array(buffer);
+}
+
+function fromIntToBytes(value) {
+    var buffer = new ArrayBuffer(4);
+    var view = new DataView(buffer);
+    view.setInt32(0, value, false);
+    return new Uint8Array(buffer);
+}
+
+function fromBoolToBytes(value) {
+    var buffer = new ArrayBuffer(1);
+    var view = new DataView(buffer);
+    view.setUint8(0, value ? 1 : 0);
+    return new Uint8Array(buffer);
+}
+
+function createConbusReadInstruction(deviceId, address)
+{
+    return {
+        id: 1000 + deviceId,
+        data: [address]
+    }
+}
+
+function createConbusReadResponse(deviceId, data)
+{
+    return {
+        id: deviceId - 1100,
+        address: data[0],
+        length: data[1],
+        reserved: data[2],
+        data: data?.slice(3) ?? []
+    }
+}
+
 $(document).ready(function () {
-    var ros = new ROSLIB.Ros({
-        url: 'ws://192.168.1.109:9090'
-    });
+    ////////////////////////////////// Websocekt //////////////////////////////////
 
-    ros.on('connection', function () {
-        $(".connecting").hide();
+    var websocket;
 
-        setTimeout(() => {
-            broadcastStatePublisher.publish(new ROSLIB.Message({}));
-        }, 500);
-    });
+    function createWebsocket()
+    {
+        websocket = new WebSocket(`ws://${preferences.host}:${preferences.port}`);
 
-    ros.on("open", function () {
-        $(".connecting").hide();
-    });
+        websocket.onopen = function (event) {
+            $("#connecting-state").text("Updating Data");
+            $(".connecting-input").hide();
+    
+            send({
+                op: "broadcast"
+            });
+            send({
+                op: "get_nodes"
+            });
 
-    ros.on('error', function (error) {
-        console.log('Error connecting to websocket server: ', error);
-    });
+            send({
+                op: "conbus",
+                ...createConbusReadInstruction(0x10, 0xFF)
+            })
+    
+            setTimeout(() => {
+                $(".connecting").hide();
+            }, 1000);
+        };
+    
+        websocket.onmessage = function (event) {
+            const obj = JSON.parse(event.data);
+            const { op, topic } = obj;
+    
+            if (op == "data") {
+                onTopicData(topic, obj);
+            }
+    
+            if (op == "get_nodes_callback") {
+                for (let i = 0; i < obj.nodes.length; i++) {
+                    const node = obj.nodes[i];
+                    send({
+                        op: "configuration",
+                        device: node,
+                        opcode: 4
+                    });
+                }
+            }
+        };
+    
+        websocket.onclose = function (event) {
+            $("#connecting-state").text("Waiting for the Weeb Wagon");
+            $(".connecting").show();
+            $(".connecting-input").show();
+    
+            setTimeout(() => {
+                createWebsocket();
+            }, 2000);
+        };
+    
+        websocket.onerror = function (event) {
+            console.error(event);
+        };
+    }
 
-    ros.on('close', function () {
-        $(".connecting").show();
-        const socket = ros.socket;
-        if (socket) {
-            socket.close();
+    createWebsocket();
+
+    var sendQueue = [];
+
+    function send(obj) {
+        sendQueue.push(obj);
+    }
+
+    function setSystemState()
+    {
+        send({
+            op: "set_system_state",
+            state: systemState.state,
+            estop: systemState.estop,
+            mobility: systemState.mobility,
+        });
+    }
+
+    function generateElementForType(data, type, device, text) {
+        if (type == "bool") {
+            const checked = fromBytesToBool(data);
+
+            // Create a dropdown
+            const div = document.createElement("div");
+            div.classList.add("input-group");
+            div.classList.add("mb-3");
+
+            const select = document.createElement("select");
+            select.classList.add("form-select");
+            select.onchange = function () {
+                send({
+                    op: "configuration",
+                    opcode: 1,
+                    device: device,
+                    address: text,
+                    data: Array.from(fromBoolToBytes(select.value == 1))
+                });
+            }
+
+            const optionTrue = document.createElement("option");
+            optionTrue.value = 1;
+            optionTrue.innerText = "True";
+            optionTrue.selected = checked;
+
+            const optionFalse = document.createElement("option");
+            optionFalse.value = 0;
+            optionFalse.innerText = "False";
+            optionFalse.selected = !checked;
+
+            select.appendChild(optionTrue);
+            select.appendChild(optionFalse);
+
+            const span = document.createElement("span");
+            span.classList.add("input-group-text");
+            span.innerText = text;
+
+            div.appendChild(span);
+            div.appendChild(select);
+            return div;
+        }
+        else if (type == "float") {
+            const div = document.createElement("div");
+            div.classList.add("input-group");
+            div.classList.add("mb-3");
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.classList.add("form-control");
+            input.value = fromBytesToFloat(data).toFixed(3);
+            input.onchange = function () {
+                send({
+                    op: "configuration",
+                    opcode: 1,
+                    device: device,
+                    address: text,
+                    data: Array.from(fromFloatToBytes(input.value))
+                });
+            }
+
+            const span = document.createElement("span");
+            span.classList.add("input-group-text");
+            span.innerText = text;
+
+            div.appendChild(span);
+            div.appendChild(input);
+            return div;
+        }
+        else if (type == "int") {
+            const div = document.createElement("div");
+            div.classList.add("input-group");
+            div.classList.add("mb-3");
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.classList.add("form-control");
+            input.value = fromBytesToInt(data);
+            input.onchange = function () {
+                send({
+                    op: "configuration",
+                    opcode: 1,
+                    device: device,
+                    address: text,
+                    data: Array.from(fromIntToBytes(input.value))
+                });
+            }
+
+            const span = document.createElement("span");
+            span.classList.add("input-group-text");
+            span.innerText = text;
+
+            div.appendChild(span);
+            div.appendChild(input);
+            return div;
+        }
+        else {
+            const options = addressKeys[device][text];
+
+            if (typeof options == "object") {
+                const index = fromBytesToInt(data);
+
+                // Create a dropdown
+                const div = document.createElement("div");
+                div.classList.add("input-group");
+                div.classList.add("mb-3");
+
+                const select = document.createElement("select");
+                select.classList.add("form-select");
+                select.onchange = function () {
+                    send({
+                        op: "configuration",
+                        opcode: 1,
+                        device: device,
+                        address: text,
+                        data: Array.from(fromIntToBytes(select.value))
+                    });
+                }
+
+                for (let i = 0; i < Object.keys(options).length; i++) {
+                    const option = document.createElement("option");
+                    option.value = i;
+                    option.selected = i == index;
+                    option.innerText = options[i];
+                    select.appendChild(option);
+                }
+
+                const span = document.createElement("span");
+                span.classList.add("input-group-text");
+                span.innerText = text;
+
+                div.appendChild(span);
+                div.appendChild(select);
+                return div;
+            }
+        }
+    }
+
+    setInterval(() => {
+        if (sendQueue.length > 0 && websocket.readyState == 1 && websocket.bufferedAmount == 0) {
+            const obj = sendQueue.shift();
+            console.log(websocket);
+            console.log("Sending -> ", obj)
+            websocket.send(JSON.stringify(obj));
+        }
+    }, 10);
+
+    function onTopicData(topic, msg) {
+        // console.log(topic, msg);
+        if (topic == "/scr/state/system") {
+            console.log(topic, msg);
+            const { state, mode, mobility, estop } = msg;
+            $("#var_system_state").text(state == 0 ? "Diabled" : state == 1 ? "Autonomous" : state == 2 ? "Manual" : "Shutdown");
+            $("#var_system_mode").text(mode == 0 ? "Competition" : mode == 1 ? "Simulation" : "Practice");
+            $("#var_system_mobility").text(mobility ? "Enabled" : "Disabled");
+            $("#var_system_estop").text(estop ? "Yes" : "No");
+
+            systemState.state = state;
+            systemState.mode = mode;
+            systemState.mobility = mobility;
+            systemState.estop = estop;
+
+            $("#input_system_state").val(state);
+            $("#input_system_mode").val(mode);
+            $("#input_system_mobility").prop("checked", mobility);
+            $("#input_system_estop").prop("checked", estop);
+            return;
         }
 
-        setTimeout(function () {
-            // location.reload();
-        }, 500);
-    });
+        if (topic == "/scr/state/device") {
+            const { device, state } = msg;
 
-    ////////////////////////////////// Globals //////////////////////////////////
+            if (deviceStates[device] == undefined) {
+                deviceStates[device] = state;
+            }
 
-    var systemState = {
-        state: 0,
-        mode: 0,
-        mobility: false,
-        estop: false
+            unorderedListElement = $("#element_device_states");
+            unorderedListElement.empty();
+            for (const id in deviceStates) {
+                const state = deviceStates[id];
+                unorderedListElement.append(`<h5>${id}: <span data-state=\"${state}\">${deviceStateToName(state)}</span></h5>`);
+            }
+            return;
+        }
+
+        if (topic == "/scr/configuration/instruction") {
+            const { device, opcode, data, address } = msg;
+            if (opcode == 4) {
+                return;
+            }
+
+            if (opcode == 2 || opcode == 3) {
+                if (!(device in config)) {
+                    config[device] = {};
+                }
+
+                config[device][address] = data;
+
+                const configElement = $("#configuration");
+                configElement.empty();
+
+                for (const deviceId in config) {
+                    const deviceConfig = config[deviceId];
+                    const title = addressKeys[deviceId]["internal_title"];
+                    const deviceElement = $(`<div class="card" style="margin-bottom: 10px;"></div>`);
+                    deviceElement.append(`<div class="card-header"><h5>${title}</h5></div>`);
+                    const deviceBody = $(`<div class="card-body"></div>`);
+                    deviceElement.append(deviceBody);
+
+                    for (const address in deviceConfig) {
+                        const data = deviceConfig[address];
+                        const type = addressKeys[deviceId][address];
+                        const inputElement = generateElementForType(data, type, deviceId, address);
+                        deviceBody.append(inputElement);
+                    }
+
+                    configElement.append(deviceElement);
+                }
+            }
+            return;
+        }
+
+        if (topic == "/scr/logging") {
+            logs.push({ message: msg.data, node: msg.node });
+            if (logs.length > 75) {
+                logs.shift();
+            }
+
+            const logElement = $("#element_logs");
+            logElement.empty();
+            for (let i = logs.length - 1; i >= 0; i--) {
+                const log = logs[i];
+                logElement.append(`<h5>${log.node}: ${log.message}</h5>`);
+            }
+            return;
+        }
+
+        if (topic == "/autonav/gps") {
+            const { latitude, longitude, gps_fix, is_locked, satellites } = msg;
+            $("#var_gps_position").text(`(${formatToFixed(latitude, 8)}, ${formatToFixed(longitude, 8)})`);
+            $("#var_gps_fix").text(gps_fix);
+            $("#var_gps_fixed").text(is_locked ? "Locked" : "Not Locked");
+            $("#var_gps_satellites").text(satellites);
+            return;
+        }
+
+        if (topic == "/autonav/MotorFeedback") {
+            const { delta_x, delta_y, delta_theta } = msg;
+            $("#var_motors_feedback").text(`(${formatToFixed(delta_x, 4)}, ${formatToFixed(delta_y, 4)}, ${formatToFixed(delta_theta, 4)}°)`);
+            return;
+        }
+
+        if (topic == "/autonav/MotorInput") {
+            const { forward_velocity, angular_velocity } = msg;
+            $("#var_motors_velocity").text(`(${formatToFixed(forward_velocity, 3)}, ${formatToFixed(angular_velocity, 3)})`);
+            return;
+        }
+
+        if (topic == "/autonav/debug/astar") {
+            const { desired_heading, desired_latitude, desired_longitude, distance_to_destination, waypoints } = msg;
+            $("#var_astar_heading").text(`${radiansToDegrees(parseFloat(desired_heading)).toFixed(3)}°`);
+            $("#var_astar_waypoint").text(`(${formatToFixed(desired_latitude, 8)}, ${formatToFixed(desired_longitude, 8)})`);
+            $("#var_astar_distance").text(formatToFixed(distance_to_destination, 3));
+            $("#var_astar_waypoints").text(
+                waypoints.reduce((acc, val, i) => {
+                    if (i % 2 == 0) {
+                        acc.push([val, waypoints[i + 1]]);
+                    }
+
+                    return acc;
+                }, []).map((waypoint) => {
+                    if (preferences.gpsFormat == "LL") {
+                        return `(${formatToFixed(waypoint[0], 8)}, ${formatToFixed(waypoint[1], 8)})`;
+                    }
+
+                    const lat = waypoint[0];
+                    const lon = waypoint[1];
+                    return `(${convertLLToMSD(lat, lon)})`;
+                }).join(", ")
+            );
+            return;
+        }
+
+        if (topic == "/autonav/position") {
+            const { x, y, theta, latitude, longitude } = msg;
+            $("#var_position_origin").text(`(${formatToFixed(x, 4)}, ${formatToFixed(y, 4)}, ${radiansToDegrees(parseFloat(theta)).toFixed(3)}°)`);
+            $("#var_position_global").text(`(${formatToFixed(latitude, 8)}, ${formatToFixed(longitude, 8)})`);
+            return;
+        }
+
+        if (topic == "/autonav/camera/compressed")
+        {
+            const targetImgElement = document.getElementById("target_raw_camera");
+            targetImgElement.src = `data:image/jpeg;base64,${msg.data}`;
+            return;
+        }
+
+        if (topic == "/autonav/cfg_space/raw/image")
+        {
+            const filteredImgElement = document.getElementById("target_filtered_camera");
+            filteredImgElement.src = `data:image/jpeg;base64,${msg.data}`;
+            return;
+        }
+
+        if (topic == "/autonav/conbus")
+        {
+            const { id, data } = msg;
+            console.log("Conbus Instruction Rececived", id, data);
+            if (!(id in conbusDevices))
+            {
+                return;
+            }
+        }
     }
-
-    var preferences = {
-        gpsFormat: "LL"
-    }
-
-    var config = {}
 
     ////////////////////////////////// Helpers //////////////////////////////////
 
@@ -53,7 +647,7 @@ $(document).ready(function () {
     }
 
     const radiansToDegrees = (radians) => {
-        return (360 - (radians * (180 / Math.PI))) % 360; 
+        return (360 - (radians * (180 / Math.PI))) % 360;
     }
 
     const convertLLToMSD = (lat, lon) => {
@@ -68,198 +662,10 @@ $(document).ready(function () {
         return `${latDeg}°${latMin}'${latSec}"N ${lonDeg}°${lonMin}'${lonSec}"W`;
     }
 
-    var broadcastStatePublisher = new ROSLIB.Topic({
-        ros: ros,
-        name: '/scr/state/broadcast',
-        messageType: 'std_msgs/Empty'
-    });
-
     const deviceStateToName = (state) => {
         return state == 0 ? "Off" : state == 1 ? "Standby" : state == 2 ? "Ready" : "Operating";
     }
 
-    ////////////////////////////////// Subscribers //////////////////////////////////
-
-    // System State
-    var systemStateListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/scr/state/system',
-        messageType: 'scr_msgs/SystemState'
-    });
-    systemStateListener.subscribe(function (message) {
-        const { state, mode, mobility, estop } = message;
-        $("#var_system_state").text(state == 0 ? "Diabled" : state == 1 ? "Autonomous" : state == 2 ? "Manual" : "Shutdown");
-        $("#var_system_mode").text(mode == 0 ? "Competition" : state == 1 ? "Simulation" : "Practice");
-        $("#var_system_mobility").text(mobility ? "Enabled" : "Disabled");
-        $("#var_system_estop").text(estop ? "Yes" : "No");
-
-        // Update the input fields
-        systemState.state = state;
-        systemState.mode = mode;
-        systemState.mobility = mobility;
-        systemState.estop = estop;
-
-        $("#input_system_state").val(state);
-        $("#input_system_mode").val(mode);
-        $("#input_system_mobility").prop("checked", mobility);
-        $("#input_system_estop").prop("checked", estop);
-    });
-
-    var deviceStateListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/scr/state/device',
-        messageType: 'scr_msgs/DeviceState'
-    });
-    var deviceStates = {};
-    deviceStateListener.subscribe(async function (message) {
-        const { device, state } = message;
-
-        if (deviceStates[device] == undefined) {
-            deviceStates[device] = state;
-        }
-
-        unorderedListElement = $("#element_device_states");
-        unorderedListElement.empty();
-        for (const id in deviceStates)
-        {
-            const state = deviceStates[id];
-            unorderedListElement.append(`<h5>${id}: <span data-state=\"${state}\">${deviceStateToName(state)}</span></h5>`);
-        }
-    });
-
-    // Motor Feedback
-    var motorFeedbackListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/MotorFeedback',
-        messageType: 'autonav_msgs/MotorFeedback'
-    });
-    motorFeedbackListener.subscribe(function (message) {
-        const { delta_x, delta_y, delta_theta } = message;
-        $("#var_motors_feedback").text(`(${formatToFixed(delta_x, 4)}, ${formatToFixed(delta_y, 4)}, ${formatToFixed(delta_theta, 4)}°)`);
-    });
-
-    // Motor Input
-    var motorInputListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/MotorInput',
-        messageType: 'autonav_msgs/MotorInput'
-    });
-    motorInputListener.subscribe(function (message) {
-        const { forward_velocity, angular_velocity } = message;
-        $("#var_motors_velocity").text(`(${formatToFixed(forward_velocity, 3)}, ${formatToFixed(angular_velocity, 3)})`);
-    });
-
-    // GPS
-    var gpsListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/gps',
-        messageType: 'autonav_msgs/GPSFeedback'
-    });
-    gpsListener.subscribe(function (message) {
-        const { latitude, longitude, gps_fix, is_locked, satellites } = message;
-        $("#var_gps_position").text(`(${formatToFixed(latitude, 8)}, ${formatToFixed(longitude, 8)})`);
-        $("#var_gps_fix").text(gps_fix);
-        $("#var_gps_fixed").text(is_locked ? "Locked" : "Not Locked");
-        $("#var_gps_satellites").text(satellites);
-    });
-
-    // GPS
-    var gpsListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/debug/astar',
-        messageType: 'autonav_msgs/PathingDebug'
-    });
-    gpsListener.subscribe(function (message) {
-        const { desired_heading, desired_latitude, desired_longitude, distance_to_destination, waypoints } = message;
-        $("#var_astar_heading").text(`${radiansToDegrees(parseFloat(desired_heading)).toFixed(3)}°`);
-        $("#var_astar_waypoint").text(`(${formatToFixed(desired_latitude, 8)}, ${formatToFixed(desired_longitude, 8)})`);
-        $("#var_astar_distance").text(formatToFixed(distance_to_destination, 3));
-        $("#var_astar_waypoints").text(
-            waypoints.reduce((acc, val, i) => {
-                if (i % 2 == 0) {
-                    acc.push([val, waypoints[i + 1]]);
-                }
-
-                return acc;
-            }, []).map((waypoint) => {
-                if (preferences.gpsFormat == "LL")
-                {
-                    return `(${formatToFixed(waypoint[0], 8)}, ${formatToFixed(waypoint[1], 8)})`;
-                }
-
-                const lat = waypoint[0];
-                const lon = waypoint[1];
-                return `(${convertLLToMSD(lat, lon)})`;
-            }).join(", ")
-        );
-    });  
-
-    // Position
-    var positionListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/position',
-        messageType: 'autonav_msgs/Position'
-    });
-    positionListener.subscribe(function (message) {
-        const { x, y, theta, latitude, longitude } = message;
-        $("#var_position_origin").text(`(${formatToFixed(x, 4)}, ${formatToFixed(y, 4)}, ${radiansToDegrees(parseFloat(theta)).toFixed(3)}°)`);
-        $("#var_position_global").text(`(${formatToFixed(latitude, 8)}, ${formatToFixed(longitude, 8)})`);
-    });  
-
-    // Raw Camera
-    var rawCameraListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/camera/compressed',
-        messageType: 'sensor_msgs/CompressedImage'
-    });
-    rawCameraListener.subscribe(function (message) {
-        const targetImgElement = document.getElementById("target_raw_camera");
-        targetImgElement.src = `data:image/jpeg;base64,${message.data}`;
-    });
-
-    // Filtered Camera
-    var filteredCameraListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/cfg_space/raw/image',
-        messageType: 'sensor_msgs/CompressedImage'
-    });
-    filteredCameraListener.subscribe(function (message) {
-        const targetImgElement = document.getElementById("target_filtered_camera");
-        targetImgElement.src = `data:image/jpeg;base64,${message.data}`;
-    });
-
-    var filteredCameraListener = new ROSLIB.Topic({
-        ros: ros,
-        name: '/autonav/debug/astar/image',
-        messageType: 'sensor_msgs/CompressedImage'
-    });
-    filteredCameraListener.subscribe(function (message) {
-        const targetImgElement = document.getElementById("target_astar_path");
-        targetImgElement.src = `data:image/jpeg;base64,${message.data}`;
-    });
-
-
-    ////////////////////////////////// Publishers //////////////////////////////////
-
-    var systemStateService = new ROSLIB.Service({
-        ros: ros,
-        name: '/scr/state/set_system_state',
-        serviceType: 'scr_msgs/SystemState'
-    });
-
-    function setSystemState() {
-        const request = new ROSLIB.ServiceRequest({
-            state: systemState.state,
-            mode: systemState.mode,
-            mobility: systemState.mobility,
-            estop: systemState.estop
-        });
-        systemStateService.callService(request, function (result) {
-            console.log(result);
-        });
-    }
-
-    // get aria-labelledby="dropdown_system_state"
     $(".dropdown-menu a").on("click", function () {
         const parentDataTarget = $(this).parents(".dropdown").attr("data-target");
         if (parentDataTarget == "system_state")
@@ -282,5 +688,19 @@ $(document).ready(function () {
     $("#checkbox_system_mobility").on("change", function () {
         systemState.mobility = $(this).is(":checked");
         setSystemState();
+    });
+
+    $("#input_port").on("change", function () {
+        const intt = parseInt($(this).val());
+        preferences.port = isNaN(intt) ? 8023 : intt;
+
+        if (isNaN(intt))
+        {
+            $(this).val(8023);
+        }
+    });
+
+    $("#input_host").on("change", function () {
+        preferences.host = $(this).val();
     });
 })

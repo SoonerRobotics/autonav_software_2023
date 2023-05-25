@@ -47,7 +47,13 @@ h5 > span {
     left: 0;
     z-index: 999;
 
+    display: grid;
+    place-items: center;
+}
+
+.connecting-inner {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 1rem;
@@ -68,4 +74,55 @@ h5 > span {
 .flex-column {
     display: flex;
     flex-direction: column;
+}
+
+span[data-state="0"] {
+    color: #ffffff;
+}
+
+span[data-state="1"] {
+    color: #C21858;
+}
+
+span[data-state="2"] {
+    color: #57ACDC;
+}
+
+span[data-state="3"] {
+    color: #60C689;
+}
+
+#element_device_states > h5 > span {
+    font-weight: 700;
+}
+
+.connecting-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.test {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.test > h4 {
+    margin: 0;
+}
+
+@media screen and (max-width: 1920px) {
+	.logo {
+		display: none !important;
+	}
+}
+
+#configuration {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0;
 }

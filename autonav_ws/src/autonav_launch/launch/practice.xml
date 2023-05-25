@@ -3,14 +3,12 @@
         <param name="mode" value="2" />
     </node>
     <node pkg="scr_logging" exec="logging">
-        <param name="log_to_console" value="false" />
+        <param name="log_to_console" value="true" />
     </node>
     <node pkg="scr_configuration" exec="config">
         <param name="preset" value="practice" />
     </node>
-    <node pkg="autonav_display" exec="primary_display">
-        <param name="fullscreen" value="true" />
-    </node>
+    <node pkg="autonav_display" exec="broadcast.py" />
     <node pkg="autonav_serial" exec="imu.py" />
     <node pkg="autonav_serial" exec="serial_node.py" />
     <node pkg="autonav_serial" exec="camera.py" />

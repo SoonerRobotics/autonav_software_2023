@@ -5,18 +5,18 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>SCR Weeb Wagon</title>
     <link rel="stylesheet" href="styles/bootstrap.css">
     <link rel="stylesheet" href="styles/reset.css">
     <link rel="stylesheet" href="styles/index.css">
+
+    <link rel="icon" href="assets/scr_icon.png" type="image/png" sizes="32x32">
 </head>
 
 <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand">
-                <h2>Weeb Wagon</h2>
-            </a>
+            <img src="assets/SCR_Gear_23_Wide_Red_on_Transparent.png" width="90" height="45" class="d-inline-block align-top logo" alt="">
             <ul class="nav nav-underline">
                 <li class="nav-item">
                     <a class="nav-link active" data-page-id="dashboard">Dashboard</a>
@@ -25,7 +25,13 @@
                     <a class="nav-link" data-page-id="vision">Vision</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" data-page-id="logging">Logging</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" data-page-id="configuration">Configuration</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page-id="conbus">Conbus</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-page-id="preferences">Preferences</a>
@@ -34,6 +40,9 @@
                     <a class="nav-link" data-page-id="debug">Debug</a>
                 </li>
             </ul>
+            <a class="navbar-brand test">
+                <h4>Weeb Wagon</h4>
+            </a>
         </div>
     </nav>
 
@@ -49,7 +58,7 @@
                     <h5>Mobility: <span id="var_system_mobility">Disabled</span></h5>
                     <h5>ESTOP: <span id="var_system_estop">No</span></h5>
                 </div>
-    
+
                 <div class="divider">
                     <h3>Motors</h3>
                 </div>
@@ -57,7 +66,7 @@
                     <h5>Forward/Angular Velocity: <span id="var_motors_velocity">(0.0, 0.0)</span></h5>
                     <h5>Delta X/Y/Theta: <span id="var_motors_feedback">(0.0, 0.0, 0.0&deg;)</span></h5>
                 </div>
-    
+
                 <div class="divider">
                     <h3>Position</h3>
                 </div>
@@ -65,7 +74,7 @@
                     <h5>Local: <span id="var_position_origin">(0.0, 0.0, 0.0&deg;)</span></h5>
                     <h5>Global: <span id="var_position_global">(0.0, 0.0)</span></h5>
                 </div>
-    
+
                 <div class="divider">
                     <h3>GPS</h3>
                 </div>
@@ -75,7 +84,7 @@
                     <h5>Is Fixed: <span id="var_gps_fixed">No</span></h5>
                     <h5>Satellites: <span id="var_gps_satellites">0</span></h5>
                 </div>
-    
+
                 <div class="divider">
                     <h3>Path Planning</h3>
                 </div>
@@ -92,7 +101,7 @@
                 </div>
                 <div class="section">
                     <div id="element_device_states">
-                        
+
                     </div>
                 </div>
             </div>
@@ -112,7 +121,14 @@
         <div class="page" id="configuration">
         </div>
 
+        <div class="page" id="conbus">
+        </div>
+
         <div class="page" id="preferences">
+        </div>
+
+        <div class="page" id="logging">
+            <div class="element_logs"></div>
         </div>
 
         <div class="page" id="debug">
@@ -133,29 +149,10 @@
                     </ul>
                 </div>
 
-                <div class="dropdown" data-target="system_mode">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdown_system_mode"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        System Mode
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdown_system_mode">
-                        <li><a class="dropdown-item" data-value="0">Competition</a></li>
-                        <li><a class="dropdown-item" data-value="1">Simulation</a></li>
-                        <li><a class="dropdown-item" data-value="2">Practice</a></li>
-                    </ul>
-                </div>
-
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" value="" id="checkbox_system_mobility">
                     <label class="form-check-label" for="checkbox_system_estop">
                         Mobility
-                    </label>
-                </div>
-
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" value="" id="checkbox_system_estop">
-                    <label class="form-check-label" for="checkbox_system_estop">
-                        ESTOP
                     </label>
                 </div>
             </div>
@@ -167,10 +164,22 @@
     </footer>
 
     <div class="connecting">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+        <div class="connecting-inner">
+            <div class="connecting-text">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h3 id="connecting-state">Waiting for the Weeb Wagon</h3>
+            </div>
+    
+            <!-- Input box for IP and Port -->
+            <div class="input-group mb-3 connecting-input">
+                <div class="input-group-prepend">
+                    <input id="input_port" value="8023" type="text" class="form-control" aria-label="Port" placeholder="8023">
+                </div>
+                <input id="input_host" value="localhost" type="text" class="form-control" aria-label="Address" placeholder="localhost">
+            </div>
         </div>
-        <h3>Waiting for ROS</h3>
     </div>
 
     <script src="vendor/eventemitter2.min.js"></script>

@@ -60,8 +60,7 @@ public:
 
 	void onBroadcast(const std_msgs::msg::Empty::SharedPtr _)
 	{
-		publishState();
-
+		systemStatePublisher->publish(state);
 		for (auto &[id, state] : deviceStates)
 		{
 			auto deviceState = scr_msgs::msg::DeviceState();
@@ -177,6 +176,7 @@ public:
 			deviceState.device = node;
 			deviceState.state = SCR::DeviceState::STANDBY;
 			deviceStatePublisher->publish(deviceState);
+			deviceStates[node] = SCR::DeviceState::STANDBY;
 		}
 
 		waitingQueue.clear();
@@ -195,6 +195,7 @@ public:
 		deviceState.device = node;
 		deviceState.state = SCR::DeviceState::STANDBY;
 		deviceStatePublisher->publish(deviceState);
+		deviceStates[node] = SCR::DeviceState::STANDBY;
 		publishState();
 	}
 
@@ -226,6 +227,12 @@ public:
 
 	void onSetDeviceState(const std::shared_ptr<scr_msgs::srv::SetDeviceState::Request> request, std::shared_ptr<scr_msgs::srv::SetDeviceState::Response> response)
 	{
+		if (deviceStates[request->device] == request->state)
+		{
+			response->ok = true;
+			return;
+		}
+
 		auto deviceState = scr_msgs::msg::DeviceState();
 		deviceState.device = request->device;
 		deviceState.state = request->state;

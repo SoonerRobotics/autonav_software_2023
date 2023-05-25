@@ -6,9 +6,7 @@
     <node pkg="scr_configuration" exec="config">
         <param name="preset" value="default" />
     </node>
-    <node pkg="autonav_display" exec="primary_display" output="screen">
-        <param name="fullscreen" value="true" />
-    </node>
+    <node pkg="autonav_display" exec="broadcast.py" />
     <node pkg="autonav_serial" exec="imu.py" />
     <node pkg="autonav_serial" exec="serial_node.py" />
     <node pkg="autonav_serial" exec="camera.py" />

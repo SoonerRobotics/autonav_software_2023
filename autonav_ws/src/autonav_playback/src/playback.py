@@ -18,9 +18,6 @@ CONFIG_RECORD_GPS = "record_gps"
 CONFIG_RECORD_POSITION = "record_position"
 CONFIG_RECORD_FEEDBACK = "record_feedback"
 CONFIG_RECORD_OBJECTDETECTION = "record_objectdetection"
-CONFIG_RECORD_CAMERA = "record_camera"
-CONFIG_RECORD_THRESHOLDED = "record_thresholded"
-CONFIG_RECORD_EXPANDIFIED = "record_expandified"
 CONFIG_RECORD_MANUAL = "record_manual"
 CONFIG_RECORD_AUTONOMOUS = "record_autonomous"
 CONFIG_RECORD_INPUT = "record_input"
@@ -36,9 +33,6 @@ class PlaybackNode(Node):
         self.fileName = None
         self.bridge = cv_bridge.CvBridge()
         self.HOME_DIR = os.path.expanduser("~")
-        self.thresholdedIndex = 0
-        self.expandifiedIndex = 0
-        self.cameraIndex = 0
 
     def configure(self):
         self.config.setBool(CONFIG_RECORD_IMU, True)
@@ -46,9 +40,6 @@ class PlaybackNode(Node):
         self.config.setBool(CONFIG_RECORD_POSITION, True)
         self.config.setBool(CONFIG_RECORD_FEEDBACK, True)
         self.config.setBool(CONFIG_RECORD_OBJECTDETECTION, False)
-        self.config.setBool(CONFIG_RECORD_CAMERA, True)
-        self.config.setBool(CONFIG_RECORD_THRESHOLDED, True)
-        self.config.setBool(CONFIG_RECORD_EXPANDIFIED, False)
         self.config.setBool(CONFIG_RECORD_MANUAL, True)
         self.config.setBool(CONFIG_RECORD_AUTONOMOUS, True)
         self.config.setBool(CONFIG_RECORD_INPUT, True)
@@ -61,22 +52,11 @@ class PlaybackNode(Node):
         self.positionSubscriber = self.create_subscription(Position, "/autonav/position", self.positionCallback, 20)
         self.objectDetectionSubscriber = self.create_subscription(ObjectDetection, "/autonav/ObjectDetection", self.objectDetectionCallback, 20)
         self.motorControllerDebugSubscriber = self.create_subscription(MotorControllerDebug, "/autonav/MotorControllerDebug", self.motorControllerDebugCallback, 20)
-        
-        self.thresholdedSpaceSubscriber = self.create_subscription(CompressedImage, "/autonav/cfg_space/raw/image", self.thresholdedImageCallback, 20)
-        self.expandifiedSpaceSubscriber = self.create_subscription(CompressedImage, "/autonav/cfg_space/expanded/image", self.expandifiedImageCallback, 20)
-        self.cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.cameraImageCallback, 20)
-        
-        self.framerate = 2 if self.getSystemState().mode == SystemMode.SIMULATION else 15
-        
+
         self.setDeviceState(DeviceStateEnum.OPERATING)
         
     def getTimestamp(self):
         return datetime.now().timestamp() - self.startTime
-    
-    def combineImagesIntoVideo(self, folder, name):
-        IMAGES_PATH = os.path.join(self.HOME_DIR, ".scr", "playback", self.fileName, "images", folder)
-        SAVE_PATH = os.path.join(self.HOME_DIR, ".scr", "playback", self.fileName)
-        os.system(f"ffmpeg -r {self.framerate} -i {IMAGES_PATH}/%d.jpg -vcodec libx264 -crf 18  -pix_fmt yuv420p -y {SAVE_PATH}/{name}.mp4")
         
     def createFileName(self):
         time = datetime.now()
@@ -88,22 +68,11 @@ class PlaybackNode(Node):
         self.fileName = self.createFileName()
         self.startTime = datetime.now().timestamp()
         
-        # Create a folder at $HOME/.scr/playback/{fileName}
-        # Create folders at $HOME/.scr/playback/{fileName}/images/{thresholded, expandified, camera}
-        # Create a file at $HOME/.scr/playback/{fileName}/log.csv
         BASE_PATH = os.path.join(self.HOME_DIR, ".scr", "playback", self.fileName)
         os.makedirs(BASE_PATH, exist_ok = True)
-        os.makedirs(os.path.join(BASE_PATH, "images", "thresholded"), exist_ok = True)
-        os.makedirs(os.path.join(BASE_PATH, "images", "expandified"), exist_ok = True)
-        os.makedirs(os.path.join(BASE_PATH, "images", "camera"), exist_ok = True)
 
         self.file = open(os.path.join(BASE_PATH, "log.csv"), "w")
         self.file.write("timestamp, type\n")
-        
-        self.thresholdedIndex = 0
-        self.expandifiedIndex = 0
-        self.cameraIndex = 0
-        
         self.writeCurrentSystemState()
         
         self.log(f"Recording playback data at {BASE_PATH}")
@@ -128,9 +97,6 @@ class PlaybackNode(Node):
         
         # Zip up the folder at $HOME/.scr/playback/{fileName} and then delete it
         BASE_PATH = os.path.join(self.HOME_DIR, ".scr", "playback", self.fileName)
-        self.combineImagesIntoVideo("thresholded", "thresholded")
-        self.combineImagesIntoVideo("expandified", "expandified")
-        self.combineImagesIntoVideo("camera", "camera")
 
         # Delete the images folder
         shutil.rmtree(os.path.join(BASE_PATH, "images"), ignore_errors = True)
@@ -209,31 +175,6 @@ class PlaybackNode(Node):
             return
         
         self.writeToFile(f"{self.getTimestamp()}, ENTRY_MOTORDEBUG, {msg.current_forward_velocity}, {msg.forward_velocity_setpoint}, {msg.current_angular_velocity}, {msg.angular_velocity_setpoint}, {msg.left_motor_output}, {msg.right_motor_output}")
-            
-    def thresholdedImageCallback(self, msg: CompressedImage):
-        if not self.config.getBool(CONFIG_RECORD_THRESHOLDED):
-            return
-        
-        self.writeToFile(f"{self.getTimestamp()}, ENTRY_THRESHOLDED, /images/expandified/{self.thresholdedIndex}.jpg")
-        self.saveImageToDisk(msg, "thresholded")
-        self.thresholdedIndex += 1
-        
-        
-    def expandifiedImageCallback(self, msg: CompressedImage):
-        if not self.config.getBool(CONFIG_RECORD_EXPANDIFIED):
-            return
-        
-        self.writeToFile(f"{self.getTimestamp()}, ENTRY_EXPANDIFIED_IMAGE, /images/expandified/{self.expandifiedIndex}.jpg")
-        self.saveImageToDisk(msg, "expandified")
-        self.expandifiedIndex += 1
-        
-    def cameraImageCallback(self, msg: CompressedImage):
-        if not self.config.getBool(CONFIG_RECORD_CAMERA):
-            return
-        
-        self.writeToFile(f"{self.getTimestamp()}, ENTRY_CAMERA_IMAGE, /images/camera/{self.cameraIndex}.jpg")
-        self.saveImageToDisk(msg, "camera")
-        self.cameraIndex += 1
         
 
 

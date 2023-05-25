@@ -98,6 +98,19 @@ target_include_directories(primary_display PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+
+# Install Python modules
+ament_python_install_package(${PROJECT_NAME})
+
+# Install Python executables
+install(PROGRAMS
+	src/broadcast.py
+	DESTINATION lib/${PROJECT_NAME}
+)
+
 install(DIRECTORY ${IMGUI_DIR}/misc/fonts DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY fonts DESTINATION share/${PROJECT_NAME})
 ament_package()
