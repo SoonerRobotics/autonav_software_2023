@@ -48,7 +48,7 @@ private:
     float wheel_radius_ = 0.135f;
     float wheelbase_length_ = 0.45f;
     float left_encoder_factor_ = 1.00f;
-    float right_encoder_factor_ = 1.02f;
+    float right_encoder_factor_ = 1.01f;
 
     float forward_velocity_setpoint_;
     float angular_velocity_setpoint_;

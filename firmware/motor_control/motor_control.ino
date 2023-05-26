@@ -63,11 +63,11 @@ void sendCanOdomMsgOut();
 void resetDelta();
 
 int motor_updates_in_deltaodom = 0;
-int motor_updates_between_deltaodom = 3;
+uint32_t motor_updates_between_deltaodom = 3;
 bool canBlinky = false;
 
 bool useObstacleAvoidance = false;
-short collisonBoxDist = 20;
+uint32_t collisonBoxDist = 20;
 bool isDetectingObstacle = false;
 
 bool sendStatistics = true;
@@ -147,9 +147,13 @@ void loop1(){
   }
 
   if (conbus_can.isReplyReady()) {
-    conbus_can.getReply(outFrame.id, outFrame.len, outFrame.data);
+    conbus_can.peekReply(outFrame.id, outFrame.len, outFrame.data);
 
-    can.tryToSend(outFrame);
+    bool success = can.tryToSend(outFrame);
+
+    if (success) {
+      conbus_can.popReply();
+    }
   }
 }
 void configureCan() {
