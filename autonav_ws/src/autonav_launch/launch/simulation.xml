@@ -15,6 +15,7 @@
     <node pkg="autonav_filters" exec="filters.py">
         <param name="latitude_length" value="111086.2" />
         <param name="longitude_length" value="81978.2" />
+        <param name="default_filter" value="0" />
     </node>
     <node pkg="autonav_nav" exec="astar.py">
         <param name="latitude_length" value="111086.2" />

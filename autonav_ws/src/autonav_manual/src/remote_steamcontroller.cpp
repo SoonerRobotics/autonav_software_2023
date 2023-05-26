@@ -28,6 +28,8 @@ namespace Registers
 	const std::string THROTTLE_DEADZONE = "throttle_deadzone";
 	const std::string FORWARD_SPEED = "forward_speed";
 	const std::string TURN_SPEED = "turn_speed";
+	const std::string MAX_TURN_SPEED = "max_turn_speed";
+	const std::string MAX_FORWARD_SPEED = "max_forward_speed";
 };
 
 class SteamJoyNode : public SCR::Node
@@ -44,6 +46,8 @@ public:
 		config.set(Registers::THROTTLE_DEADZONE, 0.04f);
 		config.set(Registers::FORWARD_SPEED, 1.8f);
 		config.set(Registers::TURN_SPEED, 1.0f);
+		config.set(Registers::MAX_TURN_SPEED, 3.14159265f);
+		config.set(Registers::MAX_FORWARD_SPEED, 2.2f);
 
 		setDeviceState(SCR::DeviceState::READY);
 	}
@@ -59,11 +63,6 @@ public:
 		{
 			setDeviceState(SCR::DeviceState::READY);
 		}
-	}
-
-	void onSpeedReceived(const std_msgs::msg::Float32::SharedPtr msg)
-	{
-		speed = msg->data;
 	}
 
 	void onSteamDataReceived(const autonav_msgs::msg::SteamInput &msg)
@@ -91,8 +90,8 @@ public:
 		}
 
 		autonav_msgs::msg::MotorInput input;
-		input.forward_velocity = clamp(throttle, -2.2f, 2.2f);
-		input.angular_velocity = clamp(steering * 2.35f, -3.14159265f, 3.14159265f);
+		input.forward_velocity = clamp(throttle, -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
+		input.angular_velocity = clamp(steering * 2.2f, -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
 		motorPublisher->publish(input);
 	}
 
@@ -100,7 +99,6 @@ public:
 	rclcpp::Subscription<autonav_msgs::msg::SteamInput>::SharedPtr steamSubscription;
 	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr speedSubscription;
 	rclcpp::TimerBase::SharedPtr heartbeatTimer;
-	float speed = 0.6f;
 };
 
 int main(int argc, char *argv[])

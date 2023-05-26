@@ -53,55 +53,56 @@
                     <h3>General</h3>
                 </div>
                 <div class="section">
-                    <h5>State: <span id="var_system_state">Disabled</span></h5>
-                    <h5>Mode: <span id="var_system_mode">Competition</span></h5>
-                    <h5>Mobility: <span id="var_system_mobility">Disabled</span></h5>
-                    <h5>ESTOP: <span id="var_system_estop">No</span></h5>
+                    <h5>State: <span id="var_system_state"></span></h5>
+                    <h5>Mode: <span id="var_system_mode"></span></h5>
+                    <h5>Mobility: <span id="var_system_mobility"></span></h5>
+                    <h5>ESTOP: <span id="var_system_estop"></span></h5>
                 </div>
 
                 <div class="divider">
                     <h3>Motors</h3>
                 </div>
                 <div class="section">
-                    <h5>Forward/Angular Velocity: <span id="var_motors_velocity">(0.0, 0.0)</span></h5>
-                    <h5>Delta X/Y/Theta: <span id="var_motors_feedback">(0.0, 0.0, 0.0&deg;)</span></h5>
+                    <h5>Forward/Angular Velocity: <span id="var_motors_velocity"></span></h5>
+                    <h5>Delta X/Y/Theta: <span id="var_motors_feedback"></span></h5>
                 </div>
 
                 <div class="divider">
                     <h3>Position</h3>
                 </div>
                 <div class="section">
-                    <h5>Local: <span id="var_position_origin">(0.0, 0.0, 0.0&deg;)</span></h5>
-                    <h5>Global: <span id="var_position_global">(0.0, 0.0)</span></h5>
+                    <h5>Local: <span id="var_position_origin"></span></h5>
+                    <h5>Global: <span id="var_position_global"></span></h5>
                 </div>
 
                 <div class="divider">
                     <h3>GPS</h3>
                 </div>
                 <div class="section">
-                    <h5>Latitude/Longitude: <span id="var_gps_position">(0, 0)</span></h5>
-                    <h5>Current Fix: <span id="var_gps_fix">0</span></h5>
-                    <h5>Is Fixed: <span id="var_gps_fixed">No</span></h5>
-                    <h5>Satellites: <span id="var_gps_satellites">0</span></h5>
+                    <h5>Latitude/Longitude: <span id="var_gps_position"></span></h5>
+                    <h5>Current Fix: <span id="var_gps_fix"></span></h5>
+                    <h5>Is Fixed: <span id="var_gps_fixed"></span></h5>
+                    <h5>Satellites: <span id="var_gps_satellites"></span></h5>
                 </div>
 
                 <div class="divider">
                     <h3>IMU</h3>
                 </div>
                 <div class="section">
-                    <h5>Angular Velocity: <span id="var_imu_angular">(0.0, 0.0, 0.0)</span></h5>
-                    <h5>Acceleration <span id="var_imu_acceleration">(0.0, 0.0, 0.0)</span></h5>
-                    <h5>Yaw/Pitch/Roll: <span id="var_imu_orientation">(0.0, 0.0, 0.0)</span></h5>
+                    <h5>Angular Velocity: <span id="var_imu_angular"></span></h5>
+                    <h5>Acceleration <span id="var_imu_acceleration"></span></h5>
+                    <h5>Yaw/Pitch/Roll: <span id="var_imu_orientation"></span></h5>
                 </div>
 
                 <div class="divider">
                     <h3>Path Planning</h3>
                 </div>
                 <div class="section">
-                    <h5>Desired Heading: <span id="var_astar_heading">0.0&deg;</span></h5>
-                    <h5>Target Waypoint: <span id="var_astar_waypoint">(0.0, 0.0)</span></h5>
-                    <h5>Distance to Waypoint: <span id="var_astar_distance">0.0</span></h5>
-                    <h5>Waypoints: <span id="var_astar_waypoints">{}</span></h5>
+                    <h5>Waypoint Delay: <span id="var_astar_time"></span></h5>
+                    <h5>Desired Heading: <span id="var_astar_heading"></span></h5>
+                    <h5>Target Waypoint: <span id="var_astar_waypoint"></span></h5>
+                    <h5>Distance to Waypoint: <span id="var_astar_distance"></span></h5>
+                    <h5>Waypoints: <span id="var_astar_waypoints"></span></h5>
                 </div>
             </div>
             <div class="col">
@@ -121,9 +122,9 @@
                 <h3>Camera / Filtered</h3>
             </div>
             <div class="section" id="images">
-                <img id="target_raw_camera">
-                <img id="target_filtered_camera">
-                <img id="target_astar_path">
+                <canvas width="640" height="480" id="target_raw_camera" data-type="regular"></canvas>
+                <canvas width="640" height="480" id="target_filtered_camera" data-type="regular"></canvas>
+                <canvas width="800" height="800" id="target_astar_path" data-type="bigboy"></canvas>
             </div>
         </div>
 
@@ -134,10 +135,60 @@
         </div>
 
         <div class="page" id="preferences">
+            <div class="divider">
+                <h3>General</h3>
+            </div>
+            <div class="dropdown" data-target="theme">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdown_theme"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    Theme
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdown_theme">
+                    <li><a class="dropdown-item" data-value="light">Light</a></li>
+                    <li><a class="dropdown-item" data-value="dark">Dark</a></li>
+                </ul>
+            </div>
+
+            <div class="dropdown" data-target="gpsformat">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdown_gpsformat"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    GPS Format
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdown_gpsformat">
+                    <li><a class="dropdown-item" data-value="DMS">Degrees Minutes Seconds</a></li>
+                    <li><a class="dropdown-item" data-value="DMM">Decimal Minutes</a></li>
+                    <li><a class="dropdown-item" data-value="DD">Decimal Degrees</a></li>
+                </ul>
+            </div>
         </div>
 
         <div class="page" id="logging">
-            <div class="element_logs"></div>
+            <button class="btn btn-primary" type="button" id="clear_log">
+                Clear
+            </button>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Node</th>
+                        <th scope="col">Message</th>
+                    </tr>
+                </thead>
+                <tbody id="log_body">
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="page" id="performance">
+            <div class="divider">
+                <h3>Inflation</h3>
+            </div>
+            <div class="section gap flex-column">
+                <h5>Latest: <span id="var_inflation_time">0.0</span></h5>
+                <h5>Average: <span id="var_inflation_time">0.0</span></h5>
+                <h5>Max: <span id="var_inflation_time">0.0</span></h5>
+                <canvas id="inflation_performance_canvas"></canvas>
+            </div>
         </div>
 
         <div class="page" id="debug">
@@ -186,7 +237,7 @@
                 <div class="input-group-prepend">
                     <input id="input_port" value="8023" type="text" class="form-control" aria-label="Port" placeholder="8023">
                 </div>
-                <input id="input_host" value="localhost" type="text" class="form-control" aria-label="Address" placeholder="localhost">
+                <input id="input_host" value="127.0.0.1" type="text" class="form-control" aria-label="Address" placeholder="127.0.0.1">
             </div>
         </div>
     </div>
@@ -196,6 +247,8 @@
     <script src="vendor/bootstrap.js"></script>
     <script src="vendor/jquery.js"></script>
     <script src="scripts/tabs.js"></script>
+    <script src="scripts/globals.js"></script>
+    <script src="scripts/utilities.js"></script>
     <script src="scripts/main.js"></script>
 </body>
 

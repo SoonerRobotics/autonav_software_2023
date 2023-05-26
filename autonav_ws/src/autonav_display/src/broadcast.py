@@ -37,7 +37,7 @@ class BroadcastNode(Node):
 		self.motorInputSubscriber = self.create_subscription(MotorInput, "/autonav/MotorInput", self.motorInputCallback, 20)
 		self.motorControllerDebugSubscriber = self.create_subscription(MotorControllerDebug, "/autonav/MotorControllerDebug", self.motorControllerDebugCallback, 20)
 		self.objectDetectionSubscriber = self.create_subscription(ObjectDetection, "/autonav/ObjectDetection", self.objectDetectionCallback, 20)
-		self.pathingDebugSubscriber = self.create_subscription(PathingDebug, "/autonav/astar/debug", self.pathingDebugCallback, 20)
+		self.pathingDebugSubscriber = self.create_subscription(PathingDebug, "/autonav/debug/astar", self.pathingDebugCallback, 20)
 		self.gpsFeedbackSubscriber = self.create_subscription(GPSFeedback, "/autonav/gps", self.gpsFeedbackCallback, 20)
 		self.imuDataSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.imuDataCallback, 20)
 		self.conbusSubscriber = self.create_subscription(Conbus, "/autonav/conbus", self.conbusCallback, 20)
@@ -47,6 +47,7 @@ class BroadcastNode(Node):
 
 		self.cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.cameraCallback, 20)
 		self.filteredSubscriber = self.create_subscription(CompressedImage, "/autonav/cfg_space/raw/image", self.filteredCallback, 20)
+		self.debugAStarSubscriber = self.create_subscription(CompressedImage, "/autonav/debug/astar/image", self.debugAStarCallback, 20)
 		
 		asyncio.get_event_loop().create_task(self.start())
 	
@@ -224,12 +225,13 @@ class BroadcastNode(Node):
 	def pathingDebugCallback(self, msg: PathingDebug):
 		self.pushSendQueue(json.dumps({
 			"op": "data",
-			"topic": "/autonav/astar/debug",
+			"topic": "/autonav/debug/astar",
 			"desired_heading": msg.desired_heading,
 			"desired_latitude": msg.desired_latitude,
 			"desired_longitude": msg.desired_longitude,
 			"distance_to_destination": msg.distance_to_destination,
-			"waypoints": msg.waypoints.tolist()
+			"waypoints": msg.waypoints.tolist(),
+			"time_until_use_waypoints": msg.time_until_use_waypoints,
 		}))
 
 	def objectDetectionCallback(self, msg: ObjectDetection):
@@ -271,6 +273,17 @@ class BroadcastNode(Node):
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/cfg_space/raw/image",
+			"format": msg.format,
+			"data": base64_str
+		}))
+
+	def debugAStarCallback(self, msg: CompressedImage):
+		byts = msg.data.tobytes()
+		base64_str = base64.b64encode(byts).decode("utf-8")
+
+		self.pushSendQueue(json.dumps({
+			"op": "data",
+			"topic": "/autonav/debug/astar/image",
 			"format": msg.format,
 			"data": base64_str
 		}))

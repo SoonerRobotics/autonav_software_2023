@@ -34,31 +34,23 @@ competition_waypoints = [
 ]
 
 practice_waypoints = [
-    [(35.2104852, -97.44193), (35.2104884, -97.4421088), (35.2104819, -97.4423302), (35.2106063, -97.4423293), (35.2106045, -97.4421059), (35.2104852, -97.44193)],
-    [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)],
-    [(42.6679600583,-83.2184326556),(42.6680859611,-83.2184456444),(42.668222,-83.218472)],
+    [(35.2104852, -97.44193), (35.210483, -97.44207), (35.2104841, -97.4421986), (35.2104819, -97.4423302), (35.2105455, -97.4423329), (35.2106096, -97.4423347), (35.2106107, -97.4422153), (35.2106078, -97.4421059), (35.2105575, -97.4420365), (35.2104852, -97.44193)]
 ]
 
 simulation_waypoints = [
-    [(35.19496918, -97.43855286), (35.19475331, -97.43860863), (35.19493775, -97.43881094)], 
+    [(35.194888446528864, -97.43902288310593), (35.194765121094015, -97.43902321108108),(35.19472527123724, -97.4390233172227), (35.19459435968777, -97.43902366555493)],
+    [(35.19474411, -97.43852997), (35.19474792, -97.43863678), (35.19484711, -97.43865967), (35.19494247, -97.43875885)],
+    # [(35.194816101646275, -97.43853155838949), (35.19496046401714, -97.43853155838949), (35.19501943703302, -97.4386386771562)],
+    # [(35.19496918, -97.43855286), (35.19475331, -97.43860863), (35.19493775, -97.43881094)], 
     [(35.19496918, -97.43855286), (35.19498780, -97.43859524), (35.19495163, -97.43871339), (35.19495182, -97.43877829), (35.19493406, -97.43879432), (35.19493812, -97.43881810), (35.19495368, -97.43882411), (35.19493357, -97.43902773), (35.19485847, -97.43902381)], 
-    [(35.19474411, -97.43852997), (35.19474792, -97.43863678), (35.19484711, -97.43865967), (35.19494247, -97.43875885)]
 ]
 
 
 class AStarNode(Node):
     def __init__(self):
         super().__init__("autonav_nav_astar")
-
-        self.configSpace = None
-        self.position = None
-        self.imu = None
-        self.lastPath = None
-        self.waypointTime = 0.0
-        self.waypoints = []
-        self.costMap = None
-        self.bestPosition = (0, 0)
         
+        self.onReset()
         self.latitudeLength = self.declare_parameter("latitude_length", 111086.2).get_parameter_value().double_value
         self.longitudeLength = self.declare_parameter("longitude_length", 81978.2).get_parameter_value().double_value
 
@@ -68,11 +60,10 @@ class AStarNode(Node):
         self.imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.onImuReceived, 20)
         self.debugPublisher = self.create_publisher(PathingDebug, "/autonav/debug/astar", 20)
         self.pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
-        self.rawConfigSpaceSubscriber = self.create_subscription(OccupancyGrid, "/autonav/cfg_space/raw", self.onRawConfigSpaceReceived, 20)
         self.pathDebugImagePublisher = self.create_publisher(CompressedImage, "/autonav/debug/astar/image", 20)
-        self.mapTimer = self.create_timer(0.2, self.createPath)
+        self.mapTimer = self.create_timer(0.1, self.createPath)
 
-        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.0)
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 0.25)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setBool(CONFIG_USE_ONLY_WAYPOINTS, True)
         self.config.setFloat(CONFIG_WAYPOINT_DELAY, 5.0)
@@ -88,34 +79,22 @@ class AStarNode(Node):
         self.imu = msg
         
     def onReset(self):
+        self.imu = None
+        self.lastPath = None
         self.position = None
         self.configSpace = None
         self.costMap = None
         self.bestPosition = (0, 0)
         self.waypoints = []
         self.waypointTime = 0.0
-        
-    def onRawConfigSpaceReceived(self, msg: OccupancyGrid):
-        if self.lastPath is None:
-            return
-        
-        mat = np.array(msg.data, dtype=np.uint8).reshape((80, 80))
-        mat = cv2.cvtColor(mat, cv2.COLOR_GRAY2BGR)
-        for i in range(len(self.lastPath) - 1):
-            cv2.line(mat, (self.lastPath[i][0], self.lastPath[i][1]), (self.lastPath[i + 1][0], self.lastPath[i + 1][1]), (0, 0, 255), 2)
-            
-        mat = cv2.resize(mat, (800, 800), interpolation=cv2.INTER_NEAREST)
-        msg = CompressedImage()
-        msg.format = "jpeg"
-        msg.data = np.array(cv2.imencode('.jpg', mat)[1]).tobytes()
-        self.pathDebugImagePublisher.publish(msg)
 
     def getWaypointsForDirection(self):
         direction_index = self.config.getInt(CONFIG_WAYPOINT_DIRECTION)
         return simulation_waypoints[direction_index] if self.getSystemState().mode == SystemMode.SIMULATION else competition_waypoints[direction_index] if self.getSystemState().mode == SystemMode.COMPETITION else practice_waypoints[direction_index]
 
     def transition(self, old: SystemState, updated: SystemState):
-        if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
+        if updated.state == SystemStateEnum.AUTONOMOUS and updated.mobility and len(self.waypoints) == 0:
+            self.log(f"Waypoints will active in {self.config.getFloat(CONFIG_WAYPOINT_DELAY)} seconds")
             self.waypointTime = time.time() + self.config.getFloat(CONFIG_WAYPOINT_DELAY)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
@@ -135,6 +114,21 @@ class AStarNode(Node):
             global_path.poses = [self.pathToGlobalPose(pp[0], pp[1]) for pp in path]
             self.lastPath = path
             self.pathPublisher.publish(global_path)
+
+            # Draw the cost map onto a debug iamge
+            cvimg = np.zeros((MAP_RES, MAP_RES), dtype=np.uint8)
+            for i in range(MAP_RES):
+                for j in range(MAP_RES):
+                    cvimg[i, j] = self.costMap[ i * MAP_RES + j ] * 255
+            cvimg = cv2.cvtColor(cvimg, cv2.COLOR_GRAY2RGB)
+
+            for pp in path:
+                cv2.circle(cvimg, (pp[0], pp[1]), 1, (0, 255, 0), 1)
+
+            cv2.circle(cvimg, (self.bestPosition[0], self.bestPosition[1]), 1, (255, 0, 0), 1)
+            
+            cvimg = cv2.resize(cvimg, (800, 800), interpolation=cv2.INTER_NEAREST)
+            self.pathDebugImagePublisher.publish(CV_BRIDGE.cv2_to_compressed_imgmsg(cvimg))
             
     def reconstructPath(self, path, current):
         total_path = [current]
@@ -204,7 +198,7 @@ class AStarNode(Node):
                         heappush(next_current, (fScore[neighbor], neighbor))
                     
     def onConfigSpaceReceived(self, msg: OccupancyGrid):
-        if self.position is None or self.getDeviceState() != DeviceStateEnum.OPERATING or self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
+        if self.position is None or self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             return
 
         self.performance.start("Smellification")
@@ -219,8 +213,20 @@ class AStarNode(Node):
         if self.config.getBool(CONFIG_USE_ONLY_WAYPOINTS) == True:
             grid_data = [0] * len(msg.data)
             
-        if len(self.waypoints) == 0 and time.time() > self.waypointTime:
+        if len(self.waypoints) == 0 and time.time() > self.waypointTime and self.waypointTime != 0:
             self.waypoints = copy.copy(self.getWaypointsForDirection())
+            self.waypointTime = 0
+        
+        if time.time() < self.waypointTime and len(self.waypoints) == 0:
+            time_remaining = self.waypointTime - time.time()
+            pathingDebug = PathingDebug()
+            pathingDebug.desired_heading = 0.0
+            pathingDebug.desired_latitude = 0.0
+            pathingDebug.desired_longitude = 0.0
+            pathingDebug.distance_to_destination = 0.0
+            pathingDebug.waypoints = []
+            pathingDebug.time_until_use_waypoints = time_remaining
+            self.debugPublisher.publish(pathingDebug)
 
         if len(self.waypoints) > 0:
             next_waypoint = self.waypoints[0]
@@ -241,6 +247,7 @@ class AStarNode(Node):
                 wp1d.append(wp[0])
                 wp1d.append(wp[1])
             pathingDebug.waypoints = wp1d
+            pathingDebug.time_until_use_waypoints = 0.0
             self.debugPublisher.publish(pathingDebug)
 
         depth = 0

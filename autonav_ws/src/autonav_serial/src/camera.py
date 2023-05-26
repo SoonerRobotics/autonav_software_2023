@@ -11,6 +11,10 @@ from scr_core.state import DeviceStateEnum, SystemStateEnum
 import os
 
 REFRESH_RATE = "refresh_rate"
+OUTPUT_WIDTH = "output_width"
+OUTPUT_HEIGHT = "output_height"
+CAMERA_INDEX = "camera_index"
+
 bridge = CvBridge()
 
 
@@ -20,6 +24,9 @@ class CameraNode(Node):
 
     def configure(self):
         self.config.setInt(REFRESH_RATE, 15)
+        self.config.setInt(OUTPUT_WIDTH, 640)
+        self.config.setInt(OUTPUT_HEIGHT, 480)
+        self.config.setInt(CAMERA_INDEX, 0)
 
         self.cameraPublisher = self.create_publisher(CompressedImage, "/autonav/camera/compressed", 20)
         self.cameraThread = threading.Thread(target=self.cameraWorker)
@@ -32,7 +39,7 @@ class CameraNode(Node):
         capture = None
         while rclpy.ok() and self.getSystemState().state != SystemStateEnum.SHUTDOWN:
             try:
-                if not os.path.exists("/dev/video0"):
+                if not os.path.exists("/dev/video" + str(self.config.getInt(CAMERA_INDEX))):
                     time.sleep(1.5)
                     continue
 
@@ -41,8 +48,8 @@ class CameraNode(Node):
                     time.sleep(1.5)
                     continue
 
-                capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.config.getInt(OUTPUT_WIDTH))
+                capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.config.getInt(OUTPUT_HEIGHT))
                 self.setDeviceState(DeviceStateEnum.OPERATING)
             except:
                 self.setDeviceState(DeviceStateEnum.STANDBY)

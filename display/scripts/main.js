@@ -1,283 +1,26 @@
-var systemState = {
-    state: 0,
-    mode: 0,
-    mobility: false,
-    estop: false
-}
-var preferences = {
-    gpsFormat: "LL",
-    host: "192.168.1.109",
-    port: 8023,
-}
-var config = {}
-var conbus = {};
-var deviceStates = {};
-var logs = [];
-
-var addressKeys = {
-    "autonav_serial_imu": {
-        "internal_title": "[Serial] IMU",
-        "imu_read_rate": "float",
-        "imu_notfound_retry": "float",
-        "imu_badconnect_retry": "float"
-    },
-
-    "autonav_serial_camera": {
-        "internal_title": "[Serial] Camera",
-        "refresh_rate": "int",
-    },
-
-    "autonav_vision_transformer": {
-        "internal_title": "[Vision] Transformer",
-        "lower_hue": "int",
-        "lower_saturation": "int",
-        "lower_value": "int",
-        "upper_hue": "int",
-        "upper_saturation": "int",
-        "upper_value": "int",
-        "blur": "int",
-        "blur_iterations": "int",
-    },
-
-    "autonav_filters": {
-        "internal_title": "[Localization] Filters",
-        "filter_type": {
-            0: "Deadreckoning",
-            1: "Particle Filter"
-        },
-        "degree_offset": "float",
-        "seed_heading": "bool",
-    },
-
-    "autonav_manual_steamcontroller": {
-        "internal_title": "[Manual] Steam Controller",
-        "forward_speed": "float",
-        "steering_deadzone": "float",
-        "throttle_deadzone": "float",
-        "turn_speed": "float",
-    },
-
-    "autonav_nav_astar": {
-        "internal_title": "[Navigation] A*",
-        "pop_distance": "float",
-        "direction": {
-            0: "North",
-            1: "South",
-            2: "Misc 1",
-            3: "Misc 2",
-            4: "Misc 3",
-            5: "Misc 4",
-            6: "Misc 5",
-        },
-        "use_only_waypoints": "bool",
-        "waypoint_delay": "float",
-    },
-
-    "autonav_nav_resolver": {
-        "internal_title": "[Navigation] Resolver",
-        "forward_speed": "float",
-        "reverse_speed": "float",
-        "radius_multiplier": "float",
-        "radius_max": "float",
-        "radius_start": "float",
-    },
-
-    "autonav_playback": {
-        "internal_title": "[Playback]",
-        "record_imu": "bool",
-        "record_gps": "bool",
-        "record_position": "bool",
-        "record_feedback": "bool",
-        "record_objectdetection": "bool",
-        "record_manual": "bool",
-        "record_autonomous": "bool",
-        "record_input": "bool",
-        "record_debugfeedback": "bool",
-    }
-}
-
-var conbusDevices = {
-    0x10: {
-        title: "Motor Controller",
-        registers: {
-            0x0: {
-                title: "Update Period",
-                type: "float",
-            },
-            0x1: {
-                title: "Pulses Per Radian",
-                type: "float",
-            },
-            0x2: {
-                title: "Wheel Radius",
-                type: "float",
-            },
-            0x3: {
-                title: "Wheel Base Length",
-                type: "float",
-            },
-            0x4: {
-                title: "Slew Rate Limit",
-                type: "float",
-            },
-            0x5: {
-                title: "Left Encoder Factor",
-                type: "float",
-            },
-            0x6: {
-                title: "Right Encoder Factor",
-                type: "float",
-            },
-            0x10: {
-                title: "Velocity Kp",
-                type: "float",
-            },
-            0x11: {
-                title: "Velocity Ki",
-                type: "float",
-            },
-            0x12: {
-                title: "Velocity Kd",
-                type: "float",
-            },
-            0x13: {
-                title: "Velocity Kf",
-                type: "float",
-            },
-            0x20: {
-                title: "Angular Kp",
-                type: "float",
-            },
-            0x21: {
-                title: "Angular Ki",
-                type: "float",
-            },
-            0x22: {
-                title: "Angular Kd",
-                type: "float",
-            },
-            0x23: {
-                title: "Angular Kf",
-                type: "float",
-            },
-            0x30: {
-                title: "Use Obstacle Avoidance",
-                type: "bool",
-            },
-            0x31: {
-                title: "Collision Box Distance",
-                type: "float",
-            },
-            0x40: {
-                title: "Send Statistics",
-                type: "bool",
-            },
-            0x50: {
-                title: "Pulses Between Encoders",
-                type: "float",
-            }
-        }
-    }
-}
-
-function getBytesView(bytes) {
-    var buffer = new ArrayBuffer(4);
-    var view = new DataView(buffer);
-    bytes.forEach(function (b, i) {
-        view.setUint8(i, b);
-    });
-    return view;
-}
-
-function fromBytesToFloat(bytes) {
-    return getBytesView(bytes).getFloat32(0, true);
-}
-
-function fromBytesToInt(bytes) {
-    return getBytesView(bytes).getInt32(0, false);
-}
-
-function fromBytesToBool(bytes) {
-    return getBytesView(bytes).getUint8(0) == 1;
-}
-
-function transferImageToElement(id, data) {
-    const img = document.getElementById(id);
-    img.src = "data:image/jpeg;base64," + data;
-}
-
-function fromFloatToBytes(value) {
-    var buffer = new ArrayBuffer(4);
-    var view = new DataView(buffer);
-    view.setFloat32(0, value, true);
-    return new Uint8Array(buffer);
-}
-
-function fromIntToBytes(value) {
-    var buffer = new ArrayBuffer(4);
-    var view = new DataView(buffer);
-    view.setInt32(0, value, false);
-    return new Uint8Array(buffer);
-}
-
-function fromBoolToBytes(value) {
-    var buffer = new ArrayBuffer(1);
-    var view = new DataView(buffer);
-    view.setUint8(0, value ? 1 : 0);
-    return new Uint8Array(buffer);
-}
-
-function createConbusReadInstruction(deviceId, address)
-{
-    return {
-        id: 1000 + deviceId,
-        data: [address]
-    }
-}
-
-function createConbusReadResponse(deviceId, data)
-{
-    return {
-        id: deviceId - 1100,
-        address: data[0],
-        length: data[1],
-        reserved: data[2],
-        data: data?.slice(3) ?? []
-    }
-}
-
-function createConbusWriteInstruction(deviceId, address, data)
-{
-    return {
-        id: 1200 + deviceId,
-        data: [ address, data.length, 0, ...data ]
-    }
-}
-
-function createConbusWriteResponse(deviceId, data)
-{
-    return {
-        id: deviceId - 1300,
-        address: data[0],
-        length: data[1],
-        reserved: data[2],
-        data: data?.slice(3) ?? []
-    }
-}
-
 $(document).ready(function () {
+    // Check if local storage has preferences
+    if (localStorage.getItem("preferences") == null) {
+        savePreferences();
+    } else {
+        preferences = JSON.parse(localStorage.getItem("preferences"));
+
+        $("#input_host").val(preferences.host);
+        $("#input_port").val(preferences.port);
+
+        $("html").attr("data-bs-theme", preferences.theme);
+    }
+
     ////////////////////////////////// Websocekt //////////////////////////////////
 
     var websocket;
-
-    function createWebsocket()
-    {
+    function createWebsocket() {
         websocket = new WebSocket(`ws://${preferences.host}:${preferences.port}`);
 
         websocket.onopen = function (event) {
             $("#connecting-state").text("Updating Data");
             $(".connecting-input").hide();
-    
+
             send({
                 op: "broadcast"
             });
@@ -289,21 +32,21 @@ $(document).ready(function () {
                 op: "conbus",
                 ...createConbusReadInstruction(0x10, 0xFF)
             })
-    
+
             setTimeout(() => {
                 $(".connecting").hide();
                 $("#main").show();
             }, 1000);
         };
-    
+
         websocket.onmessage = function (event) {
             const obj = JSON.parse(event.data);
             const { op, topic } = obj;
-    
+
             if (op == "data") {
                 onTopicData(topic, obj);
             }
-    
+
             if (op == "get_nodes_callback") {
                 for (let i = 0; i < obj.nodes.length; i++) {
                     const node = obj.nodes[i];
@@ -315,18 +58,19 @@ $(document).ready(function () {
                 }
             }
         };
-    
+
         websocket.onclose = function (event) {
             $("#connecting-state").text("Waiting for the Weeb Wagon");
             $(".connecting").show();
             $(".connecting-input").show();
             $("#main").hide();
-    
+            clearGlobals();
+
             setTimeout(() => {
                 createWebsocket();
             }, 2000);
         };
-    
+
         websocket.onerror = function (event) {
             console.error(event);
         };
@@ -340,8 +84,7 @@ $(document).ready(function () {
         sendQueue.push(obj);
     }
 
-    function setSystemState()
-    {
+    function setSystemState() {
         send({
             op: "set_system_state",
             state: systemState.state,
@@ -598,7 +341,6 @@ $(document).ready(function () {
     setInterval(() => {
         if (sendQueue.length > 0 && websocket.readyState == 1 && websocket.bufferedAmount == 0) {
             const obj = sendQueue.shift();
-            console.log("Sending -> ", obj)
             websocket.send(JSON.stringify(obj));
         }
     }, 10);
@@ -606,7 +348,6 @@ $(document).ready(function () {
     function onTopicData(topic, msg) {
         if (topic == "/scr/state/system") {
             const { state, mode, mobility, estop } = msg;
-            console.log("System State", state, mode, mobility, estop);
 
             $("#var_system_state").text(state == 0 ? "Diabled" : state == 1 ? "Autonomous" : state == 2 ? "Manual" : "Shutdown");
             $("#var_system_mode").text(mode == 0 ? "Competition" : mode == 1 ? "Simulation" : "Practice");
@@ -627,7 +368,6 @@ $(document).ready(function () {
 
         if (topic == "/scr/state/device") {
             const { device, state } = msg;
-            console.log("Device State", device, state);
 
             deviceStates[device] = state;
             unorderedListElement = $("#element_device_states");
@@ -663,11 +403,27 @@ $(document).ready(function () {
                     const deviceBody = $(`<div class="card-body"></div>`);
                     deviceElement.append(deviceBody);
 
-                    for (const address in deviceConfig) {
+                    for (const address of Object.keys(deviceConfig).sort()) {
                         const data = deviceConfig[address];
                         const type = addressKeys[deviceId][address];
+                        if (type == undefined)
+                        {
+                            const alert = $(`<div class="alert alert-warning" role="alert">Unknown Address: ${address}</div>`);
+                            deviceBody.append(alert);
+                            continue;
+                        }
+
                         const inputElement = generateElementForConfiguration(data, type, deviceId, address);
                         deviceBody.append(inputElement);
+                    }
+
+                    for (const address in addressKeys[deviceId]) {
+                        if (address in deviceConfig || address == "internal_title") {
+                            continue;
+                        }
+
+                        const alert = $(`<div class="alert alert-danger" role="alert">Unknown Address: ${address}</div>`);
+                        deviceBody.append(alert);              
                     }
 
                     configElement.append(deviceElement);
@@ -678,22 +434,25 @@ $(document).ready(function () {
 
         if (topic == "/scr/logging") {
             logs.push({ message: msg.data, node: msg.node });
-            if (logs.length > 75) {
+            if (logs.length > 30) {
                 logs.shift();
             }
 
-            const logElement = $(".element_logs");
+            const logElement = $("#log_body");
             logElement.empty();
             for (let i = logs.length - 1; i >= 0; i--) {
                 const log = logs[i];
-                logElement.append(`<h5>${log.node}: ${log.message}</h5>`);
+                const tableEntry = $(`<tr></tr>`);
+                tableEntry.append(`<td>${log.node}</td>`);
+                tableEntry.append(`<td>${log.message}</td>`);
+                logElement.append(tableEntry);
             }
             return;
         }
 
         if (topic == "/autonav/gps") {
             const { latitude, longitude, gps_fix, is_locked, satellites } = msg;
-            $("#var_gps_position").text(`(${formatToFixed(latitude, 8)}, ${formatToFixed(longitude, 8)})`);
+            $("#var_gps_position").text(formatLatLong(latitude, longitude, true));
             $("#var_gps_fix").text(gps_fix);
             $("#var_gps_fixed").text(is_locked ? "Locked" : "Not Locked");
             $("#var_gps_satellites").text(satellites);
@@ -713,9 +472,9 @@ $(document).ready(function () {
         }
 
         if (topic == "/autonav/debug/astar") {
-            const { desired_heading, desired_latitude, desired_longitude, distance_to_destination, waypoints } = msg;
+            const { desired_heading, desired_latitude, desired_longitude, distance_to_destination, waypoints, time_until_use_waypoints } = msg;
             $("#var_astar_heading").text(`${radiansToDegrees(parseFloat(desired_heading)).toFixed(3)}°`);
-            $("#var_astar_waypoint").text(`(${formatToFixed(desired_latitude, 8)}, ${formatToFixed(desired_longitude, 8)})`);
+            $("#var_astar_waypoint").text(formatLatLong(desired_latitude, desired_longitude, true));
             $("#var_astar_distance").text(formatToFixed(distance_to_destination, 3));
             $("#var_astar_waypoints").text(
                 waypoints.reduce((acc, val, i) => {
@@ -725,15 +484,10 @@ $(document).ready(function () {
 
                     return acc;
                 }, []).map((waypoint) => {
-                    if (preferences.gpsFormat == "LL") {
-                        return `(${formatToFixed(waypoint[0], 8)}, ${formatToFixed(waypoint[1], 8)})`;
-                    }
-
-                    const lat = waypoint[0];
-                    const lon = waypoint[1];
-                    return `(${convertLLToMSD(lat, lon)})`;
+                    return formatLatLong(waypoint[0], waypoint[1], true);
                 }).join(", ")
             );
+            $("#var_astar_time").text(formatToFixed(time_until_use_waypoints, 3));
             return;
         }
 
@@ -744,61 +498,72 @@ $(document).ready(function () {
             return;
         }
 
-        if (topic == "/autonav/camera/compressed")
-        {
-            // const targetImgElement = document.getElementById("target_raw_camera");
-            // targetImgElement.src = `data:image/jpeg;base64,${msg.data}`;
-            // return;
+        if (topic == "/autonav/camera/compressed") {
+            const canvasElement = document.getElementById("target_raw_camera");
+            const ctx = canvasElement.getContext("2d");
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+            }
+            img.src = `data:image/jpeg;base64,${msg.data}`;
+            return;
         }
 
-        if (topic == "/autonav/cfg_space/raw/image")
-        {
-            // const filteredImgElement = document.getElementById("target_filtered_camera");
-            // filteredImgElement.src = `data:image/jpeg;base64,${msg.data}`;
-            // return;
+        if (topic == "/autonav/cfg_space/raw/image") {
+            const canvasElement = document.getElementById("target_filtered_camera");
+            const ctx = canvasElement.getContext("2d");
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+            }
+            img.src = `data:image/jpeg;base64,${msg.data}`;
+            return;
+        }
+      
+        if (topic == "/autonav/debug/astar/image") {
+            const canvasElement = document.getElementById("target_astar_path");
+            const ctx = canvasElement.getContext("2d");
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+            }
+            img.src = `data:image/jpeg;base64,${msg.data}`;
+            return;
         }
 
-        if (topic == "/autonav/imu")
-        {
+        if (topic == "/autonav/imu") {
             const { accel_x, accel_y, accel_z, angular_x, angular_y, angular_z, yaw, pitch, roll } = msg;
             $("#var_imu_acceleration").text(`(${formatToFixed(accel_x, 4)}, ${formatToFixed(accel_y, 4)}, ${formatToFixed(accel_z, 4)})`);
             $("#var_imu_angular").text(`(${formatToFixed(angular_x, 4)}, ${formatToFixed(angular_y, 4)}, ${formatToFixed(angular_z, 4)})`);
             $("#var_imu_orientation").text(`(${radiansToDegrees(parseFloat(yaw)).toFixed(3)}°, ${radiansToDegrees(parseFloat(pitch)).toFixed(3)}°, ${radiansToDegrees(parseFloat(roll)).toFixed(3)}°)`);
         }
 
-        if (topic == "/autonav/conbus")
-        {
+        if (topic == "/autonav/conbus") {
             const { id, data } = msg;
             let response;
             console.log("Received Conbus Message", id, data);
-            if(id >= 1100 && id < 1200)
-            {
+            if (id >= 1100 && id < 1200) {
                 response = createConbusReadResponse(id, data);
-                if (!(response.id in conbusDevices))
-                {
+                if (!(response.id in conbusDevices)) {
                     return;
                 }
-            } else if (id >= 1300 && id < 1400)
-            {
+            } else if (id >= 1300 && id < 1400) {
                 response = createConbusWriteResponse(id, data);
-                if (!(response.id in conbusDevices))
-                {
+                if (!(response.id in conbusDevices)) {
                     return;
                 }
             } else {
                 return;
             }
 
-            if(!(response.id in conbus))
-            {
+            if (!(response.id in conbus)) {
                 conbus[response.id] = {};
             }
             conbus[response.id][response.address] = response.data;
 
             const conbusElement = $(`#conbus`);
             const conbusCard = $(`#conbus_${response.id}`);
-            if (conbusCard != undefined || conbusCard.length != 0)
-            {
+            if (conbusCard != undefined || conbusCard.length != 0) {
                 conbusCard.remove();
             }
 
@@ -807,12 +572,10 @@ $(document).ready(function () {
             const cardBody = $(`<div class="card-body"></div>`);
             card.append(cardBody);
 
-            for (const address in conbus[response.id])
-            {
+            for (const address in Object.keys(conbus[response.id] ?? {}).sort()) {
                 // Just generate a p element
                 const data = conbus[response.id][address];
-                if (!(address in conbusDevices[response.id].registers))
-                {
+                if (!(address in conbusDevices[response.id].registers)) {
                     const title = conbusDevices[response.id]?.registers?.[address]?.title ?? address.toString();
                     const alert = $(`<div class="alert alert-danger" role="alert">Unknown Address: ${title}</div>`);
                     cardBody.append(alert);
@@ -824,10 +587,8 @@ $(document).ready(function () {
                 cardBody.append(inputElement);
             }
 
-            for (const address in conbusDevices[response.id].registers)
-            {
-                if (!(address in conbus[response.id]))
-                {
+            for (const address in conbusDevices[response.id].registers) {
+                if (!(address in conbus[response.id])) {
                     const title = conbusDevices[response.id].registers[address].title;
                     const alert = $(`<div class="alert alert-warning" role="alert">Missing Address: ${title}</div>`);
                     cardBody.append(alert);
@@ -841,34 +602,9 @@ $(document).ready(function () {
 
     ////////////////////////////////// Helpers //////////////////////////////////
 
-    const formatToFixed = (str, precision) => {
-        return parseFloat(str).toFixed(precision);
-    }
-
-    const radiansToDegrees = (radians) => {
-        return (360 - (radians * (180 / Math.PI))) % 360;
-    }
-
-    const convertLLToMSD = (lat, lon) => {
-        const latDeg = Math.floor(lat);
-        const latMin = Math.floor((lat - latDeg) * 60);
-        const latSec = Math.floor(((lat - latDeg) * 60 - latMin) * 60);
-
-        const lonDeg = Math.floor(lon);
-        const lonMin = Math.floor((lon - lonDeg) * 60);
-        const lonSec = Math.floor(((lon - lonDeg) * 60 - lonMin) * 60);
-
-        return `${latDeg}°${latMin}'${latSec}"N ${lonDeg}°${lonMin}'${lonSec}"W`;
-    }
-
-    const deviceStateToName = (state) => {
-        return state == 0 ? "Off" : state == 1 ? "Standby" : state == 2 ? "Ready" : "Operating";
-    }
-
     $(".dropdown-menu a").on("click", function () {
         const parentDataTarget = $(this).parents(".dropdown").attr("data-target");
-        if (parentDataTarget == "system_state")
-        {
+        if (parentDataTarget == "system_state") {
             const id = $(this).attr("data-value");
             systemState.state = parseInt(id);
             setSystemState();
@@ -876,6 +612,14 @@ $(document).ready(function () {
             const id = $(this).attr("data-value");
             systemState.mode = parseInt(id);
             setSystemState();
+        } else if (parentDataTarget == "theme") {
+            const id = $(this).attr("data-value");
+            preferences.theme = id;
+            savePreferences();
+            $("html").attr("data-bs-theme", id);
+        } else if (parentDataTarget == "gpsformat") {
+            preferences.gpsFormat = $(this).attr("data-value");
+            savePreferences();
         }
     });
 
@@ -893,13 +637,21 @@ $(document).ready(function () {
         const intt = parseInt($(this).val());
         preferences.port = isNaN(intt) ? 8023 : intt;
 
-        if (isNaN(intt))
-        {
+        if (isNaN(intt)) {
             $(this).val(8023);
         }
+
+        savePreferences();
     });
 
     $("#input_host").on("change", function () {
         preferences.host = $(this).val();
+
+        savePreferences();
+    });
+
+    $("clear_log").on("click", function () {
+        logs = [];
+        $("#log_body").empty();
     });
 })

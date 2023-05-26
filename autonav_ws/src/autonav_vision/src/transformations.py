@@ -32,8 +32,7 @@ UPPER_SATURATION = "upper_saturation"
 UPPER_VALUE = "upper_value"
 BLUR = "blur"
 BLUR_ITERATIONS = "blur_iterations"
-REGION_OF_DISINTEREST_TL = "region_of_disinterest_tl"
-REGION_OF_DISINTEREST_TR = "region_of_disinterest_tr"
+REGION_OF_DISINTEREST_OFFSET = "region_of_disinterest_offset"
 
 
 class ImageTransformer(Node):
@@ -49,8 +48,7 @@ class ImageTransformer(Node):
         self.config.setInt(UPPER_VALUE, 180)
         self.config.setInt(BLUR, 5)
         self.config.setInt(BLUR_ITERATIONS, 2)
-        self.config.setInt(REGION_OF_DISINTEREST_TL, 0)
-        self.config.setInt(REGION_OF_DISINTEREST_TR, 0)
+        self.config.setInt(REGION_OF_DISINTEREST_OFFSET, 120)
 
         self.cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.rawMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
@@ -121,7 +119,7 @@ class ImageTransformer(Node):
         width = img.shape[1]
         region_of_disinterest_vertices=[
             (0, height),
-            (width / 2, height / 2 + 120),
+            (width / 2, height / 2 + self.config.getInt(REGION_OF_DISINTEREST_OFFSET)),
             (width, height)
         ]
         mask = self.regionOfDisinterest(mask, np.array([region_of_disinterest_vertices], np.int32))

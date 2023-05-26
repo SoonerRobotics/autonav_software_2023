@@ -3,3 +3,4 @@ float64 desired_latitude
 float64 desired_longitude
 float64 distance_to_destination
 float64[] waypoints
+float64 time_until_use_waypoints

@@ -19,6 +19,14 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+html[data-bs-theme="light"] {
+    --text-color: #000;
+}
+
+html[data-bs-theme="dark"] {
+    --text-color: #fff;
+}
+
 img,
 picture,
 video,
@@ -43,6 +51,11 @@ h4,
 h5,
 h6 {
     overflow-wrap: break-word;
+    color: var(--text-color);
+}
+
+label {
+    color: var(--text-color);
 }
 
 #root {

@@ -26,6 +26,7 @@ class FiltersNode(Node):
 
         self.lastIMUReceived = None
         self.firstGps = None
+        self.lastGps = None
         
         self.latitudeLength = self.declare_parameter("latitude_length", 111086.2).get_parameter_value().double_value
         self.longitudeLength = self.declare_parameter("longitude_length", 81978.2).get_parameter_value().double_value
@@ -36,7 +37,7 @@ class FiltersNode(Node):
         self.onReset()
 
     def configure(self):
-        self.config.setInt(CONFIG_FILTER_TYPE, FilterType.PARTICLE_FILTER)
+        self.config.setInt(CONFIG_FILTER_TYPE, self.declare_parameter("default_filter", 0).get_parameter_value().integer_value)
         self.config.setFloat(CONFIG_DEGREE_OFFSET, 107.0)
         self.config.setBool(CONFIG_SEED_HEADING, False)
 
@@ -76,6 +77,8 @@ class FiltersNode(Node):
         if self.firstGps is None:
             self.firstGps = msg
 
+        self.lastGps = msg
+
         filterType = self.config.getInt(CONFIG_FILTER_TYPE)
         if filterType == FilterType.PARTICLE_FILTER:
             self.pf.gps(msg)
@@ -104,6 +107,10 @@ class FiltersNode(Node):
             gps_y = self.firstGps.longitude - position.y / self.longitudeLength
             position.latitude = gps_x
             position.longitude = gps_y
+
+        if self.getSystemState().mode == SystemMode.SIMULATION and self.lastGps is not None:
+            position.latitude = self.lastGps.latitude
+            position.longitude = self.lastGps.longitude
         
         self.positionPublisher.publish(position)
 

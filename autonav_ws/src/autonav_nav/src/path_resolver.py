@@ -16,6 +16,8 @@ REVERSE_SPEED = "reverse_speed"
 RADIUS_MULTIPLIER = "radius_multiplier"
 RADIUS_MAX = "radius_max"
 RADIUS_START = "radius_start"
+ANGULAR_AGGRESSINON = "angular_aggression"
+MAX_ANGULAR_SPEED = "max_angular_speed"
 
 def hexToRgb(color: str):
     if color[0] == "#":
@@ -54,6 +56,8 @@ class PathResolverNode(Node):
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
         self.config.setFloat(RADIUS_START, 0.7)
+        self.config.setFloat(ANGULAR_AGGRESSINON, 3.0)
+        self.config.setFloat(MAX_ANGULAR_SPEED, 1.15)
         
         self.create_timer(0.1, self.onResolve)
         self.setDeviceState(DeviceStateEnum.READY)
@@ -65,10 +69,6 @@ class PathResolverNode(Node):
     def transition(self, old: SystemState, updated: SystemState):
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
             self.setDeviceState(DeviceStateEnum.OPERATING)
-            if updated.mobility == False:
-                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#00A36C"))
-            else:
-                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 0, 0, "#000000"))
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
             self.setDeviceState(DeviceStateEnum.READY)
@@ -78,10 +78,10 @@ class PathResolverNode(Node):
             self.motorPublisher.publish(inputPacket)
             
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING and updated.mobility == False:
-            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#00A36C"))
+            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 150, "#00A36C"))
             
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING and updated.mobility == True:
-            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 0, 0, "#000000"))
+            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 150, "#841617"))
 
     def onPositionReceived(self, msg):
         self.position = msg
@@ -118,7 +118,7 @@ class PathResolverNode(Node):
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
-            inputPacket.angular_velocity = clamp(error * 2, -1.15, 1.15)
+            inputPacket.angular_velocity = clamp(error * self.config.getFloat(ANGULAR_AGGRESSINON), -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
         else:
             if self.backCount == -1:
                 self.backCount = 5

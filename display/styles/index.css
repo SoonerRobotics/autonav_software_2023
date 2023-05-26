@@ -77,7 +77,7 @@ h5 > span {
 }
 
 span[data-state="0"] {
-    color: #ffffff;
+    color: --var(-text-color);
 }
 
 span[data-state="1"] {
@@ -125,4 +125,35 @@ span[data-state="3"] {
     flex-direction: column;
     gap: 1rem;
     margin: 1rem 0;
+}
+
+#preferences {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.alert {
+    padding: 0.45rem var(--bs-alert-padding-x);
+}
+
+#images {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+#images > canvas[data-type="regular"] {
+    width: 640px !important;
+    height: 480px !important;
+}
+
+#images > canas[data-type="bigboy"] {
+    width: 800px !important;
+    height: 800px !important;
+}
+
+#logging {
+    margin: 1rem;
 }

@@ -11,8 +11,6 @@ from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
 
 IMU_READ_RATE = "imu_read_rate"
-IMU_NOTFOUND_RETRY = "imu_notfound_retry"
-IMU_BADCONNECT_RETRY = "imu_badconnect_retry"
 
 
 class IMUNode(Node):
@@ -23,8 +21,6 @@ class IMUNode(Node):
         self.vectorNavSensor = VnSensor()
 
         self.config.setFloat(IMU_READ_RATE, 0.1)
-        self.config.setFloat(IMU_NOTFOUND_RETRY, 5.0)
-        self.config.setFloat(IMU_BADCONNECT_RETRY, 5.0)
 
         self.imuPublisher = self.create_publisher(IMUData, "/autonav/imu", 20)
         self.gpsPublisher = self.create_publisher(GPSFeedback, "/autonav/gps", 20)
@@ -40,18 +36,18 @@ class IMUNode(Node):
             if (not self.vectorNavSensor.is_connected):
                 try:
                     if not os.path.exists("/dev/autonav-imu-200"):
-                        time.sleep(self.config.getFloat(IMU_NOTFOUND_RETRY))
+                        time.sleep(3.0)
                         continue
 
                     self.vectorNavSensor.connect("/dev/autonav-imu-200", 115200)
                     self.setDeviceState(DeviceStateEnum.OPERATING)
                 except:
                     self.setDeviceState(DeviceStateEnum.STANDBY)
-                    time.sleep(self.config.getFloat(IMU_NOTFOUND_RETRY))
+                    time.sleep(3.0)
                     continue
 
             if (not self.vectorNavSensor.is_connected):
-                time.sleep(self.config.getFloat(IMU_BADCONNECT_RETRY))
+                time.sleep(3.0)
                 self.setDeviceState(DeviceStateEnum.STANDBY)
                 continue
 

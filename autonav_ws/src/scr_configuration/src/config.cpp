@@ -159,11 +159,11 @@ public:
 		createPath(path(CONFIG_PATH));
 		if (doesFileExist(path(CONFIG_PATH) + preset + ".csv"))
 		{
-			loadPreset(path(CONFIG_PATH) + preset + ".csv");
+			// loadPreset(path(CONFIG_PATH) + preset + ".csv");
 		}
 		else
 		{
-			savePreset(preset);
+			// savePreset(preset);
 		}
 
 		setDeviceState(SCR::DeviceState::OPERATING);
