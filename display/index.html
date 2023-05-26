@@ -46,7 +46,7 @@
         </div>
     </nav>
 
-    <main>
+    <main style="display: none;" id="main">
         <div class="page" id="dashboard" data-type="columns">
             <div class="col">
                 <div class="divider">
@@ -83,6 +83,15 @@
                     <h5>Current Fix: <span id="var_gps_fix">0</span></h5>
                     <h5>Is Fixed: <span id="var_gps_fixed">No</span></h5>
                     <h5>Satellites: <span id="var_gps_satellites">0</span></h5>
+                </div>
+
+                <div class="divider">
+                    <h3>IMU</h3>
+                </div>
+                <div class="section">
+                    <h5>Angular Velocity: <span id="var_imu_angular">(0.0, 0.0, 0.0)</span></h5>
+                    <h5>Acceleration <span id="var_imu_acceleration">(0.0, 0.0, 0.0)</span></h5>
+                    <h5>Yaw/Pitch/Roll: <span id="var_imu_orientation">(0.0, 0.0, 0.0)</span></h5>
                 </div>
 
                 <div class="divider">

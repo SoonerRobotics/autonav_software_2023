@@ -6,7 +6,7 @@ var systemState = {
 }
 var preferences = {
     gpsFormat: "LL",
-    host: "localhost",
+    host: "192.168.1.109",
     port: 8023,
 }
 var config = {}
@@ -172,6 +172,10 @@ var conbusDevices = {
                 title: "Send Statistics",
                 type: "bool",
             },
+            0x50: {
+                title: "Pulses Between Encoders",
+                type: "float",
+            }
         }
     }
 }
@@ -242,6 +246,25 @@ function createConbusReadResponse(deviceId, data)
     }
 }
 
+function createConbusWriteInstruction(deviceId, address, data)
+{
+    return {
+        id: 1200 + deviceId,
+        data: [ address, data.length, 0, ...data ]
+    }
+}
+
+function createConbusWriteResponse(deviceId, data)
+{
+    return {
+        id: deviceId - 1300,
+        address: data[0],
+        length: data[1],
+        reserved: data[2],
+        data: data?.slice(3) ?? []
+    }
+}
+
 $(document).ready(function () {
     ////////////////////////////////// Websocekt //////////////////////////////////
 
@@ -269,6 +292,7 @@ $(document).ready(function () {
     
             setTimeout(() => {
                 $(".connecting").hide();
+                $("#main").show();
             }, 1000);
         };
     
@@ -296,6 +320,7 @@ $(document).ready(function () {
             $("#connecting-state").text("Waiting for the Weeb Wagon");
             $(".connecting").show();
             $(".connecting-input").show();
+            $("#main").hide();
     
             setTimeout(() => {
                 createWebsocket();
@@ -325,7 +350,7 @@ $(document).ready(function () {
         });
     }
 
-    function generateElementForType(data, type, device, text) {
+    function generateElementForConfiguration(data, type, device, text) {
         if (type == "bool") {
             const checked = fromBytesToBool(data);
 
@@ -375,7 +400,7 @@ $(document).ready(function () {
             const input = document.createElement("input");
             input.type = "number";
             input.classList.add("form-control");
-            input.value = fromBytesToFloat(data).toFixed(3);
+            input.value = fromBytesToFloat(data).toFixed(6);
             input.onchange = function () {
                 send({
                     op: "configuration",
@@ -463,20 +488,126 @@ $(document).ready(function () {
         }
     }
 
+    function generateElementForConbus(data, type, text, deviceId, address) {
+        if (type == "bool") {
+            const checked = fromBytesToBool(data);
+
+            // Create a dropdown
+            const div = document.createElement("div");
+            div.classList.add("input-group");
+            div.classList.add("mb-3");
+
+            const select = document.createElement("select");
+            select.classList.add("form-select");
+            select.onchange = function () {
+                const instruction = createConbusWriteInstruction(
+                    parseInt(deviceId),
+                    parseInt(address),
+                    Array.from(fromBoolToBytes(select.value == 1))
+                )
+
+                send({
+                    op: "conbus",
+                    ...instruction
+                });
+            }
+
+            const optionTrue = document.createElement("option");
+            optionTrue.value = 1;
+            optionTrue.innerText = "True";
+            optionTrue.selected = checked;
+
+            const optionFalse = document.createElement("option");
+            optionFalse.value = 0;
+            optionFalse.innerText = "False";
+            optionFalse.selected = !checked;
+
+            select.appendChild(optionTrue);
+            select.appendChild(optionFalse);
+
+            const span = document.createElement("span");
+            span.classList.add("input-group-text");
+            span.innerText = text;
+
+            div.appendChild(span);
+            div.appendChild(select);
+            return div;
+        }
+        else if (type == "float") {
+            const div = document.createElement("div");
+            div.classList.add("input-group");
+            div.classList.add("mb-3");
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.classList.add("form-control");
+            input.value = fromBytesToFloat(data).toFixed(6);
+            input.onchange = function () {
+                const instruction = createConbusWriteInstruction(
+                    parseInt(deviceId),
+                    parseInt(address),
+                    Array.from(fromFloatToBytes(input.value))
+                )
+
+                send({
+                    op: "conbus",
+                    ...instruction
+                });
+            }
+
+            const span = document.createElement("span");
+            span.classList.add("input-group-text");
+            span.innerText = text;
+
+            div.appendChild(span);
+            div.appendChild(input);
+            return div;
+        }
+        else if (type == "int") {
+            const div = document.createElement("div");
+            div.classList.add("input-group");
+            div.classList.add("mb-3");
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.classList.add("form-control");
+            input.value = fromBytesToInt(data);
+            input.onchange = function () {
+                const instruction = createConbusWriteInstruction(
+                    parseInt(deviceId),
+                    parseInt(address),
+                    Array.from(fromIntToBytes(input.value))
+                )
+
+                send({
+                    op: "conbus",
+                    ...instruction
+                });
+            }
+
+            const span = document.createElement("span");
+            span.classList.add("input-group-text");
+            span.innerText = text;
+
+            div.appendChild(span);
+            div.appendChild(input);
+            return div;
+        }
+    }
+
     setInterval(() => {
         if (sendQueue.length > 0 && websocket.readyState == 1 && websocket.bufferedAmount == 0) {
             const obj = sendQueue.shift();
-            console.log(websocket);
             console.log("Sending -> ", obj)
             websocket.send(JSON.stringify(obj));
         }
     }, 10);
 
     function onTopicData(topic, msg) {
-        // console.log(topic, msg);
         if (topic == "/scr/state/system") {
-            console.log(topic, msg);
             const { state, mode, mobility, estop } = msg;
+            console.log("System State", state, mode, mobility, estop);
+
             $("#var_system_state").text(state == 0 ? "Diabled" : state == 1 ? "Autonomous" : state == 2 ? "Manual" : "Shutdown");
             $("#var_system_mode").text(mode == 0 ? "Competition" : mode == 1 ? "Simulation" : "Practice");
             $("#var_system_mobility").text(mobility ? "Enabled" : "Disabled");
@@ -496,11 +627,9 @@ $(document).ready(function () {
 
         if (topic == "/scr/state/device") {
             const { device, state } = msg;
+            console.log("Device State", device, state);
 
-            if (deviceStates[device] == undefined) {
-                deviceStates[device] = state;
-            }
-
+            deviceStates[device] = state;
             unorderedListElement = $("#element_device_states");
             unorderedListElement.empty();
             for (const id in deviceStates) {
@@ -537,7 +666,7 @@ $(document).ready(function () {
                     for (const address in deviceConfig) {
                         const data = deviceConfig[address];
                         const type = addressKeys[deviceId][address];
-                        const inputElement = generateElementForType(data, type, deviceId, address);
+                        const inputElement = generateElementForConfiguration(data, type, deviceId, address);
                         deviceBody.append(inputElement);
                     }
 
@@ -553,7 +682,7 @@ $(document).ready(function () {
                 logs.shift();
             }
 
-            const logElement = $("#element_logs");
+            const logElement = $(".element_logs");
             logElement.empty();
             for (let i = logs.length - 1; i >= 0; i--) {
                 const log = logs[i];
@@ -617,26 +746,96 @@ $(document).ready(function () {
 
         if (topic == "/autonav/camera/compressed")
         {
-            const targetImgElement = document.getElementById("target_raw_camera");
-            targetImgElement.src = `data:image/jpeg;base64,${msg.data}`;
-            return;
+            // const targetImgElement = document.getElementById("target_raw_camera");
+            // targetImgElement.src = `data:image/jpeg;base64,${msg.data}`;
+            // return;
         }
 
         if (topic == "/autonav/cfg_space/raw/image")
         {
-            const filteredImgElement = document.getElementById("target_filtered_camera");
-            filteredImgElement.src = `data:image/jpeg;base64,${msg.data}`;
-            return;
+            // const filteredImgElement = document.getElementById("target_filtered_camera");
+            // filteredImgElement.src = `data:image/jpeg;base64,${msg.data}`;
+            // return;
+        }
+
+        if (topic == "/autonav/imu")
+        {
+            const { accel_x, accel_y, accel_z, angular_x, angular_y, angular_z, yaw, pitch, roll } = msg;
+            $("#var_imu_acceleration").text(`(${formatToFixed(accel_x, 4)}, ${formatToFixed(accel_y, 4)}, ${formatToFixed(accel_z, 4)})`);
+            $("#var_imu_angular").text(`(${formatToFixed(angular_x, 4)}, ${formatToFixed(angular_y, 4)}, ${formatToFixed(angular_z, 4)})`);
+            $("#var_imu_orientation").text(`(${radiansToDegrees(parseFloat(yaw)).toFixed(3)}°, ${radiansToDegrees(parseFloat(pitch)).toFixed(3)}°, ${radiansToDegrees(parseFloat(roll)).toFixed(3)}°)`);
         }
 
         if (topic == "/autonav/conbus")
         {
             const { id, data } = msg;
-            console.log("Conbus Instruction Rececived", id, data);
-            if (!(id in conbusDevices))
+            let response;
+            console.log("Received Conbus Message", id, data);
+            if(id >= 1100 && id < 1200)
             {
+                response = createConbusReadResponse(id, data);
+                if (!(response.id in conbusDevices))
+                {
+                    return;
+                }
+            } else if (id >= 1300 && id < 1400)
+            {
+                response = createConbusWriteResponse(id, data);
+                if (!(response.id in conbusDevices))
+                {
+                    return;
+                }
+            } else {
                 return;
             }
+
+            if(!(response.id in conbus))
+            {
+                conbus[response.id] = {};
+            }
+            conbus[response.id][response.address] = response.data;
+
+            const conbusElement = $(`#conbus`);
+            const conbusCard = $(`#conbus_${response.id}`);
+            if (conbusCard != undefined || conbusCard.length != 0)
+            {
+                conbusCard.remove();
+            }
+
+            const card = $(`<div class="card" id="conbus_${response.id}" style="margin-bottom: 10px;"></div>`);
+            card.append(`<div class="card-header"><h5>${conbusDevices[response.id].title}</h5></div>`);
+            const cardBody = $(`<div class="card-body"></div>`);
+            card.append(cardBody);
+
+            for (const address in conbus[response.id])
+            {
+                // Just generate a p element
+                const data = conbus[response.id][address];
+                if (!(address in conbusDevices[response.id].registers))
+                {
+                    const title = conbusDevices[response.id]?.registers?.[address]?.title ?? address.toString();
+                    const alert = $(`<div class="alert alert-danger" role="alert">Unknown Address: ${title}</div>`);
+                    cardBody.append(alert);
+                    continue;
+                }
+                const type = conbusDevices[response.id].registers[address].type;
+                const title = conbusDevices[response.id].registers[address].title;
+                const inputElement = generateElementForConbus(data, type, title, address, response.id);
+                cardBody.append(inputElement);
+            }
+
+            for (const address in conbusDevices[response.id].registers)
+            {
+                if (!(address in conbus[response.id]))
+                {
+                    const title = conbusDevices[response.id].registers[address].title;
+                    const alert = $(`<div class="alert alert-warning" role="alert">Missing Address: ${title}</div>`);
+                    cardBody.append(alert);
+                }
+            }
+
+            conbusElement.append(card);
+            return;
         }
     }
 
