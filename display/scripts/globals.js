@@ -110,6 +110,7 @@ var conbusDevices = {
 			0x0: {
 				title: "Update Period",
 				type: "float",
+				readonly: true
 			},
 			0x1: {
 				title: "Pulses Per Radian",
@@ -173,15 +174,15 @@ var conbusDevices = {
 			},
 			0x31: {
 				title: "Collision Box Distance",
-				type: "float",
+				type: "uint",
 			},
 			0x40: {
 				title: "Send Statistics",
 				type: "bool",
 			},
 			0x50: {
-				title: "Pulses Between Encoders",
-				type: "float",
+				title: "Motor Updates Between Deltaodom",
+				type: "uint",
 			}
 		}
 	}

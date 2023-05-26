@@ -33,6 +33,18 @@ $(document).ready(function () {
                 ...createConbusReadInstruction(0x10, 0xFF)
             })
 
+            // setTimeout(() => {
+            //     send({
+            //         op: "conbus",
+            //         ...createConbusReadInstruction(0x10, 0x40)
+            //     })
+
+            //     send({
+            //         op: "conbus",
+            //         ...createConbusReadInstruction(0x10, 0x50)
+            //     })
+            // }, 500);
+
             setTimeout(() => {
                 $(".connecting").hide();
                 $("#main").show();
@@ -81,6 +93,11 @@ $(document).ready(function () {
     var sendQueue = [];
 
     function send(obj) {
+        console.log("Sending", obj);
+        if(obj.op == "conbus" && obj.id >= 1200 && obj.id < 1300)
+        {
+            console.log(`CONBUS Write Confirmation`, obj);
+        }
         sendQueue.push(obj);
     }
 
@@ -231,7 +248,7 @@ $(document).ready(function () {
         }
     }
 
-    function generateElementForConbus(data, type, text, deviceId, address) {
+    function generateElementForConbus(data, type, text, deviceId, address, readonly = false) {
         if (type == "bool") {
             const checked = fromBytesToBool(data);
 
@@ -241,6 +258,7 @@ $(document).ready(function () {
             div.classList.add("mb-3");
 
             const select = document.createElement("select");
+            select.disabled = readonly;
             select.classList.add("form-select");
             select.onchange = function () {
                 const instruction = createConbusWriteInstruction(
@@ -285,6 +303,7 @@ $(document).ready(function () {
             input.type = "number";
             input.classList.add("form-control");
             input.value = fromBytesToFloat(data).toFixed(6);
+            input.disabled = readonly;
             input.onchange = function () {
                 const instruction = createConbusWriteInstruction(
                     parseInt(deviceId),
@@ -315,11 +334,43 @@ $(document).ready(function () {
             input.type = "number";
             input.classList.add("form-control");
             input.value = fromBytesToInt(data);
+            input.disbled = readonly;
             input.onchange = function () {
                 const instruction = createConbusWriteInstruction(
                     parseInt(deviceId),
                     parseInt(address),
                     Array.from(fromIntToBytes(input.value))
+                )
+
+                send({
+                    op: "conbus",
+                    ...instruction
+                });
+            }
+
+            const span = document.createElement("span");
+            span.classList.add("input-group-text");
+            span.innerText = text;
+
+            div.appendChild(span);
+            div.appendChild(input);
+            return div;
+        } else if (type == "uint")
+        {
+            const div = document.createElement("div");
+            div.classList.add("input-group");
+            div.classList.add("mb-3");
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.classList.add("form-control");
+            input.value = fromBytesToUInt(data);
+            input.disbled = readonly;
+            input.onchange = function () {
+                const instruction = createConbusWriteInstruction(
+                    parseInt(deviceId),
+                    parseInt(address),
+                    Array.from(fromUIntToBytes(input.value))
                 )
 
                 send({
@@ -499,35 +550,35 @@ $(document).ready(function () {
         }
 
         if (topic == "/autonav/camera/compressed") {
-            const canvasElement = document.getElementById("target_raw_camera");
-            const ctx = canvasElement.getContext("2d");
-            const img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0);
-            }
-            img.src = `data:image/jpeg;base64,${msg.data}`;
+            // const canvasElement = document.getElementById("target_raw_camera");
+            // const ctx = canvasElement.getContext("2d");
+            // const img = new Image();
+            // img.onload = () => {
+            //     ctx.drawImage(img, 0, 0);
+            // }
+            // img.src = `data:image/jpeg;base64,${msg.data}`;
             return;
         }
 
         if (topic == "/autonav/cfg_space/raw/image") {
-            const canvasElement = document.getElementById("target_filtered_camera");
-            const ctx = canvasElement.getContext("2d");
-            const img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0);
-            }
-            img.src = `data:image/jpeg;base64,${msg.data}`;
+            // const canvasElement = document.getElementById("target_filtered_camera");
+            // const ctx = canvasElement.getContext("2d");
+            // const img = new Image();
+            // img.onload = () => {
+            //     ctx.drawImage(img, 0, 0);
+            // }
+            // img.src = `data:image/jpeg;base64,${msg.data}`;
             return;
         }
       
         if (topic == "/autonav/debug/astar/image") {
-            const canvasElement = document.getElementById("target_astar_path");
-            const ctx = canvasElement.getContext("2d");
-            const img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0);
-            }
-            img.src = `data:image/jpeg;base64,${msg.data}`;
+            // const canvasElement = document.getElementById("target_astar_path");
+            // const ctx = canvasElement.getContext("2d");
+            // const img = new Image();
+            // img.onload = () => {
+            //     ctx.drawImage(img, 0, 0);
+            // }
+            // img.src = `data:image/jpeg;base64,${msg.data}`;
             return;
         }
 
@@ -541,14 +592,15 @@ $(document).ready(function () {
         if (topic == "/autonav/conbus") {
             const { id, data } = msg;
             let response;
-            console.log("Received Conbus Message", id, data);
             if (id >= 1100 && id < 1200) {
+                console.log("Received CONBUS Read Reply", id, data);
                 response = createConbusReadResponse(id, data);
                 if (!(response.id in conbusDevices)) {
                     return;
                 }
             } else if (id >= 1300 && id < 1400) {
                 response = createConbusWriteResponse(id, data);
+                console.log("Received CONBUS Write Reply", id, data);
                 if (!(response.id in conbusDevices)) {
                     return;
                 }
@@ -572,8 +624,7 @@ $(document).ready(function () {
             const cardBody = $(`<div class="card-body"></div>`);
             card.append(cardBody);
 
-            for (const address in Object.keys(conbus[response.id] ?? {}).sort()) {
-                // Just generate a p element
+            for (const address in conbus[response.id]) {
                 const data = conbus[response.id][address];
                 if (!(address in conbusDevices[response.id].registers)) {
                     const title = conbusDevices[response.id]?.registers?.[address]?.title ?? address.toString();
@@ -583,7 +634,8 @@ $(document).ready(function () {
                 }
                 const type = conbusDevices[response.id].registers[address].type;
                 const title = conbusDevices[response.id].registers[address].title;
-                const inputElement = generateElementForConbus(data, type, title, address, response.id);
+                const readonly = conbusDevices[response.id].registers[address].readonly || false;
+                const inputElement = generateElementForConbus(data, type, title, response.id, address, readonly); 
                 cardBody.append(inputElement);
             }
 

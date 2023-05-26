@@ -15,6 +15,10 @@ const fromBytesToInt = (bytes) => {
 	return getBytesView(bytes).getInt32(0, false);
 }
 
+const fromBytesToUInt = (bytes) => {
+	return getBytesView(bytes).getInt32(0, true);
+}
+
 const fromBytesToBool = (bytes) => {
 	return getBytesView(bytes).getUint8(0) == 1;
 }
@@ -35,6 +39,13 @@ const fromIntToBytes = (value) => {
 	var buffer = new ArrayBuffer(4);
 	var view = new DataView(buffer);
 	view.setInt32(0, value, false);
+	return new Uint8Array(buffer);
+}
+
+const fromUIntToBytes = (value) => {
+	var buffer = new ArrayBuffer(4);
+	var view = new DataView(buffer);
+	view.setInt32(0, value, true);
 	return new Uint8Array(buffer);
 }
 
