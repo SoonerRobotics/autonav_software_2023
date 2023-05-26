@@ -6,7 +6,6 @@ from sensor_msgs.msg import CompressedImage
 from scr_msgs.msg import SystemState, DeviceState
 from scr_core.node import Node
 from datetime import datetime
-import cv_bridge
 import shutil
 import rclpy
 import cv2
@@ -31,7 +30,6 @@ class PlaybackNode(Node):
         self.startTime = datetime.now().timestamp()
         self.file = None
         self.fileName = None
-        self.bridge = cv_bridge.CvBridge()
         self.HOME_DIR = os.path.expanduser("~")
 
     def configure(self):
@@ -84,7 +82,6 @@ class PlaybackNode(Node):
         
         self.writeToFile(f"{self.getTimestamp()}, ENTRY_DEVICESTATE, {state.device}, {state.state}")
         
-        
     def writeCurrentSystemState(self):
         self.writeToFile(f"{self.getTimestamp()}, ENTRY_SYSTEMSTATE, {self.getSystemState().state}, {self.getSystemState().mode}, {self.getSystemState().mobility}, {self.getSystemState().estop}")
 
@@ -98,8 +95,14 @@ class PlaybackNode(Node):
         # Zip up the folder at $HOME/.scr/playback/{fileName} and then delete it
         BASE_PATH = os.path.join(self.HOME_DIR, ".scr", "playback", self.fileName)
 
-        # Delete the images folder
-        shutil.rmtree(os.path.join(BASE_PATH, "images"), ignore_errors = True)
+        # For every type of log in the log file, create a seperate csv file for it
+        with open(os.path.join(BASE_PATH, "log.csv"), "r") as logFile:
+            for line in logFile.readlines()[1:]:
+                logEntry = line.split(", ")
+                logType = logEntry[1].strip()
+                logPath = os.path.join(BASE_PATH, f"{logType}.csv")
+                with open(logPath, "a") as logTypeFile:
+                    logTypeFile.write(line)
         
         shutil.make_archive(BASE_PATH, "zip", BASE_PATH)
         SIZE_OF_ZIP = os.path.getsize(BASE_PATH + ".zip") / 1024 / 1024
