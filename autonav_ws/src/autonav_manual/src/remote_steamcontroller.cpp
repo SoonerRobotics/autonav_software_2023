@@ -91,7 +91,7 @@ public:
 
 		autonav_msgs::msg::MotorInput input;
 		input.forward_velocity = clamp(throttle, -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
-		input.angular_velocity = clamp(steering * 2.2f, -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
+		input.angular_velocity = -clamp(steering * 2.2f, -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
 		motorPublisher->publish(input);
 	}
 
