@@ -2,6 +2,7 @@
 
 import rclpy
 from scr_core.node import Node
+from scr_core.state import DeviceStateEnum
 from scr_msgs.msg import SystemState, DeviceState, Log, ConfigurationInstruction
 from scr_msgs.srv import SetSystemState
 from std_msgs.msg import Empty
@@ -281,6 +282,9 @@ class BroadcastNode(Node):
 			"id": msg.id,
 			"data": msg.data.tolist()
 		}))
+
+	def configure(self):
+		self.setDeviceState(DeviceStateEnum.OPERATING)
 
 	def transition(self, old, updated):
 		return

@@ -5,7 +5,6 @@
 #include "scr_core/system_state.h"
 #include "scr_core/device_state.h"
 #include "std_msgs/msg/empty.hpp"
-#include "scr_core/utils.h"
 #include "rclcpp/rclcpp.hpp"
 #include <chrono>
 

@@ -127,7 +127,7 @@ class SerialMotors(Node):
             pkg.sensor_3 = right
             self.objectDetectionPublisher.publish(pkg)
             
-        if arb_id >= 1000 and arb_id <= 1300:
+        if arb_id >= 1000 and arb_id < 1400:
             pkg = Conbus()
             pkg.id = arb_id
             pkg.data = msg.data
@@ -163,7 +163,6 @@ class SerialMotors(Node):
         packed_data.green = lights.green
         packed_data.blue = lights.blue
         can_msg = can.Message(arbitration_id=SAFETY_LIGHTS_ID, data=bytes(packed_data))
-        self.log(f"Setting SafetyLights: {'Autonomous' if lights.autonomous else 'Manual'},{'Eco' if lights.eco else 'Not Eco'},{lights.mode},{lights.brightness},{lights.red},{lights.green},{lights.blue}")
 
         try:
             self.can.send(can_msg)
@@ -177,7 +176,6 @@ class SerialMotors(Node):
         try:
             actual_bytes = bytes(instruction.data)
             can_msg = can.Message(arbitration_id = instruction.id, data = actual_bytes)
-            self.log(f"CONBUS Instruction: {instruction.id} -> {','.join([str(x) for x in instruction.data])}")
             try:
                 self.can.send(can_msg)
             except can.CanError:
