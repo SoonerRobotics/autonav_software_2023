@@ -13,7 +13,34 @@ import websockets
 import threading
 import json
 import base64
+import time
 
+
+class Limiter:
+	def __init__(self) -> None:
+		self.limits = {}
+		self.nextAllowance = {}
+
+	# Sets a limit for how many times per second a key can be used
+	def setLimit(self, key, limit):
+		self.limits[key] = limit
+		self.nextAllowance[key] = 0
+		
+	# If it can be used, returns true and decrements the remaining uses
+	def use(self, key):
+		if key not in self.limits:
+			return True
+		
+		nextUsageAfter = self.nextAllowance[key]
+		if nextUsageAfter == 0:
+			self.nextAllowance[key] = time.time() + (1.0 / self.limits[key])
+			return True
+		
+		if time.time() >= nextUsageAfter:
+			self.nextAllowance[key] = time.time() + (1.0 / self.limits[key])
+			return True
+		
+		return False
 
 class BroadcastNode(Node):
 	def __init__(self):
@@ -24,6 +51,17 @@ class BroadcastNode(Node):
 		self.sendQueue = []
 		self.sendQueueLock = threading.Lock()
 		self.connectedClients = 0
+
+		self.limiter = Limiter()
+		self.limiter.setLimit("/autonav/MotorInput", 2)
+		self.limiter.setLimit("/autonav/MotorFeedback", 2)
+		self.limiter.setLimit("/autonav/MotorControllerDebug", 1)
+		self.limiter.setLimit("/autonav/imu", 2)
+		self.limiter.setLimit("/autonav/gps", 2)
+		self.limiter.setLimit("/autonav/position", 2)
+		self.limiter.setLimit("//autonav/camera/compressed", 2)
+		self.limiter.setLimit("/autonav/cfg_space/raw/image", 2)
+		self.limiter.setLimit("/autonav/debug/astar/image", 2)
 
 		self.systemStateSubscriber = self.create_subscription(SystemState, "/scr/state/system", self.systemStateCallback, 20)
 		self.deviceStateSubscriber = self.create_subscription(DeviceState, "/scr/state/device", self.deviceStateCallback, 20)
@@ -168,6 +206,9 @@ class BroadcastNode(Node):
 		}))
 
 	def positionCallback(self, msg: Position):
+		if not self.limiter.use("/autonav/position"):
+			return
+
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/position",
@@ -179,6 +220,9 @@ class BroadcastNode(Node):
 		}))
 
 	def motorInputCallback(self, msg: MotorInput):
+		if not self.limiter.use("/autonav/MotorInput"):
+			return
+
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/MotorInput",
@@ -187,6 +231,9 @@ class BroadcastNode(Node):
 		}))
 
 	def motorFeedbackCallback(self, msg: MotorFeedback):
+		if not self.limiter.use("/autonav/MotorFeedback"):
+			return
+		
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/MotorFeedback",
@@ -196,6 +243,9 @@ class BroadcastNode(Node):
 		}))
 
 	def imuDataCallback(self, msg: IMUData):
+		if not self.limiter.use("/autonav/imu"):
+			return
+
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/imu",
@@ -211,6 +261,9 @@ class BroadcastNode(Node):
 		}))
 
 	def gpsFeedbackCallback(self, msg: GPSFeedback):
+		if not self.limiter.use("/autonav/gps"):
+			return
+
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/gps",
@@ -223,6 +276,9 @@ class BroadcastNode(Node):
 		}))
 
 	def pathingDebugCallback(self, msg: PathingDebug):
+		if not self.limiter.use("/autonav/debug/astar"):
+			return
+
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/debug/astar",
@@ -235,6 +291,9 @@ class BroadcastNode(Node):
 		}))
 
 	def objectDetectionCallback(self, msg: ObjectDetection):
+		if not self.limiter.use("/autonav/ObjectDetection"):
+			return
+
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/ObjectDetection",
@@ -244,6 +303,9 @@ class BroadcastNode(Node):
 		}))
 
 	def motorControllerDebugCallback(self, msg: MotorControllerDebug):
+		if not self.limiter.use("/autonav/MotorControllerDebug"):
+			return
+
 		self.pushSendQueue(json.dumps({
 			"op": "data",
 			"topic": "/autonav/MotorControllerDebug",
@@ -256,6 +318,9 @@ class BroadcastNode(Node):
 		}))
 
 	def cameraCallback(self, msg: CompressedImage):
+		if not self.limiter.use("/autonav/camera/compressed"):
+			return
+
 		byts = msg.data.tobytes()
 		base64_str = base64.b64encode(byts).decode("utf-8")
 
@@ -267,6 +332,9 @@ class BroadcastNode(Node):
 		}))
 
 	def filteredCallback(self, msg: CompressedImage):
+		if not self.limiter.use("/autonav/cfg_space/raw/image"):
+			return
+
 		byts = msg.data.tobytes()
 		base64_str = base64.b64encode(byts).decode("utf-8")
 
@@ -278,6 +346,9 @@ class BroadcastNode(Node):
 		}))
 
 	def debugAStarCallback(self, msg: CompressedImage):
+		if not self.limiter.use("/autonav/debug/astar/image"):
+			return
+
 		byts = msg.data.tobytes()
 		base64_str = base64.b64encode(byts).decode("utf-8")
 
