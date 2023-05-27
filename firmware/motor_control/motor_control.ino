@@ -177,6 +177,11 @@ void configureCan() {
 }
 void onCanRecieve() {
   can.isr();
+
+  if (!can.available()) {
+    return;
+  }
+
   can.receive(frame);  
 
   conbus_can.readCanMessage(frame.id, frame.data);
