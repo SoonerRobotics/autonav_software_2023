@@ -12,38 +12,33 @@ echo "machine files.dylanzeml.in login <user> password <password>" > vectorsecre
 ./setup.sh
 ```
 
-Additionally, you will need to install OpenCV on your system. **TODO: FILL THIS IN LATER**
-
 ## Building
 
 ```bash
 source /opt/ros/humble/setup.bash
+cd autonav_ws
 colcon build
 source /install/setup.bash
 ```
 
-## Autonomous
-Follow the steps in [building](#building) and then run the following command
-```bash
-ros2 launch autonav_launch autonomous.xml
-```
-
-Or, in the simulator
-```bash
-ros2 launch autonav_launch managed_sim.xml
-```
-
-## Manual/Remote Control
+## Autonomous/Manual
 
 Follow the steps in [building](#building) and then run the following command
 ```bash
-ros2 launch autonav_launch managed_manual.xml
+ros2 launch autonav_launch competition.xml
+```
+or
+```bash
+ros2 launch autonav_launch practice.xml
 ```
 
-Or, for the steam controller
+## Simulation
+
+Follow the steps in [building](#building) and then run the following command
 ```bash
-ros2 launch autonav_launch managed_steam.xml
+ros2 launch autonav_launch simulation.xml
 ```
+
 ## VSCode
 
 To edit the software with Visual Studio Code, please install the ros extension and open VSCode through the command line via `code` after running all steps under [Building](#building). To get proper intellisense for C++, create the following file: `.vscode/c_cpp_properties.json`
