@@ -48,9 +48,8 @@ class BroadcastNode(Node):
 
 		self.port = self.declare_parameter("port", 8023).get_parameter_value().integer_value
 		self.host = self.declare_parameter("host", "0.0.0.0").get_parameter_value().string_value
-		self.sendQueue = []
-		self.sendQueueLock = threading.Lock()
-		self.connectedClients = 0
+		self.sendMap = {}
+		self.socketMap = {}
 
 		self.limiter = Limiter()
 		self.limiter.setLimit("/autonav/MotorInput", 2)
@@ -93,8 +92,35 @@ class BroadcastNode(Node):
 		async with websockets.serve(self.handler, self.host, self.port):
 			await asyncio.Future()
 
+	def getUserIdFromSocket(self, websocket):
+		try:
+			return websocket.path.split("?")[1].split("=")[1]
+		except:
+			return None
+
+	def pushSendQueue(self, message, unique_id=None):
+		if len(self.sendMap) == 0:
+			return
+
+		# self.log(f"<- {message} to {unique_id if unique_id is not None else 'all'}")
+		if unique_id is None:
+			for unique_id in self.sendMap:
+				self.sendMap[unique_id].append(message)
+		else:
+			self.sendMap[unique_id].append(message)
+
+	async def producer(self, websocket):
+		unqiue_id = self.getUserIdFromSocket(websocket)
+		while True:
+			if len(self.sendMap[unqiue_id]) > 0:
+				await websocket.send(self.sendMap[unqiue_id].pop(0))
+			else:
+				await asyncio.sleep(0.01)
+
 	async def consumer(self, websocket):
+		unique_id = self.getUserIdFromSocket(websocket)
 		async for message in websocket:
+			# self.log(f"-> [{unique_id}] {message}")
 			obj = json.loads(message)
 			if obj["op"] == "broadcast":
 				self.broadcastPublisher.publish(Empty())
@@ -105,6 +131,7 @@ class BroadcastNode(Node):
 				msg.opcode = int(obj["opcode"])
 				msg.data = obj["data"] if "data" in obj else []
 				msg.address = str(obj["address"]) if "address" in obj else ""
+				msg.iterator = int(obj["iterator"]) if "iterator" in obj else 0
 				self.configurationInstructionPublisher.publish(msg)
 
 			if obj["op"] == "get_nodes":
@@ -114,7 +141,7 @@ class BroadcastNode(Node):
 				self.pushSendQueue(json.dumps({
 					"op": "get_nodes_callback",
 					"nodes": nodes
-				}))
+				}), unique_id)
 
 			if obj["op"] == "set_system_state":
 				request = SetSystemState.Request()
@@ -129,43 +156,31 @@ class BroadcastNode(Node):
 				msg = Conbus()
 				msg.id = id
 				msg.data = data
+				msg.iterator = int(obj["iterator"]) if "iterator" in obj else 0
 				self.conbusPublisher.publish(msg)
 
-	def pushSendQueue(self, message):
-		if self.connectedClients == 0:
-			return
-			
-
-		self.sendQueueLock.acquire()
-		self.sendQueue.append(message)
-		self.sendQueueLock.release()
-
-	async def producer(self, websocket):
-		while True:
-			if len(self.sendQueue) > 0:
-				self.sendQueueLock.acquire()
-				message = self.sendQueue.pop(0)
-				self.sendQueueLock.release()
-				try:
-					await websocket.send(message)
-				except websockets.exceptions.ConnectionClosed:
-					break
-			else:
-				await asyncio.sleep(0.05)
-
 	async def handler(self, websocket):
-		self.connectedClients += 1
-			
+		unique_id = self.getUserIdFromSocket(websocket)
+		if unique_id in self.socketMap or unique_id is None:
+			await websocket.close()
+			return
+
+		self.log(f"[{unique_id}] Connected")
+		self.socketMap[unique_id] = websocket
+		self.sendMap[unique_id] = []
+
 		consumer_task = asyncio.create_task(self.consumer(websocket))
 		producer_task = asyncio.create_task(self.producer(websocket))
 		pending = await asyncio.wait(
 			[consumer_task, producer_task],
-			return_when=asyncio.FIRST_COMPLETED,
+			return_when=asyncio.FIRST_COMPLETED
 		)
-		for task in pending[0]:
+		for task in pending:
 			task.cancel()
 
-		self.connectedClients -= 1
+		del self.socketMap[unique_id]
+		del self.sendMap[unique_id]
+		self.log(f"[{unique_id}] Disconnected")
 
 	def systemStateCallback(self, msg: SystemState):
 		self.pushSendQueue(json.dumps({
@@ -198,11 +213,12 @@ class BroadcastNode(Node):
 	def configurationInstructionCallback(self, msg: ConfigurationInstruction):
 		self.pushSendQueue(json.dumps({
 			"op": "data",
-			"topic": "/scr/configuration/instruction",
+			"topic": "/scr/configuration",
 			"device": msg.device,
 			"opcode": msg.opcode,
 			"data": msg.data.tolist(),
-			"address": msg.address
+			"address": msg.address,
+			"iterator": msg.iterator
 		}))
 
 	def positionCallback(self, msg: Position):
@@ -364,7 +380,8 @@ class BroadcastNode(Node):
 			"op": "data",
 			"topic": "/autonav/conbus",
 			"id": msg.id,
-			"data": msg.data.tolist()
+			"data": msg.data.tolist(),
+			"iterator": msg.iterator
 		}))
 
 	def configure(self):

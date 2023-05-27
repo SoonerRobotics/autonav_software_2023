@@ -14,6 +14,8 @@ var config = {}
 var conbus = {};
 var deviceStates = {};
 var logs = [];
+var iterator = 0;
+var iterators = [];
 
 var addressKeys = {
 	"autonav_serial_imu": {
@@ -182,6 +184,15 @@ var conbusDevices = {
 			},
 			0x50: {
 				title: "Motor Updates Between Deltaodom",
+				type: "uint",
+			}
+		}
+	},
+	0x11: {
+		title: "Safety Lights",
+		registers: {
+			0x0: {
+				title: "Blink Rate",
 				type: "uint",
 			}
 		}

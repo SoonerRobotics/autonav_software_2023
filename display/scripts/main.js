@@ -14,36 +14,28 @@ $(document).ready(function () {
     ////////////////////////////////// Websocekt //////////////////////////////////
 
     var websocket;
-    function createWebsocket() {
-        websocket = new WebSocket(`ws://${preferences.host}:${preferences.port}`);
+    const createWebsocket = () => {
+        const userID = generateUUID();
+        websocket = new WebSocket(`ws://${preferences.host}:${preferences.port}/?id=${userID}`);
 
         websocket.onopen = function (event) {
             $("#connecting-state").text("Updating Data");
             $(".connecting-input").hide();
 
-            send({
-                op: "broadcast"
-            });
-            send({
-                op: "get_nodes"
-            });
+            send({ op: "broadcast" });
+            send({ op: "get_nodes" });
 
-            send({
-                op: "conbus",
-                ...createConbusReadInstruction(0x10, 0xFF)
-            })
-
-            // setTimeout(() => {
-            //     send({
-            //         op: "conbus",
-            //         ...createConbusReadInstruction(0x10, 0x40)
-            //     })
-
-            //     send({
-            //         op: "conbus",
-            //         ...createConbusReadInstruction(0x10, 0x50)
-            //     })
-            // }, 500);
+            const conbusDeviceIds = Object.keys(conbusDevices);
+            for (let i = 0; i < conbusDeviceIds.length; i++) {
+                const deviceId = parseInt(conbusDeviceIds[i]);
+                setTimeout(() => {
+                    send({
+                        op: "conbus",
+                        ...createConbusReadInstruction(deviceId, 0xFF),
+                        iterator: iterate()
+                    })
+                }, 100 * i);
+            }
 
             setTimeout(() => {
                 $(".connecting").hide();
@@ -65,7 +57,8 @@ $(document).ready(function () {
                     send({
                         op: "configuration",
                         device: node,
-                        opcode: 4
+                        opcode: 4,
+                        iterator: iterate()
                     });
                 }
             }
@@ -94,8 +87,7 @@ $(document).ready(function () {
 
     function send(obj) {
         console.log("Sending", obj);
-        if(obj.op == "conbus" && obj.id >= 1200 && obj.id < 1300)
-        {
+        if (obj.op == "conbus" && obj.id >= 1200 && obj.id < 1300) {
             console.log(`CONBUS Write Confirmation`, obj);
         }
         sendQueue.push(obj);
@@ -127,7 +119,8 @@ $(document).ready(function () {
                     opcode: 1,
                     device: device,
                     address: text,
-                    data: Array.from(fromBoolToBytes(select.value == 1))
+                    data: Array.from(fromBoolToBytes(select.value == 1)),
+                    iterator: iterate()
                 });
             }
 
@@ -167,7 +160,8 @@ $(document).ready(function () {
                     opcode: 1,
                     device: device,
                     address: text,
-                    data: Array.from(fromFloatToBytes(input.value))
+                    data: Array.from(fromFloatToBytes(input.value)),
+                    iterator: iterate()
                 });
             }
 
@@ -194,7 +188,8 @@ $(document).ready(function () {
                     opcode: 1,
                     device: device,
                     address: text,
-                    data: Array.from(fromIntToBytes(input.value))
+                    data: Array.from(fromIntToBytes(input.value)),
+                    iterator: iterate()
                 });
             }
 
@@ -225,7 +220,8 @@ $(document).ready(function () {
                         opcode: 1,
                         device: device,
                         address: text,
-                        data: Array.from(fromIntToBytes(select.value))
+                        data: Array.from(fromIntToBytes(select.value)),
+                        iterator: iterate()
                     });
                 }
 
@@ -266,10 +262,10 @@ $(document).ready(function () {
                     parseInt(address),
                     Array.from(fromBoolToBytes(select.value == 1))
                 )
-
                 send({
                     op: "conbus",
-                    ...instruction
+                    ...instruction,
+                    iterator: iterate()
                 });
             }
 
@@ -310,10 +306,10 @@ $(document).ready(function () {
                     parseInt(address),
                     Array.from(fromFloatToBytes(input.value))
                 )
-
                 send({
                     op: "conbus",
-                    ...instruction
+                    ...instruction,
+                    iterator: iterate()
                 });
             }
 
@@ -341,10 +337,10 @@ $(document).ready(function () {
                     parseInt(address),
                     Array.from(fromIntToBytes(input.value))
                 )
-
                 send({
                     op: "conbus",
-                    ...instruction
+                    ...instruction,
+                    iterator: iterate()
                 });
             }
 
@@ -355,8 +351,7 @@ $(document).ready(function () {
             div.appendChild(span);
             div.appendChild(input);
             return div;
-        } else if (type == "uint")
-        {
+        } else if (type == "uint") {
             const div = document.createElement("div");
             div.classList.add("input-group");
             div.classList.add("mb-3");
@@ -375,7 +370,8 @@ $(document).ready(function () {
 
                 send({
                     op: "conbus",
-                    ...instruction
+                    ...instruction,
+                    iterator: iterate()
                 });
             }
 
@@ -397,6 +393,13 @@ $(document).ready(function () {
     }, 10);
 
     function onTopicData(topic, msg) {
+        const { iterator } = msg;
+        if (iterator != undefined && iterators.includes(iterator)) {
+            console.log("Ignoring message with iterator: ", msg);
+            iterators.splice(iterators.indexOf(iterator), 1);
+            return;
+        }
+
         if (topic == "/scr/state/system") {
             const { state, mode, mobility, estop } = msg;
 
@@ -430,7 +433,7 @@ $(document).ready(function () {
             return;
         }
 
-        if (topic == "/scr/configuration/instruction") {
+        if (topic == "/scr/configuration") {
             const { device, opcode, data, address } = msg;
             if (opcode == 4) {
                 return;
@@ -457,8 +460,7 @@ $(document).ready(function () {
                     for (const address of Object.keys(deviceConfig).sort()) {
                         const data = deviceConfig[address];
                         const type = addressKeys[deviceId][address];
-                        if (type == undefined)
-                        {
+                        if (type == undefined) {
                             const alert = $(`<div class="alert alert-warning" role="alert">Unknown Address: ${address}</div>`);
                             deviceBody.append(alert);
                             continue;
@@ -474,7 +476,7 @@ $(document).ready(function () {
                         }
 
                         const alert = $(`<div class="alert alert-danger" role="alert">Unknown Address: ${address}</div>`);
-                        deviceBody.append(alert);              
+                        deviceBody.append(alert);
                     }
 
                     configElement.append(deviceElement);
@@ -570,7 +572,7 @@ $(document).ready(function () {
             // img.src = `data:image/jpeg;base64,${msg.data}`;
             return;
         }
-      
+
         if (topic == "/autonav/debug/astar/image") {
             // const canvasElement = document.getElementById("target_astar_path");
             // const ctx = canvasElement.getContext("2d");
@@ -635,7 +637,7 @@ $(document).ready(function () {
                 const type = conbusDevices[response.id].registers[address].type;
                 const title = conbusDevices[response.id].registers[address].title;
                 const readonly = conbusDevices[response.id].registers[address].readonly || false;
-                const inputElement = generateElementForConbus(data, type, title, response.id, address, readonly); 
+                const inputElement = generateElementForConbus(data, type, title, response.id, address, readonly);
                 cardBody.append(inputElement);
             }
 

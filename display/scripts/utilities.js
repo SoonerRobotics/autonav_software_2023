@@ -117,7 +117,7 @@ const formatToFixed = (str, precision) => {
 }
 
 const radiansToDegrees = (radians) => {
-	return radians * (180 / Math.PI);
+	return (radians * (180 / Math.PI) + 360) % 360;
 }
 
 const deviceStateToName = (state) => {
@@ -142,7 +142,8 @@ const clearElements = () => {
 		"var_motors_velocity", "var_motors_feedback", "var_position_origin", "var_position_global",
 		"var_gps_position", "var_gps_fix", "var_gps_fixed", "var_gps_satellites",
 		"var_imu_angular", "var_imu_acceleration", "var_imu_orientation",
-		"var_astar_time", "var_astar_heading", "var_astar_waypoint", "var_astar_distance", "var_astar_waypoints"
+		"var_astar_time", "var_astar_heading", "var_astar_waypoint", "var_astar_distance", "var_astar_waypoints",
+		"var_system_state", "var_system_mode", "var_system_mobility", "var_system_estop",
 	]
 
 	const clearResets = [
@@ -157,11 +158,6 @@ const clearElements = () => {
 		$(element).empty();
 	}
 
-	$("#var_system_state").html("Disabled");
-	$("#var_system_mode").html("Competition");
-	$("#var_system_mobility").html("Disabled");
-	$("#var_system_estop").html("No");
-
 	// Clear the three canvas's
 	const canvas1 = document.getElementById("#target_raw_camera");
 	const canvas2 = document.getElementById("#target_processed_camera");
@@ -174,4 +170,18 @@ const clearElements = () => {
 	ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
 	ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
 	ctx3.clearRect(0, 0, canvas3.width, canvas3.height);
+}
+
+const generateUUID = () => {
+	return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+		const r = Math.random() * 16 | 0,
+			v = c == "x" ? r : (r & 0x3 | 0x8);
+		return v.toString(16);
+	});
+}
+
+const iterate = () => {
+	iterator++;
+	iterators.push(iterator);
+	return iterator;
 }
