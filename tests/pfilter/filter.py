@@ -5,6 +5,11 @@ from typies import Feedback, GPS
 import matplotlib.pyplot as plt
 from math import cos, sin
 
+
+LAT_METER_CONV = 110944.21
+LON_METER_CONV = 91065.46
+
+
 class Particle:
     def __init__(self, x = 0, y = 0, theta = 0, weight = 1) -> None:
         self.x = x
@@ -14,9 +19,9 @@ class Particle:
 
 class PFilter:
     def __init__(self) -> None:
-        self.num_particles = 500
-        self.gps_noise = [0.3]
-        self.odom_noise = [0.05, 0.05, 0.05]
+        self.num_particles = 750
+        self.gps_noise = [0.45]
+        self.odom_noise = [0.05, 0.05, 0.1]
         self.init_particles()
         self.first_gps = None
         
@@ -55,8 +60,8 @@ class PFilter:
         if self.first_gps is None:
             self.first_gps = gps
             
-        gps_x = (gps.latitude - self.first_gps.latitude) * 111086.2
-        gps_y = (self.first_gps.longitude - gps.longitude) * 81978.2
+        gps_x = (gps.latitude - self.first_gps.latitude) * LAT_METER_CONV
+        gps_y = (self.first_gps.longitude - gps.longitude) * LON_METER_CONV
     
         for particle in self.particles:
             dist_sqrt = np.sqrt((particle.x - gps_x) ** 2 + (particle.y - gps_y) ** 2)

@@ -4,7 +4,9 @@ from typies import Feedback, GPS
 import matplotlib.pyplot as plt
 import math
 
-MAIN_FILE = "log.csv"
+MAIN_FILE = "playback/manual/log.csv"
+LAT_METER_CONV = 110944.21
+LON_METER_CONV = 91065.46
 
 data = []
 with open(MAIN_FILE, "r") as f:
@@ -34,7 +36,9 @@ for row in data:
 			continue
 		average = pf.feedback(feedback)
 		if first_gps is not None:
-			newpf_poses.append([average[0], average[1], average[2]])
+			mtr_x = first_gps.latitude + average[0] / LAT_METER_CONV
+			mtr_y = first_gps.longitude - average[1] / LON_METER_CONV
+			newpf_poses.append([mtr_x, mtr_y, average[2]])
 
 	else:
 		gps = GPS(float(row[2]), float(row[3]))
@@ -45,7 +49,7 @@ for row in data:
 			first_gps = gps
    
 		pf.gps(gps)
-		# rawgps_poses.append([gps.latitude * 111086.2, gps.longitude * 81978.2])
+		rawgps_poses.append([gps.latitude, gps.longitude])
 
 # Filter out any [0, 0] points
 newpf_poses = [x for x in newpf_poses if x[0] != 0 and x[1] != 0]
@@ -56,7 +60,7 @@ for i in range(len(newpf_poses)):
 	pose = newpf_poses[i]
 	theta = pose[2]
 	if i % 10 == 0:
-		plt.quiver(pose[0], pose[1], math.sin(theta), math.cos(theta), scale=50)
+		plt.quiver(pose[0], pose[1], math.cos(theta), math.sin(theta), color="red", scale=10)
 
 plt.plot([x[0] for x in rawgps_poses], [x[1] for x in rawgps_poses], label="Raw GPS")
 plt.plot([x[0] for x in newpf_poses], [x[1] for x in newpf_poses], label="PF")

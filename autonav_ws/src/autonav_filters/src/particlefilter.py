@@ -12,9 +12,9 @@ class Particle:
 
 class ParticleFilter:
     def __init__(self, latitudeLength, longitudeLength) -> None:
-        self.num_particles = 500
-        self.gps_noise = [0.3]
-        self.odom_noise = [0.05, 0.05, 0.05]
+        self.num_particles = 750
+        self.gps_noise = [0.45]
+        self.odom_noise = [0.05, 0.05, 0.1]
         self.init_particles()
         self.first_gps = None
         
