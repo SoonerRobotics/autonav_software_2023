@@ -25,17 +25,25 @@ $(document).ready(function () {
             send({ op: "broadcast" });
             send({ op: "get_nodes" });
 
-            const conbusDeviceIds = Object.keys(conbusDevices);
-            for (let i = 0; i < conbusDeviceIds.length; i++) {
-                const deviceId = parseInt(conbusDeviceIds[i]);
-                setTimeout(() => {
-                    send({
-                        op: "conbus",
-                        ...createConbusReadInstruction(deviceId, 0xFF),
-                        iterator: iterate()
-                    })
-                }, 100 * i);
-            }
+            const waitInterval = setInterval(() => {
+                if (deviceStates["autonav_serial_can"] != 3) {
+                    console.log("Waiting on autonav_serial_can")
+                    return;
+                }
+
+                clearInterval(waitInterval);
+                const conbusDeviceIds = Object.keys(conbusDevices);
+                for (let i = 0; i < conbusDeviceIds.length; i++) {
+                    const deviceId = parseInt(conbusDeviceIds[i]);
+                    setTimeout(() => {
+                        send({
+                            op: "conbus",
+                            ...createConbusReadInstruction(deviceId, 0xFF),
+                            iterator: iterate()
+                        })
+                    }, 250 * i);
+                }
+            }, 500);
 
             setTimeout(() => {
                 $(".connecting").hide();
@@ -72,7 +80,8 @@ $(document).ready(function () {
             clearGlobals();
 
             setTimeout(() => {
-                createWebsocket();
+                // createWebsocket();
+                location.reload();
             }, 2000);
         };
 
