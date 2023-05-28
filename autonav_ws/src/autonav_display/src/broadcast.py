@@ -58,7 +58,7 @@ class BroadcastNode(Node):
 		self.limiter.setLimit("/autonav/imu", 2)
 		self.limiter.setLimit("/autonav/gps", 2)
 		self.limiter.setLimit("/autonav/position", 2)
-		self.limiter.setLimit("//autonav/camera/compressed", 2)
+		self.limiter.setLimit("/autonav/camera/compressed", 2)
 		self.limiter.setLimit("/autonav/cfg_space/raw/image", 2)
 		self.limiter.setLimit("/autonav/debug/astar/image", 2)
 
@@ -77,8 +77,8 @@ class BroadcastNode(Node):
 		self.pathingDebugSubscriber = self.create_subscription(PathingDebug, "/autonav/debug/astar", self.pathingDebugCallback, 20)
 		self.gpsFeedbackSubscriber = self.create_subscription(GPSFeedback, "/autonav/gps", self.gpsFeedbackCallback, 20)
 		self.imuDataSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.imuDataCallback, 20)
-		self.conbusSubscriber = self.create_subscription(Conbus, "/autonav/conbus", self.conbusCallback, 20)
-		self.conbusPublisher = self.create_publisher(Conbus, "/autonav/conbus", 20)
+		self.conbusSubscriber = self.create_subscription(Conbus, "/autonav/conbus/data", self.conbusCallback, 20)
+		self.conbusPublisher = self.create_publisher(Conbus, "/autonav/conbus/instruction", 20)
 
 		self.systemStateService = self.create_client(SetSystemState, "/scr/state/set_system_state")
 
@@ -120,7 +120,7 @@ class BroadcastNode(Node):
 	async def consumer(self, websocket):
 		unique_id = self.getUserIdFromSocket(websocket)
 		async for message in websocket:
-			# self.log(f"-> [{unique_id}] {message}")
+			self.log(f"-> [{unique_id}] {message}")
 			obj = json.loads(message)
 			if obj["op"] == "broadcast":
 				self.broadcastPublisher.publish(Empty())
@@ -152,6 +152,7 @@ class BroadcastNode(Node):
 
 			if obj["op"] == "conbus":
 				id = int(obj["id"])
+				self.log(f"[{unique_id}] Sending conbus message with id {id}")
 				data = list(map(lambda x: int(x), obj["data"]))
 				msg = Conbus()
 				msg.id = id
@@ -217,8 +218,7 @@ class BroadcastNode(Node):
 			"device": msg.device,
 			"opcode": msg.opcode,
 			"data": msg.data.tolist(),
-			"address": msg.address,
-			"iterator": msg.iterator
+			"address": msg.address
 		}))
 
 	def positionCallback(self, msg: Position):
