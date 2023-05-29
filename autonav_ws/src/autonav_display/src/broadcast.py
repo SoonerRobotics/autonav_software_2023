@@ -177,7 +177,8 @@ class BroadcastNode(Node):
 			return_when=asyncio.FIRST_COMPLETED
 		)
 		for task in pending:
-			task.cancel()
+			for t in task:
+				t.cancel()
 
 		del self.socketMap[unique_id]
 		del self.sendMap[unique_id]

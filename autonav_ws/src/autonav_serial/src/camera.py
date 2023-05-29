@@ -42,10 +42,12 @@ class CameraNode(Node):
             try:
                 if not os.path.exists("/dev/video" + str(self.config.getInt(CAMERA_INDEX))):
                     time.sleep(1.5)
+                    self.log("Could not find camera /dev/video" + str(self.config.getInt(CAMERA_INDEX)))
                     continue
 
                 capture = cv2.VideoCapture(0)
                 if capture is None or not capture.isOpened():
+                    self.log("Could not open camera /dev/video" + str(self.config.getInt(CAMERA_INDEX)))
                     time.sleep(1.5)
                     continue
 
