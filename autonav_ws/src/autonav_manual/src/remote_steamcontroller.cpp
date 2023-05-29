@@ -32,11 +32,6 @@ namespace Registers
 	const std::string MAX_FORWARD_SPEED = "max_forward_speed";
 };
 
-double easing(double t)
-{
-	return t == 0 ? 0 : t == 1 ? 1 : t < 0.5 ? pow(2, 20 * t - 10) / 2 : (2 - pow(2, -20 * t + 10)) / 2;
-}
-
 class SteamJoyNode : public SCR::Node
 {
 public:
@@ -95,8 +90,8 @@ public:
 		}
 
 		autonav_msgs::msg::MotorInput input;
-		input.forward_velocity = clamp(easing(throttle) * config.get<float>(Registers::FORWARD_SPEED), -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
-		input.angular_velocity = clamp(easing(steering) * config.get<float>(Registers::TURN_SPEED), -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
+		input.forward_velocity = clamp(throttle * config.get<float>(Registers::FORWARD_SPEED), -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
+		input.angular_velocity = clamp(steering * config.get<float>(Registers::TURN_SPEED), -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
 		motorPublisher->publish(input);
 	}
 
