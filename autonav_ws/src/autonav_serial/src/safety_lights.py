@@ -35,6 +35,7 @@ class SafetyLightsSerial(Node):
         self.writeQueue = []
         self.writeQueueLock = threading.Lock()
         self.writeThread = threading.Thread(target=self.picoWriteWorker)
+        self.writeThread.daemon = True
         self.writeThread.start()
         
     def transition(self, old: SystemState, updated: SystemState):

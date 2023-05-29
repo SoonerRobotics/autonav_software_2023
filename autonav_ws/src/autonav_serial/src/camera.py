@@ -30,6 +30,7 @@ class CameraNode(Node):
 
         self.cameraPublisher = self.create_publisher(CompressedImage, "/autonav/camera/compressed", 20)
         self.cameraThread = threading.Thread(target=self.cameraWorker)
+        self.cameraThread.daemon = True
         self.cameraThread.start()
 
     def transition(self, old, updated):

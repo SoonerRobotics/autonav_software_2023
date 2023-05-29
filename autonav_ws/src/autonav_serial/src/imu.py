@@ -26,6 +26,7 @@ class IMUNode(Node):
         self.gpsPublisher = self.create_publisher(GPSFeedback, "/autonav/gps", 20)
 
         self.imuThread = threading.Thread(target=self.imuWorker)
+        self.imuThread.daemon = True
         self.imuThread.start()
 
     def transition(self, old, updated):

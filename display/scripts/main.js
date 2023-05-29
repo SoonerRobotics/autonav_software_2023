@@ -27,7 +27,6 @@ $(document).ready(function () {
 
             const waitInterval = setInterval(() => {
                 if (deviceStates["autonav_serial_can"] != 3) {
-                    console.log("Waiting on autonav_serial_can")
                     return;
                 }
 
@@ -95,10 +94,6 @@ $(document).ready(function () {
     var sendQueue = [];
 
     function send(obj) {
-        console.log("Sending", obj);
-        if (obj.op == "conbus" && obj.id >= 1200 && obj.id < 1300) {
-            console.log(`CONBUS Write Confirmation`, obj);
-        }
         sendQueue.push(obj);
     }
 
@@ -404,7 +399,6 @@ $(document).ready(function () {
     function onTopicData(topic, msg) {
         const { iterator } = msg;
         if (iterator != undefined && iterators.includes(iterator)) {
-            console.log("Ignoring message with iterator: ", msg);
             iterators.splice(iterators.indexOf(iterator), 1);
             return;
         }
@@ -561,35 +555,21 @@ $(document).ready(function () {
         }
 
         if (topic == "/autonav/camera/compressed") {
-            // const canvasElement = document.getElementById("target_raw_camera");
-            // const ctx = canvasElement.getContext("2d");
-            // const img = new Image();
-            // img.onload = () => {
-            //     ctx.drawImage(img, 0, 0);
-            // }
-            // img.src = `data:image/jpeg;base64,${msg.data}`;
+            // Set to 
+            const imgElement = document.getElementById("target_raw_camera");
+            imgElement.src = `data:image/jpeg;base64,${msg.data}`;
             return;
         }
 
         if (topic == "/autonav/cfg_space/raw/image") {
-            // const canvasElement = document.getElementById("target_filtered_camera");
-            // const ctx = canvasElement.getContext("2d");
-            // const img = new Image();
-            // img.onload = () => {
-            //     ctx.drawImage(img, 0, 0);
-            // }
-            // img.src = `data:image/jpeg;base64,${msg.data}`;
+            const imgElement = document.getElementById("target_filtered_camera");
+            imgElement.src = `data:image/jpeg;base64,${msg.data}`;
             return;
         }
 
         if (topic == "/autonav/debug/astar/image") {
-            // const canvasElement = document.getElementById("target_astar_path");
-            // const ctx = canvasElement.getContext("2d");
-            // const img = new Image();
-            // img.onload = () => {
-            //     ctx.drawImage(img, 0, 0);
-            // }
-            // img.src = `data:image/jpeg;base64,${msg.data}`;
+            const imgElement = document.getElementById("target_astar_path");
+            imgElement.src = `data:image/jpeg;base64,${msg.data}`;
             return;
         }
 
@@ -604,14 +584,12 @@ $(document).ready(function () {
             const { id, data } = msg;
             let response;
             if (id >= 1100 && id < 1200) {
-                console.log("Received CONBUS Read Reply", id, data);
                 response = createConbusReadResponse(id, data);
                 if (!(response.id in conbusDevices)) {
                     return;
                 }
             } else if (id >= 1300 && id < 1400) {
                 response = createConbusWriteResponse(id, data);
-                console.log("Received CONBUS Write Reply", id, data);
                 if (!(response.id in conbusDevices)) {
                     return;
                 }
