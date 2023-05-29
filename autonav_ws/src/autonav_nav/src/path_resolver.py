@@ -19,6 +19,15 @@ RADIUS_START = "radius_start"
 ANGULAR_AGGRESSINON = "angular_aggression"
 MAX_ANGULAR_SPEED = "max_angular_speed"
 
+TURN_TYPE = "turn_type"
+
+MIN_TURN_ANGLE = "min_turn_angle"
+MIN_TURN_SPEED = "min_turn_speed"
+TURN_COEFFICIENT = "turn_coefficient"
+
+COLON_STRAT_A = "colon_start_a"
+COLON_STRAT_B = "colon_start_b"
+
 def hexToRgb(color: str):
     if color[0] == "#":
         color = color[1:]
@@ -58,6 +67,15 @@ class PathResolverNode(Node):
         self.config.setFloat(RADIUS_START, 0.7)
         self.config.setFloat(ANGULAR_AGGRESSINON, 3.0)
         self.config.setFloat(MAX_ANGULAR_SPEED, 1.15)
+
+        self.config.setFloat(TURN_TYPE, 1)
+
+        self.config.setFloat(MIN_TURN_ANGLE, 0.5)
+        self.config.setFloat(MIN_TURN_SPEED, 0.4)
+        self.config.setFloat(TURN_COEFFICIENT, 1)
+
+        self.config.setFloat(COLON_STRAT_A, 2.5)
+        self.config.setFloat(COLON_STRAT_B, 0.3)
         
         self.create_timer(0.1, self.onResolve)
         self.setDeviceState(DeviceStateEnum.READY)
@@ -118,7 +136,10 @@ class PathResolverNode(Node):
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
-            inputPacket.angular_velocity = clamp(error * self.config.getFloat(ANGULAR_AGGRESSINON), -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
+            regular_turn = self.config.getFloat(MIN_TURN_SPEED) + error * self.config.getFloat(TURN_COEFFICIENT) if abs(error) > self.config.getFloat(MIN_TURN_ANGLE) else 0.0
+            colon_turn = self.config.getFloat(COLON_STRAT_A) * (1 / (1 + math.exp((-1 * self.config.getFloat(COLON_STRAT_B)) * error) ) - 0.5)
+            ang = regular_turn if self.config.getInt(TURN_TYPE) == 0 else colon_turn
+            inputPacket.angular_velocity = clamp(ang, -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
         else:
             if self.backCount == -1:
                 self.backCount = 5

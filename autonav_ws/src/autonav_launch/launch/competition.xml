@@ -15,6 +15,7 @@
     <node pkg="autonav_filters" exec="filters.py">
         <param name="latitude_length" value="110944.21" />
         <param name="longitude_length" value="91065.46" />
+        <param name="default_type" value="1" />
     </node>
     <node pkg="autonav_manual" exec="steam.py" />
     <node pkg="autonav_manual" exec="steamremote" />
