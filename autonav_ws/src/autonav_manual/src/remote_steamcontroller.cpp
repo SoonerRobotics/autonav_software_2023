@@ -95,8 +95,8 @@ public:
 		}
 
 		autonav_msgs::msg::MotorInput input;
-		input.forward_velocity = clamp(easing(throttle) * config.get<float>(Registers::MAX_FORWARD_SPEED), -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
-		input.angular_velocity = clamp(easing(steering) * config.get<float>(Registers::MAX_TURN_SPEED), -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
+		input.forward_velocity = clamp(easing(throttle) * config.get<float>(Registers::FORWARD_SPEED), -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
+		input.angular_velocity = clamp(easing(steering) * config.get<float>(Registers::TURN_SPEED), -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
 		motorPublisher->publish(input);
 	}
 
