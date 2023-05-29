@@ -58,8 +58,8 @@ class BroadcastNode(Node):
 		self.limiter.setLimit("/autonav/imu", 2)
 		self.limiter.setLimit("/autonav/gps", 2)
 		self.limiter.setLimit("/autonav/position", 2)
-		self.limiter.setLimit("/autonav/camera/compressed", 2)
-		self.limiter.setLimit("/autonav/cfg_space/raw/image", 2)
+		self.limiter.setLimit("/autonav/camera/compressed", 7)
+		self.limiter.setLimit("/autonav/cfg_space/raw/image", 7)
 		self.limiter.setLimit("/autonav/debug/astar/image", 2)
 
 		self.systemStateSubscriber = self.create_subscription(SystemState, "/scr/state/system", self.systemStateCallback, 20)
