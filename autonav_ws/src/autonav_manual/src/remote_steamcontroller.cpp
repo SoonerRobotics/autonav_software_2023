@@ -34,7 +34,7 @@ namespace Registers
 
 double easing(double t)
 {
-	return 1 - sqrt(1 - t * t);
+	return t == 0 ? 0 : t == 1 ? 1 : t < 0.5 ? pow(2, 20 * t - 10) / 2 : (2 - pow(2, -20 * t + 10)) / 2;
 }
 
 class SteamJoyNode : public SCR::Node
@@ -47,8 +47,8 @@ public:
 		steamSubscription = create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&SteamJoyNode::onSteamDataReceived, this, _1));
 		motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 
-		config.set(Registers::STEERING_DEADZONE, 0.01f);
-		config.set(Registers::THROTTLE_DEADZONE, 0.01f);
+		config.set(Registers::STEERING_DEADZONE, 0.03f);
+		config.set(Registers::THROTTLE_DEADZONE, 0.03f);
 		config.set(Registers::FORWARD_SPEED, 1.8f);
 		config.set(Registers::TURN_SPEED, 1.0f);
 		config.set(Registers::MAX_TURN_SPEED, 3.14159265f);
