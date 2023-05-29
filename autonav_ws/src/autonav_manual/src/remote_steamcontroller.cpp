@@ -32,6 +32,11 @@ namespace Registers
 	const std::string MAX_FORWARD_SPEED = "max_forward_speed";
 };
 
+double easing(double t)
+{
+	return 1 - sqrt(1 - t * t);
+}
+
 class SteamJoyNode : public SCR::Node
 {
 public:
@@ -42,8 +47,8 @@ public:
 		steamSubscription = create_subscription<autonav_msgs::msg::SteamInput>("/autonav/joy/steam", 20, std::bind(&SteamJoyNode::onSteamDataReceived, this, _1));
 		motorPublisher = create_publisher<autonav_msgs::msg::MotorInput>("/autonav/MotorInput", 20);
 
-		config.set(Registers::STEERING_DEADZONE, 0.04f);
-		config.set(Registers::THROTTLE_DEADZONE, 0.04f);
+		config.set(Registers::STEERING_DEADZONE, 0.01f);
+		config.set(Registers::THROTTLE_DEADZONE, 0.01f);
 		config.set(Registers::FORWARD_SPEED, 1.8f);
 		config.set(Registers::TURN_SPEED, 1.0f);
 		config.set(Registers::MAX_TURN_SPEED, 3.14159265f);
@@ -80,18 +85,18 @@ public:
 
 		if (abs(msg.ltrig) > throttleDeadzone || abs(msg.rtrig) > throttleDeadzone)
 		{
-			throttle = msg.rtrig * config.get<float>(Registers::FORWARD_SPEED);
-			throttle = throttle - msg.ltrig * config.get<float>(Registers::FORWARD_SPEED);
+			throttle = msg.rtrig;
+			throttle = throttle - msg.ltrig;
 		}
 
 		if (abs(msg.lpad_x) > steeringDeadzone)
 		{
-			steering = msg.lpad_x * config.get<float>(Registers::TURN_SPEED);
+			steering = msg.lpad_x;
 		}
 
 		autonav_msgs::msg::MotorInput input;
-		input.forward_velocity = clamp(throttle, -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
-		input.angular_velocity = -clamp(steering * 2.2f, -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
+		input.forward_velocity = clamp(easing(throttle) * config.get<float>(Registers::MAX_FORWARD_SPEED), -config.get<float>(Registers::MAX_FORWARD_SPEED), config.get<float>(Registers::MAX_FORWARD_SPEED));
+		input.angular_velocity = clamp(easing(steering) * config.get<float>(Registers::MAX_TURN_SPEED), -config.get<float>(Registers::MAX_TURN_SPEED), config.get<float>(Registers::MAX_TURN_SPEED));
 		motorPublisher->publish(input);
 	}
 
