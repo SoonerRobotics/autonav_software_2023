@@ -489,7 +489,7 @@ $(document).ready(function () {
         }
 
         if (topic == "/scr/logging") {
-            logs.push({ message: msg.data, node: msg.node });
+            logs.push({ message: msg.data, node: msg.node, timestamp: new Date() });
             if (logs.length > 30) {
                 logs.shift();
             }
@@ -499,6 +499,8 @@ $(document).ready(function () {
             for (let i = logs.length - 1; i >= 0; i--) {
                 const log = logs[i];
                 const tableEntry = $(`<tr></tr>`);
+                // Format as: HH:MM:SS
+                tableEntry.append(`<td>${log.timestamp.toTimeString().split(" ")[0]}</td>`);
                 tableEntry.append(`<td>${log.node}</td>`);
                 tableEntry.append(`<td>${log.message}</td>`);
                 logElement.append(tableEntry);
