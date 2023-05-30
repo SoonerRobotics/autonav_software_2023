@@ -4,7 +4,7 @@ from typies import Feedback, GPS
 import matplotlib.pyplot as plt
 import math
 
-MAIN_FILE = "playback/manual/log.csv"
+MAIN_FILE = "log.csv"
 LAT_METER_CONV = 110944.21
 LON_METER_CONV = 91065.46
 
