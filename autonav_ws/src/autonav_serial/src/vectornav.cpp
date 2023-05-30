@@ -21,7 +21,7 @@ struct PublisherPtrs
 
 static std::shared_ptr<vn::sensors::VnSensor> sensor;
 
-void onAsciiMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t index)
+void onGpsMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t index)
 {
     if (p.type() != vn::protocol::uart::Packet::TYPE_ASCII)
     {
@@ -62,7 +62,16 @@ void onAsciiMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_
         publisherPtrs->gpsFeedbackPublisher->publish(gpsFeedback);
         return;
     }
+}
 
+void onImuMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t index)
+{
+    if (p.type() != vn::protocol::uart::Packet::TYPE_ASCII)
+    {
+        return;
+    }
+
+    auto publisherPtrs = (PublisherPtrs *)userData;
     if (p.determineAsciiAsyncType() == vn::protocol::uart::AsciiAsync::VNIMU)
     {
         vn::math::vec3f accel;
@@ -93,6 +102,7 @@ void onAsciiMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_
         return;
     }
 }
+
 class VectornavNode : public SCR::Node
 {
 public:
@@ -110,7 +120,10 @@ public:
         ptrs->sensor = sensor;
 
         sensor->writeAsyncDataOutputType(vn::protocol::uart::VNGPS, true);
-        sensor->registerAsyncPacketReceivedHandler(ptrs, onAsciiMessageReceived);
+        sensor->registerAsyncPacketReceivedHandler(ptrs, onGpsMessageReceived);
+
+        sensor->writeAsyncDataOutputType(vn::protocol::uart::VNIMU, true);
+        sensor->registerAsyncPacketReceivedHandler(ptrs, onImuMessageReceived);
 
         this->setDeviceState(SCR::DeviceState::OPERATING);
     }
