@@ -41,7 +41,7 @@ void onGpsMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t 
         vn::math::vec3f nedAcc;
         float speedAcc;
         float timeAcc;
-        p.parseGpsSolutionLla(
+        p.parseVNGPS(
             &time,
             &week,
             &gpsFix,
@@ -64,45 +64,6 @@ void onGpsMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t 
     }
 }
 
-void onImuMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t index)
-{
-    if (p.type() != vn::protocol::uart::Packet::TYPE_ASCII)
-    {
-        return;
-    }
-
-    auto publisherPtrs = (PublisherPtrs *)userData;
-    if (p.determineAsciiAsyncType() == vn::protocol::uart::AsciiAsync::VNIMU)
-    {
-        vn::math::vec3f accel;
-        vn::math::vec3f gyro;
-        vn::math::vec3f mag;
-        float temp;
-        float pres;
-        p.parseImuMeasurements(
-            &accel,
-            &gyro,
-            &mag,
-            &temp,
-            &pres);
-
-        vn::math::vec3f ypr = publisherPtrs->sensor->readYawPitchRoll();
-
-        autonav_msgs::msg::IMUData imuData;
-        imuData.accel_x = accel.x;
-        imuData.accel_y = accel.y;
-        imuData.accel_z = accel.z;
-        imuData.angular_x = gyro.x;
-        imuData.angular_y = gyro.y;
-        imuData.angular_z = gyro.z;
-        imuData.yaw = ypr.x;
-        imuData.pitch = ypr.y;
-        imuData.roll = ypr.z;
-        publisherPtrs->imuDataPublisher->publish(imuData);
-        return;
-    }
-}
-
 class VectornavNode : public SCR::Node
 {
 public:
@@ -121,9 +82,6 @@ public:
 
         sensor->writeAsyncDataOutputType(vn::protocol::uart::VNGPS, true);
         sensor->registerAsyncPacketReceivedHandler(ptrs, onGpsMessageReceived);
-
-        sensor->writeAsyncDataOutputType(vn::protocol::uart::VNIMU, true);
-        sensor->registerAsyncPacketReceivedHandler(ptrs, onImuMessageReceived);
 
         this->setDeviceState(SCR::DeviceState::OPERATING);
     }
