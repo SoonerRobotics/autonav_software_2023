@@ -19,15 +19,6 @@ RADIUS_START = "radius_start"
 ANGULAR_AGGRESSINON = "angular_aggression"
 MAX_ANGULAR_SPEED = "max_angular_speed"
 
-TURN_TYPE = "turn_type"
-
-MIN_TURN_ANGLE = "min_turn_angle"
-MIN_TURN_SPEED = "min_turn_speed"
-TURN_COEFFICIENT = "turn_coefficient"
-
-COLON_STRAT_A = "colon_strat_a"
-COLON_STRAT_B = "colon_strat_b"
-
 def hexToRgb(color: str):
     if color[0] == "#":
         color = color[1:]
@@ -65,17 +56,8 @@ class PathResolverNode(Node):
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
         self.config.setFloat(RADIUS_START, 0.7)
-        self.config.setFloat(ANGULAR_AGGRESSINON, 3.0)
+        self.config.setFloat(ANGULAR_AGGRESSINON, 2.2)
         self.config.setFloat(MAX_ANGULAR_SPEED, 1.15)
-
-        self.config.setFloat(TURN_TYPE, 1)
-
-        self.config.setFloat(MIN_TURN_ANGLE, 0.5)
-        self.config.setFloat(MIN_TURN_SPEED, 0.4)
-        self.config.setFloat(TURN_COEFFICIENT, 1)
-
-        self.config.setFloat(COLON_STRAT_A, 50.0)
-        self.config.setFloat(COLON_STRAT_B, 0.2)
         
         self.create_timer(0.1, self.onResolve)
         self.setDeviceState(DeviceStateEnum.READY)
@@ -138,7 +120,7 @@ class PathResolverNode(Node):
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
             error_sign = 1 if error > 0 else -1
-            inputPacket.angular_velocity = 0.0 if abs(error) < 0.05 else (0.2 * error_sign) if abs(error) < (0.15 * error_sign) else (error * 1.3)
+            inputPacket.angular_velocity = clamp(0.0 if abs(error) < 0.05 else (0.2 * error_sign) if abs(error) < (0.15 * error_sign) else (error * self.config.getFloat(ANGULAR_AGGRESSINON)), -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
         else:
             if self.backCount == -1:
                 self.backCount = 5

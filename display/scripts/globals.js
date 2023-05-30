@@ -88,19 +88,7 @@ var addressKeys = {
 		"radius_max": "float",
 		"radius_start": "float",
 		"angular_aggression": "float",
-		"max_angular_speed": "float",
-
-		"turn_type": {
-			0: "Regular",
-			1: "Colon"
-		},
-
-		"min_turn_angle": "float",
-		"min_turn_speed": "float",
-		"turn_coefficient": "float",
-
-		"colon_strat_a": "float",
-		"colon_strat_b": "float"
+		"max_angular_speed": "float"
 	},
 
 	"autonav_playback": {

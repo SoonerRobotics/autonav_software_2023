@@ -64,7 +64,7 @@ class AStarNode(Node):
         self.pathDebugImagePublisher = self.create_publisher(CompressedImage, "/autonav/debug/astar/image", 20)
         self.mapTimer = self.create_timer(0.1, self.createPath)
 
-        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 0.25)
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 0.8)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setBool(CONFIG_USE_ONLY_WAYPOINTS, True)
         self.config.setFloat(CONFIG_WAYPOINT_DELAY, 5.0)
@@ -95,7 +95,7 @@ class AStarNode(Node):
 
     def transition(self, old: SystemState, updated: SystemState):
         if updated.state == SystemStateEnum.AUTONOMOUS and updated.mobility and len(self.waypoints) == 0:
-            self.log(f"Waypoints will active in {self.config.getFloat(CONFIG_WAYPOINT_DELAY)} seconds")
+            self.log(f"Waypoints will activate in {self.config.getFloat(CONFIG_WAYPOINT_DELAY)} seconds")
             self.waypointTime = time.time() + self.config.getFloat(CONFIG_WAYPOINT_DELAY)
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
