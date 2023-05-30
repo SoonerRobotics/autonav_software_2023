@@ -46,11 +46,22 @@ int main(int a, char** b)
     auto serialNumber = sensor.readSerialNumber();
     auto hardwareRevision = sensor.readHardwareRevision();
 
+    auto gps = sensor.readGpsSolutionLla();
+    auto imu = sensor.readImuMeasurements();
+
     std::cout << "Connected to Vectornav IMU" << std::endl;
     std::cout << "Model Number: " << modelNumber << std::endl;
     std::cout << "Firmware Version: " << firmwareVersion << std::endl;
     std::cout << "Serial Number: " << serialNumber << std::endl;
     std::cout << "Hardware Revision: " << hardwareRevision << std::endl;
+
+    std::cout << "GPS: " << "(" << gps.lla.x << "," << gps.lla.y << "," << gps.lla.z << ")" << std::endl;
+
+    std::cout << "Acceleration: " << "(" << imu.accel.x << "," << imu.accel.y << "," << imu.accel.z << ")" << std::endl;
+    std::cout << "Angular Rate: " << "(" << imu.gyro.x << "," << imu.gyro.y << "," << imu.gyro.z << ")" << std::endl;
+    std::cout << "Magnetic Field: " << "(" << imu.mag.x << "," << imu.mag.y << "," << imu.mag.z << ")" << std::endl;
+    std::cout << "Temperature: " << imu.temp << std::endl;
+    std::cout << "Pressure: " << imu.pressure << std::endl;
 
     rclcpp::init(a, b);
     rclcpp::spin(std::make_shared<VectornavNode>());
