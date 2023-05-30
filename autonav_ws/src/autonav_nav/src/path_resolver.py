@@ -116,7 +116,7 @@ class PathResolverNode(Node):
         if self.backCount == -1 and (lookahead is not None and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1):
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
-            self.log("Error: " + str(error))
+            # self.log("Error: " + str(error))
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
             error_sign = 1 if error > 0 else -1
