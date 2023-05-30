@@ -16,8 +16,10 @@ struct PublisherPtrs
 {
     rclcpp::Publisher<autonav_msgs::msg::GPSFeedback>::SharedPtr gpsFeedbackPublisher;
     rclcpp::Publisher<autonav_msgs::msg::IMUData>::SharedPtr imuDataPublisher;
-    vn::sensors::VnSensor *sensor;
+    std::shared_ptr<vn::sensors::VnSensor> sensor;
 };
+
+static std::shared_ptr<vn::sensors::VnSensor> sensor;
 
 void onAsciiMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t index)
 {
@@ -102,11 +104,10 @@ public:
         this->gpsFeedbackPublisher = this->create_publisher<autonav_msgs::msg::GPSFeedback>("/autonav/gps", 20);
         this->imuDataPublisher = this->create_publisher<autonav_msgs::msg::IMUData>("/autonav/imu", 20);
 
-        sensor.connect(VectornavConstants::SENSOR_PORT, VectornavConstants::SENSOR_BAUDRATE);
-        auto modelNumber = sensor.readModelNumber();
-        auto firmwareVersion = sensor.readFirmwareVersion();
-        auto serialNumber = sensor.readSerialNumber();
-        auto hardwareRevision = sensor.readHardwareRevision();
+        auto modelNumber = sensor->readModelNumber();
+        auto firmwareVersion = sensor->readFirmwareVersion();
+        auto serialNumber = sensor->readSerialNumber();
+        auto hardwareRevision = sensor->readHardwareRevision();
 
         this->log("Connected to Vectornav IMU");
         this->log("Model Number: " + modelNumber);
@@ -117,23 +118,26 @@ public:
         auto ptrs = new PublisherPtrs();
         ptrs->gpsFeedbackPublisher = this->gpsFeedbackPublisher;
         ptrs->imuDataPublisher = this->imuDataPublisher;
-        ptrs->sensor = &sensor;
-        sensor.registerAsyncPacketReceivedHandler(ptrs, onAsciiMessageReceived);
+        ptrs->sensor = sensor;
+        sensor->registerAsyncPacketReceivedHandler(ptrs, onAsciiMessageReceived);
 
         this->setDeviceState(SCR::DeviceState::OPERATING);
     }
 
 private:
-    vn::sensors::VnSensor sensor;
-
     rclcpp::Publisher<autonav_msgs::msg::GPSFeedback>::SharedPtr gpsFeedbackPublisher;
     rclcpp::Publisher<autonav_msgs::msg::IMUData>::SharedPtr imuDataPublisher;
 };
 
 int main(int a, char **b)
 {
+    sensor = std::make_shared<vn::sensors::VnSensor>();
+    sensor->connect(VectornavConstants::SENSOR_PORT, VectornavConstants::SENSOR_BAUDRATE);
+
     rclcpp::init(a, b);
     rclcpp::spin(std::make_shared<VectornavNode>());
     rclcpp::shutdown();
+
+    sensor->disconnect();
     return 0;
 }
