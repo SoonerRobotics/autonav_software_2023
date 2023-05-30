@@ -104,17 +104,6 @@ public:
         this->gpsFeedbackPublisher = this->create_publisher<autonav_msgs::msg::GPSFeedback>("/autonav/gps", 20);
         this->imuDataPublisher = this->create_publisher<autonav_msgs::msg::IMUData>("/autonav/imu", 20);
 
-        auto modelNumber = sensor->readModelNumber();
-        auto firmwareVersion = sensor->readFirmwareVersion();
-        auto serialNumber = sensor->readSerialNumber();
-        auto hardwareRevision = sensor->readHardwareRevision();
-
-        this->log("Connected to Vectornav IMU");
-        this->log("Model Number: " + modelNumber);
-        this->log("Firmware Version: " + firmwareVersion);
-        this->log("Serial Number: " + serialNumber);
-        this->log("Hardware Revision: " + hardwareRevision);
-
         auto ptrs = new PublisherPtrs();
         ptrs->gpsFeedbackPublisher = this->gpsFeedbackPublisher;
         ptrs->imuDataPublisher = this->imuDataPublisher;
