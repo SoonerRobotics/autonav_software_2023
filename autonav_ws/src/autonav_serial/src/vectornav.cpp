@@ -108,6 +108,8 @@ public:
         ptrs->gpsFeedbackPublisher = this->gpsFeedbackPublisher;
         ptrs->imuDataPublisher = this->imuDataPublisher;
         ptrs->sensor = sensor;
+
+        sensor->writeAsyncDataOutputType(vn::protocol::uart::VNGPS, true);
         sensor->registerAsyncPacketReceivedHandler(ptrs, onAsciiMessageReceived);
 
         this->setDeviceState(SCR::DeviceState::OPERATING);
