@@ -18,10 +18,9 @@ import time
 
 
 GRID_SIZE = 0.1
-VERTICAL_CAMERA_RANGE = 2.75
-HORIZONTAL_CAMERA_RANGE = 3
+VERTICAL_CAMERA_DIST = 2.75
+HORIZONTAL_CAMERA_DIST = 3
 CV_BRIDGE = cv_bridge.CvBridge()
-MAP_RES = 80
 
 CONFIG_WAYPOINT_POP_DISTANCE = "pop_distance"
 CONFIG_WAYPOINT_DIRECTION = "direction"
@@ -64,7 +63,7 @@ class AStarNode(Node):
         self.pathDebugImagePublisher = self.create_publisher(CompressedImage, "/autonav/debug/astar/image", 20)
         self.mapTimer = self.create_timer(0.1, self.createPath)
 
-        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 0.8)
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.25)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setBool(CONFIG_USE_ONLY_WAYPOINTS, True)
         self.config.setFloat(CONFIG_WAYPOINT_DELAY, 5.0)
@@ -108,8 +107,8 @@ class AStarNode(Node):
         if self.position is None or self.costMap is None:
             return
         
-        robot_pos = (MAP_RES // 2, MAP_RES - 4)
-        path = self.findPathToPoint(robot_pos, self.bestPosition, self.costMap, MAP_RES, MAP_RES)
+        robot_pos = (40, 78)
+        path = self.findPathToPoint(robot_pos, self.bestPosition, self.costMap, 80, 80)
         if path is not None:
             global_path = Path()
             global_path.poses = [self.pathToGlobalPose(pp[0], pp[1]) for pp in path]
@@ -117,10 +116,10 @@ class AStarNode(Node):
             self.pathPublisher.publish(global_path)
 
             # Draw the cost map onto a debug iamge
-            cvimg = np.zeros((MAP_RES, MAP_RES), dtype=np.uint8)
-            for i in range(MAP_RES):
-                for j in range(MAP_RES):
-                    cvimg[i, j] = self.costMap[ i * MAP_RES + j ] * 255
+            cvimg = np.zeros((80, 80), dtype=np.uint8)
+            for i in range(80):
+                for j in range(80):
+                    cvimg[i, j] = self.costMap[ i * 80 + j ] * 255
             cvimg = cv2.cvtColor(cvimg, cv2.COLOR_GRAY2RGB)
 
             for pp in path:
@@ -142,7 +141,7 @@ class AStarNode(Node):
         return total_path[::-1]
         
     def findPathToPoint(self, start, goal, map, width, height):
-        looked_at = np.zeros((MAP_RES, MAP_RES))
+        looked_at = np.zeros((80, 80))
         open_set = [start]
         path = {}
         search_dirs = []
@@ -205,26 +204,23 @@ class AStarNode(Node):
         self.performance.start("Smellification")
 
         grid_data = msg.data
-        temp_best_pos = (MAP_RES // 2, MAP_RES - 4)
+        temp_best_pos = (40, 78)
         best_pos_cost = -1000
+
         frontier = set()
-        frontier.add((MAP_RES // 2, MAP_RES - 4))
+        frontier.add((40, 78))
         explored = set()
 
         if self.config.getBool(CONFIG_USE_ONLY_WAYPOINTS) == True:
             grid_data = [0] * len(msg.data)
             
         if len(self.waypoints) == 0 and time.time() > self.waypointTime and self.waypointTime != 0:
-            self.waypoints = copy.copy(self.getWaypointsForDirection())
+            self.waypoints = [wp for wp in self.getWaypointsForDirection()]
             self.waypointTime = 0
         
         if time.time() < self.waypointTime and len(self.waypoints) == 0:
             time_remaining = self.waypointTime - time.time()
             pathingDebug = PathingDebug()
-            pathingDebug.desired_heading = 0.0
-            pathingDebug.desired_latitude = 0.0
-            pathingDebug.desired_longitude = 0.0
-            pathingDebug.distance_to_destination = 0.0
             pathingDebug.waypoints = []
             pathingDebug.time_until_use_waypoints = time_remaining
             self.debugPublisher.publish(pathingDebug)
@@ -235,20 +231,19 @@ class AStarNode(Node):
             west_to_gps = (self.position.longitude - next_waypoint[1]) * self.longitudeLength
             heading_to_gps = math.atan2(west_to_gps, north_to_gps) % (2 * math.pi)
 
-            if math.sqrt(north_to_gps ** 2 + west_to_gps ** 2) <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
+            if north_to_gps ** 2 + west_to_gps ** 2 <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
                 self.waypoints.pop(0)
 
             pathingDebug = PathingDebug()
             pathingDebug.desired_heading = heading_to_gps
             pathingDebug.desired_latitude = next_waypoint[0]
             pathingDebug.desired_longitude = next_waypoint[1]
-            pathingDebug.distance_to_destination = math.sqrt(north_to_gps ** 2 + west_to_gps ** 2)
+            pathingDebug.distance_to_destination = north_to_gps ** 2 + west_to_gps ** 2
             wp1d = []
             for wp in self.waypoints:
                 wp1d.append(wp[0])
                 wp1d.append(wp[1])
             pathingDebug.waypoints = wp1d
-            pathingDebug.time_until_use_waypoints = 0.0
             self.debugPublisher.publish(pathingDebug)
 
         depth = 0
@@ -257,10 +252,10 @@ class AStarNode(Node):
             for pos in curfrontier:
                 x = pos[0]
                 y = pos[1]
-                cost = (MAP_RES - y) * 1.3 + depth * 2.2
+                cost = (80 - y) * 1.3 + depth * 2.2
 
                 if len(self.waypoints) > 0:
-                    heading_err_to_gps = abs(self.getAngleDifference(self.position.theta + math.atan2(MAP_RES // 2 - x, MAP_RES - y), heading_to_gps)) * 180 / math.pi
+                    heading_err_to_gps = abs(self.getAngleDifference(self.position.theta + math.atan2(40 - x, 80 - y), heading_to_gps)) * 180 / math.pi
                     cost -= max(heading_err_to_gps, 10)
 
                 if cost > best_pos_cost:
@@ -268,15 +263,16 @@ class AStarNode(Node):
                     temp_best_pos = pos
 
                 frontier.remove(pos)
-                explored.add(x + MAP_RES * y)
+                explored.add(x + 80 * y)
 
-                if y > 1 and grid_data[x + MAP_RES * (y-1)] < 50 and x + MAP_RES * (y-1) not in explored:
-                    frontier.add((x, y-1))
+                if y > 1 and grid_data[x + 80 * (y-1)] < 50 and x + 80 * (y-1) not in explored:
+                    frontier.add((x, y - 1))
 
-                if x < 79 and grid_data[x + 1 + MAP_RES * y] < 50 and x + 1 + MAP_RES * y not in explored:
-                    frontier.add((x+1, y))
-                if x > 0 and grid_data[x - 1 + MAP_RES * y] < 50 and x - 1 + MAP_RES * y not in explored:
-                    frontier.add((x-1, y))
+                if x < 79 and grid_data[x + 1 + 80 * y] < 50 and x + 1 + 80 * y not in explored:
+                    frontier.add((x + 1, y))
+
+                if x > 0 and grid_data[x - 1 + 80 * y] < 50 and x - 1 + 80 * y not in explored:
+                    frontier.add((x - 1, y))
 
             depth += 1
 
@@ -285,14 +281,11 @@ class AStarNode(Node):
         self.performance.end("Smellification")
         
     def pathToGlobalPose(self, pp0, pp1):
-        x = (MAP_RES - pp1) * VERTICAL_CAMERA_RANGE / MAP_RES
-        y = (MAP_RES // 2 - pp0) * HORIZONTAL_CAMERA_RANGE / MAP_RES
-        dx = 0
-        dy = 0
-        psi = 0
+        x = (80 - pp1) * VERTICAL_CAMERA_DIST / 80
+        y = (40 - pp0) * HORIZONTAL_CAMERA_DIST / 80
         
-        new_x = x * math.cos(psi) + y * math.sin(psi) + dx
-        new_y = x * math.sin(psi) + y * math.cos(psi) + dy
+        new_x = x * math.cos(0) + y * math.sin(0) 
+        new_y = x * math.sin(0) + y * math.cos(0)
         pose = PoseStamped()
         point = Point()
         point.x = new_x
