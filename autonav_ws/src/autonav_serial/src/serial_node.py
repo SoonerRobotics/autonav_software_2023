@@ -160,7 +160,7 @@ class SerialMotors(Node):
 
         packed_data = SafetyLightsPacket()
         packed_data.autonomous = lights.autonomous
-        packed_data.eco = lights.eco
+        packed_data.eco = False
         packed_data.mode = lights.mode
         packed_data.brightness = lights.brightness
         packed_data.red = lights.red

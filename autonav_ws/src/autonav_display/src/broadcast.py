@@ -52,22 +52,22 @@ class BroadcastNode(Node):
 		self.socketMap = {}
 
 		self.limiter = Limiter()
-		self.limiter.setLimit("/autonav/MotorInput", 2)
-		self.limiter.setLimit("/autonav/MotorFeedback", 2)
+		self.limiter.setLimit("/autonav/MotorInput", 5)
+		self.limiter.setLimit("/autonav/MotorFeedback", 5)
 		self.limiter.setLimit("/autonav/MotorControllerDebug", 1)
-		self.limiter.setLimit("/autonav/imu", 2)
-		self.limiter.setLimit("/autonav/gps", 2)
-		self.limiter.setLimit("/autonav/position", 2)
-		self.limiter.setLimit("/autonav/camera/compressed", 7)
-		self.limiter.setLimit("/autonav/cfg_space/raw/image", 7)
-		self.limiter.setLimit("/autonav/debug/astar/image", 2)
+		self.limiter.setLimit("/autonav/imu", 5)
+		self.limiter.setLimit("/autonav/gps", 5)
+		self.limiter.setLimit("/autonav/position", 5)
+		self.limiter.setLimit("/autonav/camera/compressed", 5)
+		self.limiter.setLimit("/autonav/cfg_space/raw/image", 5)
+		self.limiter.setLimit("/autonav/debug/astar/image", 5)
 
 		self.systemStateSubscriber = self.create_subscription(SystemState, "/scr/state/system", self.systemStateCallback, 20)
 		self.deviceStateSubscriber = self.create_subscription(DeviceState, "/scr/state/device", self.deviceStateCallback, 20)
 		self.broadcastPublisher = self.create_publisher(Empty, "/scr/state/broadcast", 20)
 		self.logSubscriber = self.create_subscription(Log, "/scr/logging", self.logCallback, 20)
-		self.configurationInstructionSubscriber = self.create_subscription(ConfigurationInstruction, "/scr/configuration", self.configurationInstructionCallback, 20)
-		self.configurationInstructionPublisher = self.create_publisher(ConfigurationInstruction, "/scr/configuration", 20)
+		self.configurationInstructionSubscriber = self.create_subscription(ConfigurationInstruction, "/scr/configuration", self.configurationInstructionCallback, 100)
+		self.configurationInstructionPublisher = self.create_publisher(ConfigurationInstruction, "/scr/configuration", 100)
 
 		self.positionSubscriber = self.create_subscription(Position, "/autonav/position", self.positionCallback, 20)
 		self.motorFeedbackSubscriber = self.create_subscription(MotorFeedback, "/autonav/MotorFeedback", self.motorFeedbackCallback, 20)
@@ -77,8 +77,8 @@ class BroadcastNode(Node):
 		self.pathingDebugSubscriber = self.create_subscription(PathingDebug, "/autonav/debug/astar", self.pathingDebugCallback, 20)
 		self.gpsFeedbackSubscriber = self.create_subscription(GPSFeedback, "/autonav/gps", self.gpsFeedbackCallback, 20)
 		self.imuDataSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.imuDataCallback, 20)
-		self.conbusSubscriber = self.create_subscription(Conbus, "/autonav/conbus/data", self.conbusCallback, 20)
-		self.conbusPublisher = self.create_publisher(Conbus, "/autonav/conbus/instruction", 20)
+		self.conbusSubscriber = self.create_subscription(Conbus, "/autonav/conbus/data", self.conbusCallback, 100)
+		self.conbusPublisher = self.create_publisher(Conbus, "/autonav/conbus/instruction", 100)
 
 		self.systemStateService = self.create_client(SetSystemState, "/scr/state/set_system_state")
 

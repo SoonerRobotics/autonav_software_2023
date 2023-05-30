@@ -59,7 +59,7 @@ class PathResolverNode(Node):
         self.config.setFloat(ANGULAR_AGGRESSINON, 2.2)
         self.config.setFloat(MAX_ANGULAR_SPEED, 1.15)
         
-        self.create_timer(0.1, self.onResolve)
+        self.create_timer(0.05, self.onResolve)
         self.setDeviceState(DeviceStateEnum.READY)
 
     def onReset(self):
