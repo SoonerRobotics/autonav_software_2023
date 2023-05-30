@@ -25,8 +25,8 @@ MIN_TURN_ANGLE = "min_turn_angle"
 MIN_TURN_SPEED = "min_turn_speed"
 TURN_COEFFICIENT = "turn_coefficient"
 
-COLON_STRAT_A = "colon_start_a"
-COLON_STRAT_B = "colon_start_b"
+COLON_STRAT_A = "colon_strat_a"
+COLON_STRAT_B = "colon_strat_b"
 
 def hexToRgb(color: str):
     if color[0] == "#":
@@ -74,8 +74,8 @@ class PathResolverNode(Node):
         self.config.setFloat(MIN_TURN_SPEED, 0.4)
         self.config.setFloat(TURN_COEFFICIENT, 1)
 
-        self.config.setFloat(COLON_STRAT_A, 2.5)
-        self.config.setFloat(COLON_STRAT_B, 0.3)
+        self.config.setFloat(COLON_STRAT_A, 50.0)
+        self.config.setFloat(COLON_STRAT_B, 0.2)
         
         self.create_timer(0.1, self.onResolve)
         self.setDeviceState(DeviceStateEnum.READY)
@@ -134,12 +134,11 @@ class PathResolverNode(Node):
         if self.backCount == -1 and (lookahead is not None and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1):
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
+            self.log("Error: " + str(error))
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
-            regular_turn = self.config.getFloat(MIN_TURN_SPEED) + error * self.config.getFloat(TURN_COEFFICIENT) if abs(error) > self.config.getFloat(MIN_TURN_ANGLE) else 0.0
-            colon_turn = self.config.getFloat(COLON_STRAT_A) * (1 / (1 + math.exp((-1 * self.config.getFloat(COLON_STRAT_B)) * error) ) - 0.5)
-            ang = regular_turn if self.config.getInt(TURN_TYPE) == 0 else colon_turn
-            inputPacket.angular_velocity = clamp(ang, -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
+            error_sign = 1 if error > 0 else -1
+            inputPacket.angular_velocity = 0.0 if abs(error) < 0.05 else (0.2 * error_sign) if abs(error) < (0.15 * error_sign) else (error * 1.3)
         else:
             if self.backCount == -1:
                 self.backCount = 5
