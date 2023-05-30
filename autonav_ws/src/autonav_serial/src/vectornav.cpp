@@ -12,6 +12,85 @@ namespace VectornavConstants
     const uint32_t SENSOR_BAUDRATE = 115200;
 }
 
+struct PublisherPtrs
+{
+    rclcpp::Publisher<autonav_msgs::msg::GPSFeedback>::SharedPtr gpsFeedbackPublisher;
+    rclcpp::Publisher<autonav_msgs::msg::IMUData>::SharedPtr imuDataPublisher;
+    vn::sensors::VnSensor *sensor;
+};
+
+void onAsciiMessageReceived(void *userData, vn::protocol::uart::Packet &p, size_t index)
+{
+    if (p.type() != vn::protocol::uart::Packet::TYPE_ASCII)
+    {
+        return;
+    }
+
+    auto publisherPtrs = (PublisherPtrs *)userData;
+
+    if (p.determineAsciiAsyncType() == vn::protocol::uart::AsciiAsync::VNGPS)
+    {
+        double time;
+        uint16_t week;
+        uint8_t gpsFix;
+        uint8_t numSats;
+        vn::math::vec3d lla;
+        vn::math::vec3f nedVel;
+        vn::math::vec3f nedAcc;
+        float speedAcc;
+        float timeAcc;
+        p.parseGpsSolutionLla(
+            &time,
+            &week,
+            &gpsFix,
+            &numSats,
+            &lla,
+            &nedVel,
+            &nedAcc,
+            &speedAcc,
+            &timeAcc);
+
+        autonav_msgs::msg::GPSFeedback gpsFeedback;
+        gpsFeedback.latitude = lla.x;
+        gpsFeedback.longitude = lla.y;
+        gpsFeedback.altitude = lla.z;
+        gpsFeedback.satellites = numSats;
+        gpsFeedback.gps_fix = gpsFix;
+        gpsFeedback.is_locked = gpsFix == 0 ? false : true;
+        publisherPtrs->gpsFeedbackPublisher->publish(gpsFeedback);
+        return;
+    }
+
+    if (p.determineAsciiAsyncType() == vn::protocol::uart::AsciiAsync::VNIMU)
+    {
+        vn::math::vec3f accel;
+        vn::math::vec3f gyro;
+        vn::math::vec3f mag;
+        float temp;
+        float pres;
+        p.parseImuMeasurements(
+            &accel,
+            &gyro,
+            &mag,
+            &temp,
+            &pres);
+
+        vn::math::vec3f ypr = publisherPtrs->sensor->readYawPitchRoll();
+
+        autonav_msgs::msg::IMUData imuData;
+        imuData.accel_x = accel.x;
+        imuData.accel_y = accel.y;
+        imuData.accel_z = accel.z;
+        imuData.angular_x = gyro.x;
+        imuData.angular_y = gyro.y;
+        imuData.angular_z = gyro.z;
+        imuData.yaw = ypr.x;
+        imuData.pitch = ypr.y;
+        imuData.roll = ypr.z;
+        publisherPtrs->imuDataPublisher->publish(imuData);
+        return;
+    }
+}
 class VectornavNode : public SCR::Node
 {
 public:
@@ -22,7 +101,6 @@ public:
     {
         this->gpsFeedbackPublisher = this->create_publisher<autonav_msgs::msg::GPSFeedback>("/autonav/gps", 20);
         this->imuDataPublisher = this->create_publisher<autonav_msgs::msg::IMUData>("/autonav/imu", 20);
-        auto timer = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&VectornavNode::onTimerTick, this));
 
         sensor.connect(VectornavConstants::SENSOR_PORT, VectornavConstants::SENSOR_BAUDRATE);
         auto modelNumber = sensor.readModelNumber();
@@ -36,41 +114,13 @@ public:
         this->log("Serial Number: " + serialNumber);
         this->log("Hardware Revision: " + hardwareRevision);
 
+        auto ptrs = new PublisherPtrs();
+        ptrs->gpsFeedbackPublisher = this->gpsFeedbackPublisher;
+        ptrs->imuDataPublisher = this->imuDataPublisher;
+        ptrs->sensor = &sensor;
+        sensor.registerAsyncPacketReceivedHandler(ptrs, onAsciiMessageReceived);
+
         this->setDeviceState(SCR::DeviceState::OPERATING);
-    }
-
-    void onTimerTick()
-    {
-        if (this->getDeviceState() != SCR::DeviceState::OPERATING)
-        {
-            return;
-        }
-
-        auto gps = sensor.readGpsSolutionLla();
-        auto imu = sensor.readImuMeasurements();
-        auto ypr = sensor.readYawPitchRoll();
-
-        autonav_msgs::msg::GPSFeedback gpsFeedback;
-        gpsFeedback.latitude = gps.lla.x;
-        gpsFeedback.longitude = gps.lla.y;
-        gpsFeedback.altitude = gps.lla.z;
-        gpsFeedback.satellites = gps.numSats;
-        gpsFeedback.gps_fix = gps.gpsFix;
-        gpsFeedback.is_locked = gps.gpsFix == 0 ? false : true;
-
-        autonav_msgs::msg::IMUData imuData;
-        imuData.accel_x = imu.accel.x;
-        imuData.accel_y = imu.accel.y;
-        imuData.accel_z = imu.accel.z;
-        imuData.angular_x = imu.gyro.x;
-        imuData.angular_y = imu.gyro.y;
-        imuData.angular_z = imu.gyro.z;
-        imuData.yaw = ypr.x;
-        imuData.pitch = ypr.y;
-        imuData.roll = ypr.z;
-
-        this->gpsFeedbackPublisher->publish(gpsFeedback);
-        this->imuDataPublisher->publish(imuData);
     }
 
 private:
@@ -80,7 +130,7 @@ private:
     rclcpp::Publisher<autonav_msgs::msg::IMUData>::SharedPtr imuDataPublisher;
 };
 
-int main(int a, char** b)
+int main(int a, char **b)
 {
     rclcpp::init(a, b);
     rclcpp::spin(std::make_shared<VectornavNode>());
