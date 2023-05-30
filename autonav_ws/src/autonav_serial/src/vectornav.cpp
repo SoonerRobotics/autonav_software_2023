@@ -124,6 +124,12 @@ public:
         this->setDeviceState(SCR::DeviceState::OPERATING);
     }
 
+
+    void transition(scr_msgs::msg::SystemState old, scr_msgs::msg::SystemState updated) override
+    {
+        
+    }
+
 private:
     rclcpp::Publisher<autonav_msgs::msg::GPSFeedback>::SharedPtr gpsFeedbackPublisher;
     rclcpp::Publisher<autonav_msgs::msg::IMUData>::SharedPtr imuDataPublisher;
