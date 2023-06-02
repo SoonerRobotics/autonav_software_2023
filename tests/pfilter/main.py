@@ -6,7 +6,7 @@ import math
 
 MAIN_FILE = "log.csv"
 LAT_METER_CONV = 110944.21
-LON_METER_CONV = 91065.46
+LON_METER_CONV = 81978.2
 
 data = []
 with open(MAIN_FILE, "r") as f:
@@ -26,6 +26,8 @@ plt.figure(figsize=(15,15))
 
 newpf_poses = []
 rawgps_poses = []
+
+print("Starting")
 
 pf = PFilter()
 first_gps = None
@@ -51,9 +53,13 @@ for row in data:
 		pf.gps(gps)
 		rawgps_poses.append([gps.latitude, gps.longitude])
 
+print("ending")
+
 # Filter out any [0, 0] points
 newpf_poses = [x for x in newpf_poses if x[0] != 0 and x[1] != 0]
 rawgps_poses = [x for x in rawgps_poses if x[0] != 0 and x[1] != 0]
+
+print(str(len(newpf_poses)))
 
 # Draw the pf path with quivers
 for i in range(len(newpf_poses)):

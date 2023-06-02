@@ -106,7 +106,7 @@ public:
 							if (circle.radius <= noGoRange)
 							{
 								data.at(idx) = 100;
-							} else if (circle.radius <= 100 && val <= linear)
+							} else if (data.at(idx) <= 100 && val <= linear)
 							{
 								data.at(idx) = int(linear);
 							}
@@ -142,7 +142,7 @@ private:
 	nav_msgs::msg::MapMetaData map;
 	
 	float maxRange = 0.55;
-	float noGoPercent = 0.75;
+	float noGoPercent = 0.70;
 	int noGoRange = 0;
 	std::vector<Circle> circles;
 };

@@ -30,6 +30,7 @@ CONFIG_WAYPOINT_DELAY = "waypoint_delay"
 competition_waypoints = [
     # [(42.6682697222,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417)], 
     # [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028)],
+    [(42.6680859611, -83.2184456444)],
     [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)], # Designed to hit north first
     [(42.6679600583,-83.2184326556), (42.6680859611,-83.2184456444),(42.668222,-83.218472)], # Designed to hit south first
     [],
@@ -66,10 +67,10 @@ class AStarNode(Node):
         self.pathDebugImagePublisher = self.create_publisher(CompressedImage, "/autonav/debug/astar/image", 20)
         self.mapTimer = self.create_timer(0.1, self.createPath)
 
-        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.50)
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.00)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setBool(CONFIG_USE_ONLY_WAYPOINTS, False)
-        self.config.setFloat(CONFIG_WAYPOINT_DELAY, 5.0)
+        self.config.setFloat(CONFIG_WAYPOINT_DELAY, 10.0)
 
         self.setDeviceState(DeviceStateEnum.OPERATING)
 

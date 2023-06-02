@@ -42,13 +42,13 @@ class ImageTransformer(Node):
     def configure(self):
         self.config.setInt(LOWER_HUE, 0)
         self.config.setInt(LOWER_SATURATION, 0)
-        self.config.setInt(LOWER_VALUE, 40)
-        self.config.setInt(UPPER_HUE, 255)
-        self.config.setInt(UPPER_SATURATION, 140)
-        self.config.setInt(UPPER_VALUE, 210)
-        self.config.setInt(BLUR, 5)
-        self.config.setInt(BLUR_ITERATIONS, 2)
-        self.config.setInt(REGION_OF_DISINTEREST_OFFSET, 120)
+        self.config.setInt(LOWER_VALUE, 40) # 40
+        self.config.setInt(UPPER_HUE, 255) # 255
+        self.config.setInt(UPPER_SATURATION, 40) # 140
+        self.config.setInt(UPPER_VALUE, 210) #210
+        self.config.setInt(BLUR, 5) # 5
+        self.config.setInt(BLUR_ITERATIONS, 3) #3
+        self.config.setInt(REGION_OF_DISINTEREST_OFFSET, 130)
 
         self.cameraSubscriber = self.create_subscription(CompressedImage, "/autonav/camera/compressed", self.onImageReceived, 1)
         self.rawMapPublisher = self.create_publisher(OccupancyGrid, "/autonav/cfg_space/raw", 1)
