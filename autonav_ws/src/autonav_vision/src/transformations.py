@@ -42,10 +42,10 @@ class ImageTransformer(Node):
     def configure(self):
         self.config.setInt(LOWER_HUE, 0)
         self.config.setInt(LOWER_SATURATION, 0)
-        self.config.setInt(LOWER_VALUE, 35)
+        self.config.setInt(LOWER_VALUE, 40)
         self.config.setInt(UPPER_HUE, 255)
-        self.config.setInt(UPPER_SATURATION, 200)
-        self.config.setInt(UPPER_VALUE, 180)
+        self.config.setInt(UPPER_SATURATION, 140)
+        self.config.setInt(UPPER_VALUE, 210)
         self.config.setInt(BLUR, 5)
         self.config.setInt(BLUR_ITERATIONS, 2)
         self.config.setInt(REGION_OF_DISINTEREST_OFFSET, 120)

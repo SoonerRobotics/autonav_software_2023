@@ -51,13 +51,13 @@ class PathResolverNode(Node):
         self.motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         self.safetyLightsPublisher = self.create_publisher(SafetyLights, "/autonav/SafetyLights", 20)
         
-        self.config.setFloat(FORWARD_SPEED, 0.75)
-        self.config.setFloat(REVERSE_SPEED, -0.5)
+        self.config.setFloat(FORWARD_SPEED, 0.7)
+        self.config.setFloat(REVERSE_SPEED, -0.35)
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
         self.config.setFloat(RADIUS_START, 0.7)
-        self.config.setFloat(ANGULAR_AGGRESSINON, 2.2)
-        self.config.setFloat(MAX_ANGULAR_SPEED, 1.15)
+        self.config.setFloat(ANGULAR_AGGRESSINON, 1.0)
+        self.config.setFloat(MAX_ANGULAR_SPEED, 1.3)
         
         self.create_timer(0.05, self.onResolve)
         self.setDeviceState(DeviceStateEnum.READY)
@@ -78,10 +78,10 @@ class PathResolverNode(Node):
             self.motorPublisher.publish(inputPacket)
             
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING and updated.mobility == False:
-            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 150, "#00A36C"))
+            self.safetyLightsPublisher.publish(toSafetyLights(False, False, 2, 255, "#00A36C"))
             
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING and updated.mobility == True:
-            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 150, "#841617"))
+            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FFFFFF"))
 
     def onPositionReceived(self, msg):
         self.position = msg
@@ -116,11 +116,9 @@ class PathResolverNode(Node):
         if self.backCount == -1 and (lookahead is not None and ((lookahead[1] - cur_pos[1]) ** 2 + (lookahead[0] - cur_pos[0]) ** 2) > 0.1):
             angle_diff = math.atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0])
             error = self.getAngleDifference(angle_diff, self.position.theta) / math.pi
-            # self.log("Error: " + str(error))
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 8
             inputPacket.forward_velocity = forward_speed
-            error_sign = 1 if error > 0 else -1
-            inputPacket.angular_velocity = clamp(0.0 if abs(error) < 0.05 else (0.2 * error_sign) if abs(error) < (0.15 * error_sign) else (error * self.config.getFloat(ANGULAR_AGGRESSINON)), -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
+            inputPacket.angular_velocity = clamp(error * self.config.getFloat(ANGULAR_AGGRESSINON), -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
         else:
             if self.backCount == -1:
                 self.backCount = 5

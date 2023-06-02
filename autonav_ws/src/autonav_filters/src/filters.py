@@ -37,7 +37,7 @@ class FiltersNode(Node):
         self.onReset()
 
     def configure(self):
-        self.config.setInt(CONFIG_FILTER_TYPE, self.declare_parameter("default_filter", 0).get_parameter_value().integer_value)
+        self.config.setInt(CONFIG_FILTER_TYPE, self.declare_parameter("default_filter", 1).get_parameter_value().integer_value)
         self.config.setFloat(CONFIG_DEGREE_OFFSET, 107.0)
         self.config.setBool(CONFIG_SEED_HEADING, False)
 

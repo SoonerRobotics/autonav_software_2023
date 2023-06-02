@@ -1,5 +1,7 @@
 <launch>
-    <node pkg="scr_state" exec="statemanager" />
+    <node pkg="scr_state" exec="statemanager" >
+        <param name="mode" value="0" />
+    </node>
     <node pkg="scr_logging" exec="logging">
         <param name="log_to_console" value="true" />
     </node>
@@ -7,21 +9,22 @@
         <param name="preset" value="competition" />
     </node>
     <node pkg="autonav_display" exec="broadcast.py" />
-    <node pkg="autonav_serial" exec="imu.py" />
+    <!-- <node pkg="autonav_serial" exec="imu.py" /> -->
+    <node pkg="autonav_serial" exec="vectornav_node" />
     <node pkg="autonav_serial" exec="serial_node.py" />
     <node pkg="autonav_serial" exec="camera.py" />
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify" />
     <node pkg="autonav_filters" exec="filters.py">
         <param name="latitude_length" value="110944.21" />
-        <param name="longitude_length" value="91065.46" />
-        <param name="default_type" value="1" />
+        <param name="longitude_length" value="81978.2" />
+        <param name="default_filter" value="1" />
     </node>
     <node pkg="autonav_manual" exec="steam.py" />
     <node pkg="autonav_manual" exec="steamremote" />
     <node pkg="autonav_nav" exec="astar.py">
-        <param name="latitude_length" value="110944.2" />
-        <param name="longitude_length" value="91065.46" />
+        <param name="latitude_length" value="110944.21" />
+        <param name="longitude_length" value="81978.2" />
     </node>
     <node pkg="autonav_nav" exec="path_resolver.py" />
     <node pkg="autonav_playback" exec="playback.py" />
