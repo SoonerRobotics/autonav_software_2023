@@ -57,8 +57,8 @@ class PathResolverNode(Node):
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
         self.config.setFloat(RADIUS_START, 0.7)
-        self.config.setFloat(ANGULAR_AGGRESSINON, 1.4)
-        self.config.setFloat(MAX_ANGULAR_SPEED, 1.3)
+        self.config.setFloat(ANGULAR_AGGRESSINON, 2.0)
+        self.config.setFloat(MAX_ANGULAR_SPEED, 0.5)
         
         self.create_timer(0.05, self.onResolve)
         self.setDeviceState(DeviceStateEnum.READY)
