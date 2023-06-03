@@ -46,17 +46,18 @@ class PathResolverNode(Node):
     def configure(self):
         self.purePursuit = PurePursuit()
         self.backCount = -1
+        self.status = -1
         self.pathSubscriber = self.create_subscription(Path, "/autonav/path", self.onPathReceived, 20)
         self.positionSubscriber = self.create_subscription(Position, "/autonav/position", self.onPositionReceived, 20)
         self.motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         self.safetyLightsPublisher = self.create_publisher(SafetyLights, "/autonav/SafetyLights", 20)
         
-        self.config.setFloat(FORWARD_SPEED, 0.75)
+        self.config.setFloat(FORWARD_SPEED, 0.9)
         self.config.setFloat(REVERSE_SPEED, -0.35)
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
         self.config.setFloat(RADIUS_START, 0.7)
-        self.config.setFloat(ANGULAR_AGGRESSINON, 1.8)
+        self.config.setFloat(ANGULAR_AGGRESSINON, 1.6)
         self.config.setFloat(MAX_ANGULAR_SPEED, 1.3)
         
         self.create_timer(0.05, self.onResolve)
@@ -119,11 +120,16 @@ class PathResolverNode(Node):
             forward_speed = self.config.getFloat(FORWARD_SPEED) * (1 - abs(error)) ** 5
             inputPacket.forward_velocity = forward_speed
             inputPacket.angular_velocity = clamp(error * self.config.getFloat(ANGULAR_AGGRESSINON), -self.config.getFloat(MAX_ANGULAR_SPEED), self.config.getFloat(MAX_ANGULAR_SPEED))
+            
+            if self.status == 0:
+                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FFFFFF"))
+                self.status = 1
         else:
             if self.backCount == -1:
                 self.backCount = 5
             else:
                 self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FF0000"))
+                self.status = 0
                 self.backCount -= 1
 
             inputPacket.forward_velocity = self.config.getFloat(REVERSE_SPEED)

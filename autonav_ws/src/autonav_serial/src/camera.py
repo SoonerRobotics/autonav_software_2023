@@ -23,7 +23,7 @@ class CameraNode(Node):
         super().__init__("autonav_serial_camera")
 
     def configure(self):
-        self.config.setInt(REFRESH_RATE, 15)
+        self.config.setInt(REFRESH_RATE, 8)
         self.config.setInt(OUTPUT_WIDTH, 640)
         self.config.setInt(OUTPUT_HEIGHT, 480)
         self.config.setInt(CAMERA_INDEX, 0)

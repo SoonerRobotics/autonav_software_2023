@@ -27,12 +27,13 @@ CONFIG_WAYPOINT_DIRECTION = "direction"
 CONFIG_USE_ONLY_WAYPOINTS = "use_only_waypoints"
 CONFIG_WAYPOINT_DELAY = "waypoint_delay"
 
+STARTING_PT = (42.6681268, -83.218887)
+
 competition_waypoints = [
-    # [(42.6682697222,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417)], 
-    # [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028)],
-    [(42.6680859611, -83.2184456444)],
-    [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)], # Designed to hit north first
-    [(42.6679600583,-83.2184326556), (42.6680859611,-83.2184456444),(42.668222,-83.218472)], # Designed to hit south first
+    # [(42.6682697222 ,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417), STARTING_PT], # Start Facing North
+    [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028), STARTING_PT], # Start Facing South
+    # [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)], # Start Facing North
+    # [(42.6679600583,-83.2184326556), (42.6680859611,-83.2184456444),(42.668222,-83.218472)], # Start Facing South
     [],
 ]
 
@@ -67,7 +68,7 @@ class AStarNode(Node):
         self.pathDebugImagePublisher = self.create_publisher(CompressedImage, "/autonav/debug/astar/image", 20)
         self.mapTimer = self.create_timer(0.1, self.createPath)
 
-        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.00)
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.5)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setBool(CONFIG_USE_ONLY_WAYPOINTS, False)
         self.config.setFloat(CONFIG_WAYPOINT_DELAY, 10.0)
@@ -97,6 +98,11 @@ class AStarNode(Node):
         return simulation_waypoints[direction_index] if self.getSystemState().mode == SystemMode.SIMULATION else competition_waypoints[direction_index] if self.getSystemState().mode == SystemMode.COMPETITION else practice_waypoints[direction_index]
 
     def transition(self, old: SystemState, updated: SystemState):
+        selectedWaypoints = self.getWaypointsForDirection()
+        self.log(f"Selected Waypoints: ")
+        for wpt in selectedWaypoints:
+            self.log(f" - ({wpt[0]}, {wpt[1]})")
+
         if updated.state == SystemStateEnum.AUTONOMOUS and updated.mobility and len(self.waypoints) == 0:
             self.log(f"Waypoints will activate in {self.config.getFloat(CONFIG_WAYPOINT_DELAY)} seconds")
             self.waypointTime = time.time() + self.config.getFloat(CONFIG_WAYPOINT_DELAY)

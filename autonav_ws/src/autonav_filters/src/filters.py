@@ -69,6 +69,9 @@ class FiltersNode(Node):
     def transition(self, old: SystemState, updated: SystemState):
         if old.state != SystemStateEnum.AUTONOMOUS and updated.state == SystemStateEnum.AUTONOMOUS:
             self.onReset()
+
+        if old.mobility == False and updated.mobility == True:
+            self.onReset()
             
     def onGPSReceived(self, msg: GPSFeedback):
         if msg.gps_fix == 0 and msg.is_locked == False:
