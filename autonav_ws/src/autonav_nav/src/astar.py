@@ -250,7 +250,7 @@ class AStarNode(Node):
             pathingDebug.time_until_use_waypoints = time_remaining
             self.debugPublisher.publish(pathingDebug)
 
-        if time.time() > self.resetWhen and self.resetWhen != -1:
+        if time.time() > self.resetWhen and self.resetWhen != -1 and self.getSystemState().mobility:
             self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FFFFFF"))
             self.resetWhen = -1
 

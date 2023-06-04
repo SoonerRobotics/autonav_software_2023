@@ -70,10 +70,6 @@ class PathResolverNode(Node):
     def transition(self, old: SystemState, updated: SystemState):
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
             self.setDeviceState(DeviceStateEnum.OPERATING)
-            if updated.mobility:
-                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FFFFFF"))
-            else:
-                self.safetyLightsPublisher.publish(toSafetyLights(False, False, 2, 255, "#00A36C"))
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
             self.setDeviceState(DeviceStateEnum.READY)
@@ -104,7 +100,7 @@ class PathResolverNode(Node):
         self.purePursuit.set_points([(point.x, point.y) for point in self.points])
 
     def onResolve(self):
-        if self.position is None or self.getDeviceState() != DeviceStateEnum.OPERATING or self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
+        if self.position is None or self.getDeviceState() != DeviceStateEnum.OPERATING or self.getSystemState().state != SystemStateEnum.AUTONOMOUS or self.getSystemState().mobility == False:
             return
 
         cur_pos = (self.position.x, self.position.y)
