@@ -118,11 +118,6 @@ class AStarNode(Node):
         return simulation_waypoints[direction_index] if self.getSystemState().mode == SystemMode.SIMULATION else competition_waypoints[direction_index] if self.getSystemState().mode == SystemMode.COMPETITION else practice_waypoints[direction_index]
 
     def transition(self, old: SystemState, updated: SystemState):
-        selectedWaypoints = self.getWaypointsForDirection()
-        self.log(f"Selected Waypoints: ")
-        for wpt in selectedWaypoints:
-            self.log(f" - ({wpt[0]}, {wpt[1]})")
-
         if updated.state == SystemStateEnum.AUTONOMOUS and updated.mobility and len(self.waypoints) == 0:
             self.log(f"Waypoints will activate in {self.config.getFloat(CONFIG_WAYPOINT_DELAY)} seconds")
             self.waypointTime = time.time() + self.config.getFloat(CONFIG_WAYPOINT_DELAY)
