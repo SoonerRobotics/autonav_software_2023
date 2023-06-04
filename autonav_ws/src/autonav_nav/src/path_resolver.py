@@ -70,6 +70,10 @@ class PathResolverNode(Node):
     def transition(self, old: SystemState, updated: SystemState):
         if updated.state == SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.READY:
             self.setDeviceState(DeviceStateEnum.OPERATING)
+            if updated.mobility:
+                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FFFFFF"))
+            else:
+                self.safetyLightsPublisher.publish(toSafetyLights(False, False, 2, 255, "#00A36C"))
             
         if updated.state != SystemStateEnum.AUTONOMOUS and self.getDeviceState() == DeviceStateEnum.OPERATING:
             self.setDeviceState(DeviceStateEnum.READY)

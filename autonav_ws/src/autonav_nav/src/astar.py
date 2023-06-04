@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from autonav_msgs.msg import Position, IMUData, PathingDebug
+from autonav_msgs.msg import Position, IMUData, PathingDebug, SafetyLights
 from scr_msgs.msg import SystemState
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum, SystemMode
@@ -50,6 +50,23 @@ simulation_waypoints = [
     [(35.19496918, -97.43855286), (35.19498780, -97.43859524), (35.19495163, -97.43871339), (35.19495182, -97.43877829), (35.19493406, -97.43879432), (35.19493812, -97.43881810), (35.19495368, -97.43882411), (35.19493357, -97.43902773), (35.19485847, -97.43902381)], 
 ]
 
+def hexToRgb(color: str):
+    if color[0] == "#":
+        color = color[1:]
+    return [int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16)]
+
+def toSafetyLights(autonomous: bool, eco: bool, mode: int, brightness: int, color: str) -> SafetyLights:
+    pkg = SafetyLights()
+    pkg.mode = mode
+    pkg.autonomous = autonomous
+    pkg.eco = eco
+    pkg.brightness = brightness
+    colorr = hexToRgb(color)
+    pkg.red = colorr[0]
+    pkg.green = colorr[1]
+    pkg.blue = colorr[2]
+    return pkg
+
 
 class AStarNode(Node):
     def __init__(self):
@@ -65,8 +82,11 @@ class AStarNode(Node):
         self.imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.onImuReceived, 20)
         self.debugPublisher = self.create_publisher(PathingDebug, "/autonav/debug/astar", 20)
         self.pathPublisher = self.create_publisher(Path, "/autonav/path", 20)
+        self.safetyLightsPublisher = self.create_publisher(SafetyLights, "/autonav/SafetyLights", 20)
         self.pathDebugImagePublisher = self.create_publisher(CompressedImage, "/autonav/debug/astar/image", 20)
         self.mapTimer = self.create_timer(0.1, self.createPath)
+
+        self.resetWhen = -1.0
 
         self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.5)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
@@ -235,6 +255,10 @@ class AStarNode(Node):
             pathingDebug.time_until_use_waypoints = time_remaining
             self.debugPublisher.publish(pathingDebug)
 
+        if time.time() > self.resetWhen and self.resetWhen != -1:
+            self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FFFFFF"))
+            self.resetWhen = -1
+
         if len(self.waypoints) > 0:
             next_waypoint = self.waypoints[0]
             north_to_gps = (next_waypoint[0] - self.position.latitude) * self.latitudeLength
@@ -243,6 +267,8 @@ class AStarNode(Node):
 
             if north_to_gps ** 2 + west_to_gps ** 2 <= self.config.getFloat(CONFIG_WAYPOINT_POP_DISTANCE):
                 self.waypoints.pop(0)
+                self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#00FF00"))
+                self.resetWhen = time.time() + 1.5
 
             pathingDebug = PathingDebug()
             pathingDebug.desired_heading = heading_to_gps
