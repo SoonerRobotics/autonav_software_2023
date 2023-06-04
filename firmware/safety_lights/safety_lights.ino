@@ -94,20 +94,21 @@ uint32_t colorSelector(int num){ //0-15 to color
 }
 
 void modeSelector(){ // RGB mode selector
-  switch(color_mode){
-    case 0: //Solid
-      colorSolid();
-      break;
-    case 1: //Flash
-      colorFlash();
-      break;
-    case 2: //Fade
-      colorFade();
-      break;
-    default:
-      colorSolid();
-      break;
-   }
+  // switch(color_mode){
+  //   case 0: //Solid
+  //     colorSolid();
+  //     break;
+  //   case 1: //Flash
+  //     colorFlash();
+  //     break;
+  //   case 2: //Fade
+  //     colorFade();
+  //     break;
+  //   default:
+  //     colorSolid();
+  //     break;
+  //  }
+  colorWithWhiteRules();
 }
 
 CANMessage frame;
@@ -221,20 +222,12 @@ void loop() {
 
 void whiteFlash() {
   if (!is_autonomous || is_estopped || is_mobility_stopped) {
-
-    if (!is_eco) {
-      digitalWrite(WHITE_PIN, LOW);
-    } else {
-      analogWrite(WHITE_PIN, 128);
-    }
-
+    
+    digitalWrite(WHITE_PIN, LOW);
     return;
   }
-  if (!is_eco) {
-    digitalWrite(WHITE_PIN, (millis() / BLINK_PERIOD_MS) % 2);
-  } else {
-    analogWrite(WHITE_PIN,((millis() / BLINK_PERIOD_MS) % 2) * 128);
-  }
+
+  digitalWrite(WHITE_PIN, (millis() / BLINK_PERIOD_MS) % 2);
 }
 
 void colorSolid() { // LED strip solid effect
@@ -245,6 +238,25 @@ void colorSolid() { // LED strip solid effect
 
 void colorFlash(){ // LED strip flashing effect
   strip.setBrightness(current_brightness);
+  if ((millis() / BLINK_PERIOD_MS) % 2 == 0){
+    strip.fill(current_color);
+    strip.show();
+  }
+  else{
+    colorClear();
+  }
+}
+
+void colorWithWhiteRules() {
+
+  if (!is_autonomous || is_estopped || is_mobility_stopped) {
+    strip.fill(current_color);
+    strip.show();
+    return;
+  }
+
+  strip.setBrightness(current_brightness);
+
   if ((millis() / BLINK_PERIOD_MS) % 2 == 0){
     strip.fill(current_color);
     strip.show();
