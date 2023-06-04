@@ -10,6 +10,7 @@ import shutil
 import rclpy
 import cv2
 import os
+from cv_bridge import CvBridge
 
 
 CONFIG_RECORD_IMU = "record_imu"
@@ -37,6 +38,8 @@ class PlaybackNode(Node):
         self.thresholdedIndex = 0
         self.expandifiedIndex = 0
         self.cameraIndex = 0
+        self.bridge = CvBridge()
+        self.framerate = 8
 
     def configure(self):
         self.config.setBool(CONFIG_RECORD_IMU, True)
@@ -48,6 +51,9 @@ class PlaybackNode(Node):
         self.config.setBool(CONFIG_RECORD_AUTONOMOUS, True)
         self.config.setBool(CONFIG_RECORD_INPUT, True)
         self.config.setBool(CONFIG_RECORD_DEBUGFEEDBACK, True)
+        self.config.setBool(CONFIG_RECORD_CAMERA, True)
+        self.config.setBool(CONFIG_RECORD_EXPANDIFIED, True)
+        self.config.setBool(CONFIG_RECORD_THRESHOLDED, True)
         
         self.imuSubscriber = self.create_subscription(IMUData, "/autonav/imu", self.imuCallback, 20)
         self.gpsSubscriber = self.create_subscription(GPSFeedback, "/autonav/gps", self.gpsCallback, 20)
