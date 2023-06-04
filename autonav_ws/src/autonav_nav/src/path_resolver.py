@@ -11,8 +11,8 @@ import math
 import rclpy
 
 
-IS_SOUTH = True
-BACK_SPEED = 0.35
+IS_SOUTH = False
+BACK_SPEED = 0.40
 
 
 FORWARD_SPEED = "forward_speed"
@@ -56,12 +56,12 @@ class PathResolverNode(Node):
         self.motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         self.safetyLightsPublisher = self.create_publisher(SafetyLights, "/autonav/SafetyLights", 20)
         
-        self.config.setFloat(FORWARD_SPEED, 1.25)
+        self.config.setFloat(FORWARD_SPEED, 1.30)
         self.config.setFloat(REVERSE_SPEED, -0.4)
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
         self.config.setFloat(RADIUS_START, 0.7)
-        self.config.setFloat(ANGULAR_AGGRESSINON, 2.0)
+        self.config.setFloat(ANGULAR_AGGRESSINON, 2.2)
         self.config.setFloat(MAX_ANGULAR_SPEED, 0.5)
         
         self.create_timer(0.05, self.onResolve)
