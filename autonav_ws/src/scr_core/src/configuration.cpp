@@ -15,11 +15,22 @@ namespace SCR
 		loadLocalPresets();
 	}
 
-	Configuration::Configuration(int64_t id, rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber, rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher)
+	Configuration::Configuration(
+		std::string id, 
+		rclcpp::Subscription<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configSubscriber, 
+		rclcpp::Publisher<scr_msgs::msg::ConfigurationInstruction>::SharedPtr configPublisher, 
+		rclcpp::Subscription<std_msgs::msg::String>::SharedPtr loadSubscription,
+		rclcpp::Publisher<std_msgs::msg::String>::SharedPtr loadPublisher
+	)
 	{
 		this->id = id;
 		this->configSubscriber = configSubscriber;
 		this->configPublisher = configPublisher;
+		this->loadSubscription = loadSubscription;
+		this->loadPublisher = loadPublisher;
+		this->preset = "";
+		this->presets = {};
+
 		loadLocalPresets();
 	}
 
@@ -32,7 +43,7 @@ namespace SCR
 		return preset != "";
 	}
 
-	bool Configuration::hasDevice(int64_t device)
+	bool Configuration::hasDevice(std::string device)
 	{
 		return cache.find(device) != cache.end();
 	}
@@ -98,7 +109,7 @@ namespace SCR
 		{
 			for (auto address : device.second)
 			{
-				file << device.first << "," << (int)address.first << ",";
+				file << device.first << "," << address.first << ",";
 				std::string byteStr = "";
 				for (auto byte : address.second)
 				{
@@ -120,68 +131,14 @@ namespace SCR
 
 	void Configuration::load(const std::string& preset)
 	{
-		std::string path = "/home/" + std::string(getenv("USER")) + "/.scr/configuration/" + preset + ".csv";
-		if (!std::filesystem::exists(path))
-		{
-			if (preset != "default")
-			{
-				RCLCPP_INFO(rclcpp::get_logger("scr_core"), "Configuration file not found. Loading default configuration.");
-				load("default");
-				return;
-			}
-			else
-			{
-				RCLCPP_INFO(rclcpp::get_logger("scr_core"), "No configuration file found. Creating default configuration.");
-				this->preset = "default";
-				save("default");
-				return;
-			}	
-		}
+		std_msgs::msg::String msg;
+		msg.data = preset;
+		loadPublisher->publish(msg);
+	}
 
-		if (loading)
-		{
-			return;
-		}
-
-		loading = true;
-
-		RCUTILS_LOG_INFO("Loading configuration file: %s", path.c_str());
-		std::ifstream file(path);
-		std::string line;
-
-		while (getline(file, line))
-		{
-			std::vector<std::string> tokens;
-			std::string token;
-			std::istringstream tokenStream(line);
-			while (std::getline(tokenStream, token, ','))
-			{
-				tokens.push_back(token);
-			}
-
-			int64_t device = std::stoll(tokens[0]);
-			uint8_t address = std::stoi(tokens[1]);
-
-			std::vector<uint8_t> bytes;
-			std::istringstream byteStream(tokens[2]);
-			while (std::getline(byteStream, token, ':'))
-			{
-				bytes.push_back(std::stoi(token));
-			}
-
-			scr_msgs::msg::ConfigurationInstruction instruction;
-			instruction.device = device;
-			instruction.address = address;
-			instruction.opcode = Opcode::SET;
-			instruction.data = bytes;
-			configPublisher->publish(instruction);
-		}
-
-		this->preset = preset;
-		file.close();
-
-		loading = false;
-		RCUTILS_LOG_INFO("Loaded configuration file: %s", path.c_str());
+	void Configuration::onPresetChanged(std_msgs::msg::String::SharedPtr msg)
+	{
+		this->preset = msg->data;
 	}
 
 	std::vector<std::string> Configuration::getPresets()
@@ -190,20 +147,25 @@ namespace SCR
 	}
 
 	template <>
-	int Configuration::get(uint8_t address)
+	int Configuration::get(std::string address)
 	{
 		return *(int*)cache[id][address].data();
 	}
 
 	template <>
-	int Configuration::get(int64_t device, uint8_t address)
+	int Configuration::get(std::string device, std::string address)
 	{
 		auto bytes = cache[device][address];
 		return static_cast<int>(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
 	}
 
+	bool Configuration::has(std::string device, std::string address)
+	{
+		return cache[device].find(address) != cache[device].end();
+	}
+
 	template <>
-	float Configuration::get(uint8_t address)
+	float Configuration::get(std::string address)
 	{
 		unsigned char byte_array[] = {cache[id][address][0], cache[id][address][1], cache[id][address][2], cache[id][address][3]};
 		float value;
@@ -216,7 +178,7 @@ namespace SCR
 	}
 
 	template <>
-	float Configuration::get(int64_t device, uint8_t address)
+	float Configuration::get(std::string device, std::string address)
 	{
 		auto bytes = cache[device][address];
 		unsigned char byte_array[] = {bytes[0], bytes[1], bytes[2], bytes[3]};
@@ -230,7 +192,7 @@ namespace SCR
 	}
 
 	template <>
-	void Configuration::set(uint8_t address, int value)
+	void Configuration::set(std::string address, int value)
 	{
 		std::vector<uint8_t> bytes;
 		bytes.push_back((value >> 24) & 0xFF);
@@ -247,7 +209,7 @@ namespace SCR
 	}
 
 	template <>
-	void Configuration::set(int64_t device, uint8_t address, int value)
+	void Configuration::set(std::string device, std::string address, int value)
 	{
 		std::vector<uint8_t> bytes;
 		bytes.push_back((value >> 24) & 0xFF);
@@ -264,7 +226,7 @@ namespace SCR
 	}
 
 	template<>
-	void Configuration::set(uint8_t address, float value)
+	void Configuration::set(std::string address, float value)
 	{
 		unsigned const char *p = reinterpret_cast<unsigned const char *>(&value);
 		scr_msgs::msg::ConfigurationInstruction instruction;
@@ -276,7 +238,7 @@ namespace SCR
 	}
 
 	template<>
-	void Configuration::set(int64_t device, uint8_t address, float value)
+	void Configuration::set(std::string device, std::string address, float value)
 	{
 		unsigned const char *p = reinterpret_cast<unsigned const char *>(&value);
 		scr_msgs::msg::ConfigurationInstruction instruction;
@@ -288,19 +250,19 @@ namespace SCR
 	}
 
 	template<>
-	bool Configuration::get(uint8_t address)
+	bool Configuration::get(std::string address)
 	{
 		return cache[id][address][0] == 1;
 	}
 
 	template<>
-	bool Configuration::get(int64_t device, uint8_t address)
+	bool Configuration::get(std::string device, std::string address)
 	{
 		return cache[device][address][0] == 1;
 	}
 
 	template<>
-	void Configuration::set(uint8_t address, bool value)
+	void Configuration::set(std::string address, bool value)
 	{
 		scr_msgs::msg::ConfigurationInstruction instruction;
 		instruction.device = id;
@@ -311,13 +273,35 @@ namespace SCR
 	}
 
 	template<>
-	void Configuration::set(int64_t device, uint8_t address, bool value)
+	void Configuration::set(std::string device, std::string address, bool value)
 	{
 		scr_msgs::msg::ConfigurationInstruction instruction;
 		instruction.device = device;
 		instruction.opcode = Opcode::SET;
 		instruction.address = address;
 		instruction.data = std::vector<uint8_t>{(uint8_t)value};
+		configPublisher->publish(instruction);
+	}
+
+	template<>
+	void Configuration::set(std::string address, std::vector<uint8_t> bytes)
+	{
+		scr_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = id;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = bytes;
+		configPublisher->publish(instruction);
+	}
+
+	template<>
+	void Configuration::set(std::string device, std::string address, std::vector<uint8_t> bytes)
+	{
+		scr_msgs::msg::ConfigurationInstruction instruction;
+		instruction.device = device;
+		instruction.opcode = Opcode::SET;
+		instruction.address = address;
+		instruction.data = bytes;
 		configPublisher->publish(instruction);
 	}
 
@@ -328,7 +312,7 @@ namespace SCR
 		// For each device on the network, send a GET_ALL request
 	}
 
-	std::map<int64_t, std::map<uint8_t, std::vector<uint8_t>>> Configuration::getCache()
+	std::map<std::string, std::map<std::string, std::vector<uint8_t>>> Configuration::getCache()
 	{
 		return cache;
 	}
@@ -363,7 +347,7 @@ namespace SCR
 			// if cache[instruction->device] doesn't exist, it will be created
 			if (cache.find(instruction->device) == cache.end())
 			{
-				cache[instruction->device] = std::map<uint8_t, std::vector<uint8_t>>();
+				cache[instruction->device] = std::map<std::string, std::vector<uint8_t>>();
 			}
 			cache[instruction->device][instruction->address] = instruction->data;
 		}

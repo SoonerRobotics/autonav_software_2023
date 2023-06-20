@@ -10,9 +10,7 @@ from autonav_msgs.msg import GPSFeedback
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
 
-IMU_READ_RATE = 0
-IMU_NOTFOUND_RETRY = 1
-IMU_BADCONNECT_RETRY = 2
+IMU_READ_RATE = "imu_read_rate"
 
 
 class IMUNode(Node):
@@ -23,13 +21,12 @@ class IMUNode(Node):
         self.vectorNavSensor = VnSensor()
 
         self.config.setFloat(IMU_READ_RATE, 0.1)
-        self.config.setFloat(IMU_NOTFOUND_RETRY, 5.0)
-        self.config.setFloat(IMU_BADCONNECT_RETRY, 5.0)
 
         self.imuPublisher = self.create_publisher(IMUData, "/autonav/imu", 20)
         self.gpsPublisher = self.create_publisher(GPSFeedback, "/autonav/gps", 20)
 
         self.imuThread = threading.Thread(target=self.imuWorker)
+        self.imuThread.daemon = True
         self.imuThread.start()
 
     def transition(self, old, updated):
@@ -40,18 +37,18 @@ class IMUNode(Node):
             if (not self.vectorNavSensor.is_connected):
                 try:
                     if not os.path.exists("/dev/autonav-imu-200"):
-                        time.sleep(self.config.getFloat(IMU_NOTFOUND_RETRY))
+                        time.sleep(3.0)
                         continue
 
                     self.vectorNavSensor.connect("/dev/autonav-imu-200", 115200)
                     self.setDeviceState(DeviceStateEnum.OPERATING)
                 except:
                     self.setDeviceState(DeviceStateEnum.STANDBY)
-                    time.sleep(self.config.getFloat(IMU_NOTFOUND_RETRY))
+                    time.sleep(3.0)
                     continue
 
             if (not self.vectorNavSensor.is_connected):
-                time.sleep(self.config.getFloat(IMU_BADCONNECT_RETRY))
+                time.sleep(3.0)
                 self.setDeviceState(DeviceStateEnum.STANDBY)
                 continue
 
@@ -82,7 +79,6 @@ class IMUNode(Node):
             gps.gps_fix = sensor_register.gps_fix
             gps.satellites = sensor_register.num_sats
             self.gpsPublisher.publish(gps)
-            self.log(f"{self.getClockMs()},{imu.accel_x},{imu.accel_y},{imu.accel_z},{imu.yaw},{imu.pitch},{imu.roll},{imu.angular_x},{imu.angular_y},{imu.angular_z},{gps.latitude},{gps.longitude},{gps.altitude},{gps.gps_fix},{gps.satellites}")
             time.sleep(self.config.getFloat(IMU_READ_RATE))
 
 

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCR Weeb Wagon</title>
+    <link rel="stylesheet" href="styles/bootstrap.css">
+    <link rel="stylesheet" href="styles/reset.css">
+    <link rel="stylesheet" href="styles/index.css">
+
+    <link rel="icon" href="assets/scr_icon.png" type="image/png" sizes="32x32">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <img src="assets/SCR_Gear_23_Wide_White_on_Transparent.png" width="90" height="45" class="d-inline-block align-top logo" alt="">
+            <ul class="nav nav-underline">
+                <li class="nav-item">
+                    <a class="nav-link active" data-page-id="dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page-id="vision">Vision</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page-id="logging">Logging</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page-id="configuration">Configuration</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page-id="conbus">Conbus</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page-id="preferences">Preferences</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page-id="debug">Debug</a>
+                </li>
+            </ul>
+            <a class="navbar-brand test">
+                <h4>Weeb Wagon</h4>
+            </a>
+        </div>
+    </nav>
+
+    <main style="display: none;" id="main">
+        <div class="page" id="dashboard" data-type="columns">
+            <div class="col">
+                <div class="divider">
+                    <h3>General</h3>
+                </div>
+                <div class="section">
+                    <h5>State: <span id="var_system_state"></span></h5>
+                    <h5>Mode: <span id="var_system_mode"></span></h5>
+                    <h5>Mobility: <span id="var_system_mobility"></span></h5>
+                    <h5>ESTOP: <span id="var_system_estop"></span></h5>
+                </div>
+
+                <div class="divider">
+                    <h3>Motors</h3>
+                </div>
+                <div class="section">
+                    <h5>Forward/Angular Velocity: <span id="var_motors_velocity"></span></h5>
+                    <h5>Delta X/Y/Theta: <span id="var_motors_feedback"></span></h5>
+                </div>
+
+                <div class="divider">
+                    <h3>Position</h3>
+                </div>
+                <div class="section">
+                    <h5>Local: <span id="var_position_origin"></span></h5>
+                    <h5>Global: <span id="var_position_global"></span></h5>
+                </div>
+
+                <div class="divider">
+                    <h3>GPS</h3>
+                </div>
+                <div class="section">
+                    <h5>Latitude/Longitude: <span id="var_gps_position"></span></h5>
+                    <h5>Current Fix: <span id="var_gps_fix"></span></h5>
+                    <h5>Is Fixed: <span id="var_gps_fixed"></span></h5>
+                    <h5>Satellites: <span id="var_gps_satellites"></span></h5>
+                </div>
+
+                <div class="divider">
+                    <h3>IMU</h3>
+                </div>
+                <div class="section">
+                    <h5>Angular Velocity: <span id="var_imu_angular"></span></h5>
+                    <h5>Acceleration <span id="var_imu_acceleration"></span></h5>
+                    <h5>Yaw/Pitch/Roll: <span id="var_imu_orientation"></span></h5>
+                </div>
+
+                <div class="divider">
+                    <h3>Path Planning</h3>
+                </div>
+                <div class="section">
+                    <h5>Waypoint Delay: <span id="var_astar_time"></span></h5>
+                    <h5>Desired Heading: <span id="var_astar_heading"></span></h5>
+                    <h5>Target Waypoint: <span id="var_astar_waypoint"></span></h5>
+                    <h5>Distance to Waypoint: <span id="var_astar_distance"></span></h5>
+                    <h5>Waypoints: <span id="var_astar_waypoints"></span></h5>
+                </div>
+            </div>
+            <div class="col">
+                <div class="divider">
+                    <h3>Device States</h3>
+                </div>
+                <div class="section">
+                    <div id="element_device_states">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="vision">
+            <div class="divider">
+                <h3>Camera / Filtered</h3>
+            </div>
+            <div class="section" id="images">
+                <img width="640" height="480" id="target_raw_camera" data-type="regular">
+                <img width="640" height="480" id="target_filtered_camera" data-type="regular">
+                <img width="800" height="800" id="target_astar_path" data-type="bigboy">
+            </div>
+        </div>
+
+        <div class="page" id="configuration">
+        </div>
+
+        <div class="page" id="conbus">
+        </div>
+
+        <div class="page" id="preferences">
+            <div class="divider">
+                <h3>General</h3>
+            </div>
+            <div class="dropdown" data-target="theme">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdown_theme"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    Theme
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdown_theme">
+                    <li><a class="dropdown-item" data-value="light">Light</a></li>
+                    <li><a class="dropdown-item" data-value="dark">Dark</a></li>
+                </ul>
+            </div>
+
+            <div class="dropdown" data-target="gpsformat">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdown_gpsformat"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    GPS Format
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdown_gpsformat">
+                    <li><a class="dropdown-item" data-value="DMS">Degrees Minutes Seconds</a></li>
+                    <li><a class="dropdown-item" data-value="DMM">Decimal Minutes</a></li>
+                    <li><a class="dropdown-item" data-value="DD">Decimal Degrees</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="page" id="logging">
+            <button class="btn btn-primary" type="button" id="clear_log">
+                Clear
+            </button>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Timestamp</th>
+                        <th scope="col">Node</th>
+                        <th scope="col">Message</th>
+                    </tr>
+                </thead>
+                <tbody id="log_body">
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="page" id="performance">
+            <div class="divider">
+                <h3>Inflation</h3>
+            </div>
+            <div class="section gap flex-column">
+                <h5>Latest: <span id="var_inflation_time">0.0</span></h5>
+                <h5>Average: <span id="var_inflation_time">0.0</span></h5>
+                <h5>Max: <span id="var_inflation_time">0.0</span></h5>
+                <canvas id="inflation_performance_canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="page" id="debug">
+            <div class="divider">
+                <h3>System</h3>
+            </div>
+            <div class="section gap flex-column">
+                <div class="dropdown" data-target="system_state">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdown_system_state"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        System State
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdown_system_state">
+                        <li><a class="dropdown-item" data-value="0">Disabled</a></li>
+                        <li><a class="dropdown-item" data-value="1">Autonomous</a></li>
+                        <li><a class="dropdown-item" data-value="2">Manual</a></li>
+                        <li><a class="dropdown-item" data-value="3">Shutdown</a></li>
+                    </ul>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="" id="checkbox_system_mobility">
+                    <label class="form-check-label" for="checkbox_system_estop">
+                        Mobility
+                    </label>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+
+    </footer>
+
+    <div class="connecting">
+        <div class="connecting-inner">
+            <div class="connecting-text">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h3 id="connecting-state">Waiting for the Weeb Wagon</h3>
+            </div>
+    
+            <!-- Input box for IP and Port -->
+            <div class="input-group mb-3 connecting-input">
+                <div class="input-group-prepend">
+                    <input id="input_port" value="8023" type="text" class="form-control" aria-label="Port" placeholder="8023">
+                </div>
+                <input id="input_host" value="127.0.0.1" type="text" class="form-control" aria-label="Address" placeholder="127.0.0.1">
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/eventemitter2.min.js"></script>
+    <script src="vendor/roslib.min.js"></script>
+    <script src="vendor/bootstrap.js"></script>
+    <script src="vendor/jquery.js"></script>
+    <script src="scripts/tabs.js"></script>
+    <script src="scripts/globals.js"></script>
+    <script src="scripts/utilities.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+
+</html>

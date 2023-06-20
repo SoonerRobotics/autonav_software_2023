@@ -26,6 +26,8 @@ set(msg_files
   "msg/Obstacles.msg"
   "msg/MotorControllerDebug.msg"
   "msg/SafetyLights.msg"
+  "msg/Conbus.msg"
+  "msg/PathingDebug.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

@@ -11,26 +11,26 @@ GET_ALL = 4
 
 
 class Configuration:
-    def __init__(self, id, node: Node):
-        self.id = id
+    def __init__(self, id: str, node: Node):
+        self.id = id.replace("/", "")
         self.node = node
-        self.subscriber = node.create_subscription(ConfigurationInstruction, "/scr/configuration", self.onConfigurationInstruction, 20)
-        self.publisher = node.create_publisher(ConfigurationInstruction, "/scr/configuration", 20)
+        self.subscriber = node.create_subscription(ConfigurationInstruction, "/scr/configuration", self.onConfigurationInstruction, 100)
+        self.publisher = node.create_publisher(ConfigurationInstruction, "/scr/configuration", 100)
 
         # a map of key to map of key to byte array
         self.cache = {}
         self.cache[self.id] = {}
 
-    def getInt(self, address):
+    def getInt(self, address: str) -> int:
         return self.getIntFrom(self.id, address)
 
-    def getIntFrom(self, device, address):
+    def getIntFrom(self, device: str, address: str) -> int:
         return int.from_bytes(self.cache[device][address], byteorder='big', signed=True)
 
-    def setInt(self, address, value: int):
+    def setInt(self, address: str, value: int) -> None:
         self.setIntTo(self.id, address, value)
 
-    def setIntTo(self, device, address, value: int):
+    def setIntTo(self, device: str, address: str, value: int) -> None:
         if device not in self.cache:
             self.cache[device] = {}
         self.cache[device][address] = value.to_bytes(4, byteorder='big', signed=True)
@@ -41,16 +41,16 @@ class Configuration:
         instruction.data = self.cache[device][address]
         self.publisher.publish(instruction)
 
-    def getFloat(self, address):
+    def getFloat(self, address: str) -> float:
         return self.getFloatFrom(self.id, address)
 
-    def getFloatFrom(self, device, address):
+    def getFloatFrom(self, device: str, address: str) -> float:
         return struct.unpack('f', self.cache[device][address])[0]
 
-    def setFloat(self, address, value: float):
+    def setFloat(self, address: str, value: float) -> None:
         self.setFloatTo(self.id, address, value)
 
-    def setFloatTo(self, device, address, value: float):
+    def setFloatTo(self, device: str, address: str, value: float) -> None:
         if device not in self.cache:
             self.cache[device] = {}
         self.cache[device][address] = bytearray(struct.pack('f', value))
@@ -61,16 +61,16 @@ class Configuration:
         instruction.data = self.cache[device][address]
         self.publisher.publish(instruction)
 
-    def getBool(self, address):
+    def getBool(self, address: str) -> bool:
         return self.getBoolFrom(self.id, address)
 
-    def getBoolFrom(self, device, address):
+    def getBoolFrom(self, device: str, address: str) -> bool:
         return bool.from_bytes(self.cache[device][address], byteorder='big')
 
-    def setBool(self, address, value: bool):
+    def setBool(self, address: str, value: bool) -> None:
         self.setBoolTo(self.id, address, value)
 
-    def setBoolTo(self, device, address, value: bool):
+    def setBoolTo(self, device: str, address: str, value: bool) -> None:
         if device not in self.cache:
             self.cache[device] = {}
         self.cache[device][address] = bytes([value])

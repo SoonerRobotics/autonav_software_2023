@@ -6,7 +6,7 @@ import threading
 from steamcontroller import SteamController
 from steamcontroller import SteamControllerInput
 from enum import IntEnum
-from autonav_msgs.msg import SteamInput
+from autonav_msgs.msg import SteamInput, SafetyLights
 from scr_core.node import Node
 from scr_core.state import DeviceStateEnum, SystemStateEnum
 
@@ -31,6 +31,25 @@ class SteamControllerButton(IntEnum):
     RT =        0b00000000000000000000000100000000
 
 
+def hexToRgb(color: str):
+    if color[0] == "#":
+        color = color[1:]
+    return [int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16)]
+
+
+def toSafetyLights(autonomous: bool, eco: bool, mode: int, brightness: int, color: str) -> SafetyLights:
+    pkg = SafetyLights()
+    pkg.mode = mode
+    pkg.autonomous = autonomous
+    pkg.eco = eco
+    pkg.brightness = brightness
+    colorr = hexToRgb(color)
+    pkg.red = colorr[0]
+    pkg.green = colorr[1]
+    pkg.blue = colorr[2]
+    return pkg
+
+
 class SteamTranslationNode(Node):
     def __init__(self):
         super().__init__("autonav_manual_steamtranslator")
@@ -44,6 +63,7 @@ class SteamTranslationNode(Node):
         self.steamThread.daemon = True
         self.steamThread.start()
         self.joyPublisher = self.create_publisher(SteamInput, "/autonav/joy/steam", 20)
+        self.safetyLightsPublisher = self.create_publisher(SafetyLights, "/autonav/SafetyLights", 20)
         
     def transition(self, old, new):
         pass
@@ -64,17 +84,19 @@ class SteamTranslationNode(Node):
             self.startSteamController()
     
     def onButtonReleased(self, button: SteamControllerButton, msTime: float):
-        if button == SteamControllerButton.B and msTime > 1500:
+        if button == SteamControllerButton.B:
             self.setSystemState(SystemStateEnum.SHUTDOWN)
             
-        if button == SteamControllerButton.START and msTime > 1500 and self.getSystemState().state != SystemStateEnum.MANUAL:
+        if button == SteamControllerButton.START and self.getSystemState().state != SystemStateEnum.MANUAL:
             self.setSystemState(SystemStateEnum.MANUAL)
+            self.safetyLightsPublisher.publish(toSafetyLights(False, False, 2, 100, "#FF6F00"))
             
-        if button == SteamControllerButton.STEAM and msTime > 1500 and self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
+        if button == SteamControllerButton.STEAM and self.getSystemState().state != SystemStateEnum.AUTONOMOUS:
             self.setSystemState(SystemStateEnum.AUTONOMOUS)
             
-        if button == SteamControllerButton.BACK and msTime > 1500 and self.getSystemState().state != SystemStateEnum.DISABLED:
+        if button == SteamControllerButton.BACK and self.getSystemState().state != SystemStateEnum.DISABLED:
             self.setSystemState(SystemStateEnum.DISABLED)
+            self.safetyLightsPublisher.publish(toSafetyLights(False, False, 2, 100, "#A020F0"))
 
     def onSteamControllerInput(self, _, sci: SteamControllerInput):
         if self.getDeviceState() != DeviceStateEnum.OPERATING:
@@ -87,10 +109,10 @@ class SteamTranslationNode(Node):
         for button in SteamControllerButton:
             msg.buttons.append(bool(sci.buttons & button))
             if self.buttons[button] == 0 and bool(sci.buttons & button):
-                self.buttons[button] = self.getClockNs()
+                self.buttons[button] = self.getClockMs()
             if self.buttons[button] > 0 and bool(sci.buttons & button) == False:
                 if self.buttons[button] != 0:
-                    self.onButtonReleased(button, (self.getClockNs() - self.buttons[button]) / 1000000)
+                    self.onButtonReleased(button, self.getClockMs() - self.buttons[button])
                 self.buttons[button] = 0
         msg.ltrig = float(sci.ltrig) / 255
         msg.rtrig = float(sci.rtrig) / 255

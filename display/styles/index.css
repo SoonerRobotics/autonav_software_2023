@@ -1,0 +1,159 @@
+body {
+    position: relative;
+}
+
+.page {
+    padding: 0 15px;
+}
+
+.page[data-type="columns"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page[data-type="columns"] > .col {
+    flex: 1;
+}
+
+.divider {
+    border-bottom: 1px solid #e5e5e5;
+    margin: 20px 0;
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+h5 > span {
+    font-size: 17px;
+    font-weight: 400;
+    color: #999;
+}
+
+#images {
+    display: flex;
+    gap: 1rem;
+}
+
+.connecting {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, .5);
+    backdrop-filter: blur(7px);
+
+    top: 0;
+    left: 0;
+    z-index: 999;
+
+    display: grid;
+    place-items: center;
+}
+
+.connecting-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.connecting > h3 {
+    margin: 0;
+}
+
+.gap {
+    gap: 1rem;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+span[data-state="0"] {
+    color: --var(-text-color);
+}
+
+span[data-state="1"] {
+    color: #C21858;
+}
+
+span[data-state="2"] {
+    color: #57ACDC;
+}
+
+span[data-state="3"] {
+    color: #60C689;
+}
+
+#element_device_states > h5 > span {
+    font-weight: 700;
+}
+
+.connecting-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.test {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.test > h4 {
+    margin: 0;
+}
+
+@media screen and (max-width: 1400px) {
+	.logo {
+		display: none !important;
+	}
+}
+
+#configuration {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+#preferences {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.alert {
+    padding: 0.45rem var(--bs-alert-padding-x);
+}
+
+#images {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+#images > canvas[data-type="regular"] {
+    width: 640px !important;
+    height: 480px !important;
+}
+
+#images > canas[data-type="bigboy"] {
+    width: 800px !important;
+    height: 800px !important;
+}
+
+#logging {
+    margin: 1rem;
+}

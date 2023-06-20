@@ -1,3 +1,7 @@
 bool autonomous
-int16 preset
-int16 color
+bool eco
+uint8 mode
+uint8 brightness
+uint8 red
+uint8 green
+uint8 blue

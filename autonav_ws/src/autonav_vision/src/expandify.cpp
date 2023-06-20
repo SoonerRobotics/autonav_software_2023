@@ -46,7 +46,7 @@ public:
 		{
 			for (int y = -maxRange; y <= maxRange; y++)
 			{
-				if (maxRange * noGoPercent <= sqrt(x * x + y * y) && sqrt(x * x + y * y) < maxRange && (x + y) % 3 == 0)
+				if (maxRange * noGoPercent <= sqrt(x * x + y * y) && sqrt(x * x + y * y) < maxRange)
 				{
 					circles.push_back(Circle{x, y, sqrt(x * x + y * y)});
 				}
@@ -82,10 +82,9 @@ public:
 
 		performance.start("Expandification");
 
-		std::vector<int8_t> data = std::vector<int8_t>(ExpandifyConstants::MAP_RES * ExpandifyConstants::MAP_RES);
-		std::fill(data.begin(), data.end(), 0);
+		std::vector<int8_t> cfg_space = std::vector<int8_t>(ExpandifyConstants::MAP_RES * ExpandifyConstants::MAP_RES);
+		std::fill(cfg_space.begin(), cfg_space.end(), 0);
 
-		int totalLoops = 0;
 		for (int x = 0; x < ExpandifyConstants::MAP_RES; x++)
 		{
 			for (int y = 1; y < ExpandifyConstants::MAP_RES; y++)
@@ -94,21 +93,20 @@ public:
 				{
 					for (Circle& circle : circles)
 					{
-						totalLoops++;
 						auto idx = (x + circle.x) + ExpandifyConstants::MAP_RES * (y + circle.y);
 						auto expr_x = (x + circle.x) < ExpandifyConstants::MAP_RES && (x + circle.x) >= 0;
 						auto expr_y = (y + circle.y) < ExpandifyConstants::MAP_RES && (y + circle.y) >= 0;
 						if (expr_x && expr_y)
 						{
-							auto val = cfg->data.at(idx);
+							auto val = cfg_space.at(idx);
 							auto linear = 100 - ((circle.radius - noGoRange) / (maxRange - noGoRange) * 100);
 
 							if (circle.radius <= noGoRange)
 							{
-								data.at(idx) = 100;
-							} else if (circle.radius <= 100 && val <= linear)
+								cfg_space.at(idx) = 100;
+							} else if (cfg_space.at(idx) <= 100 && val <= linear)
 							{
-								data.at(idx) = int(linear);
+								cfg_space.at(idx) = int(linear);
 							}
 						}
 					}
@@ -118,10 +116,10 @@ public:
 
 		auto newSpace = nav_msgs::msg::OccupancyGrid();
 		newSpace.info = map;
-		newSpace.data = data;
+		newSpace.data = cfg_space;
 		expandedMapPublisher->publish(newSpace);
 
-		cv::Mat image = cv::Mat(ExpandifyConstants::MAP_RES, ExpandifyConstants::MAP_RES, CV_8UC1, data.data());
+		cv::Mat image = cv::Mat(ExpandifyConstants::MAP_RES, ExpandifyConstants::MAP_RES, CV_8UC1, cfg_space.data());
 		cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
 		cv::resize(image, image, cv::Size(800, 800), 0, 0, cv::INTER_NEAREST);
 
@@ -141,8 +139,8 @@ private:
 
 	nav_msgs::msg::MapMetaData map;
 	
-	float maxRange = 0.55;
-	float noGoPercent = 0.75;
+	float maxRange = 0.65;
+	float noGoPercent = 0.70;
 	int noGoRange = 0;
 	std::vector<Circle> circles;
 };

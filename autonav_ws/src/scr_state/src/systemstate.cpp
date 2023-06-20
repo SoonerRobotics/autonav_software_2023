@@ -4,7 +4,7 @@
 #include "scr_msgs/msg/system_state.hpp"
 #include "scr_core/system_state.h"
 #include "scr_core/device_state.h"
-#include "scr_core/utils.h"
+#include "std_msgs/msg/empty.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <chrono>
 
@@ -17,21 +17,27 @@ public:
 		deviceStateService = this->create_service<scr_msgs::srv::SetDeviceState>("/scr/state/set_device_state", std::bind(&StateSystemNode::onSetDeviceState, this, std::placeholders::_1, std::placeholders::_2));
 		deviceStatePublisher = this->create_publisher<scr_msgs::msg::DeviceState>("/scr/state/device", 10);
 		systemStatePublisher = this->create_publisher<scr_msgs::msg::SystemState>("/scr/state/system", 10);
+		broadcastSubscriber = this->create_subscription<std_msgs::msg::Empty>("/scr/state/broadcast", 10, std::bind(&StateSystemNode::onBroadcast, this, std::placeholders::_1));
+
 		stateTimer = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&StateSystemNode::onStateTick, this));
 
-		declare_parameter("forced_state", "");
-		declare_parameter("required_nodes", std::vector<std::string>());
-		declare_parameter("mode", 0);
-		declare_parameter("override_mobility", false);
-		requiredNodes = get_parameter("required_nodes").as_string_array();
+		requiredNodes = declare_parameter("required_nodes", std::vector<std::string>());
+		if (std::find(requiredNodes.begin(), requiredNodes.end(), "scr_logging") == requiredNodes.end())
+		{
+			requiredNodes.push_back("scr_logging");
+		}
+		if (std::find(requiredNodes.begin(), requiredNodes.end(), "scr_configuration") == requiredNodes.end())
+		{
+			requiredNodes.push_back("scr_configuration");
+		}
 
 		state = scr_msgs::msg::SystemState();
 		state.state = SCR::SystemState::DISABLED;
-		state.mode = get_parameter("mode").as_int();
+		state.mode = declare_parameter("mode", 0);
 		state.estop = false;
-		state.mobility = get_parameter("override_mobility").as_bool();
+		state.mobility = declare_parameter("override_mobility", false);
 
-		auto forcedState = get_parameter("forced_state").as_string();
+		auto forcedState = declare_parameter("forced_state", "");
 		if (forcedState == "disabled")
 		{
 			state.state = SCR::SystemState::DISABLED;
@@ -51,12 +57,34 @@ public:
 		}
 	}
 
+	void onBroadcast(const std_msgs::msg::Empty::SharedPtr _)
+	{
+		systemStatePublisher->publish(state);
+		for (auto &[id, state] : deviceStates)
+		{
+			auto deviceState = scr_msgs::msg::DeviceState();
+			deviceState.device = id;
+			deviceState.state = state;
+			deviceStatePublisher->publish(deviceState);
+		}
+	}
+
 	bool shouldIgnoreNode(std::string node)
 	{
 		if (node.find("scr_state_system") != std::string::npos)
 		{
 			return true;
 		}
+
+		if (node.find("scr_configuration") != std::string::npos)
+		{
+			return false;
+		}
+
+		if (node.find("scr_logging") != std::string::npos)
+		{
+			return false;
+		}	
 
 		if (node.find("autonav") != std::string::npos)
 		{
@@ -95,23 +123,22 @@ public:
 			if (std::find(trackedNodes.begin(), trackedNodes.end(), node) == trackedNodes.end())
 			{
 				trackedNodes.push_back(node);
-				RCLCPP_INFO(this->get_logger(), "Node added: %s", node.c_str());
 				onNodeAdded(node);
+				publishState();
 			}
 		}
 
-		std::vector<std::string> removedNodes;
+		std::vector<std::string> lostNodes;
 		for (auto node : trackedNodes)
 		{
 			if (std::find(nodes.begin(), nodes.end(), node) == nodes.end())
 			{
-				removedNodes.push_back(node);
+				lostNodes.push_back(node);
 			}
 		}
 
-		for (auto node : removedNodes)
+		for (auto node : lostNodes)
 		{
-			RCLCPP_INFO(this->get_logger(), "Node removed: %s", node.c_str());
 			trackedNodes.erase(std::remove(trackedNodes.begin(), trackedNodes.end(), node), trackedNodes.end());
 			onNodeRemoved(node);
 		}
@@ -145,9 +172,10 @@ public:
 		for (auto node : waitingQueue)
 		{
 			auto deviceState = scr_msgs::msg::DeviceState();
-			deviceState.device = SCR::hash(node);
+			deviceState.device = node;
 			deviceState.state = SCR::DeviceState::STANDBY;
 			deviceStatePublisher->publish(deviceState);
+			deviceStates[node] = SCR::DeviceState::STANDBY;
 		}
 
 		waitingQueue.clear();
@@ -163,9 +191,10 @@ public:
 		}
 
 		auto deviceState = scr_msgs::msg::DeviceState();
-		deviceState.device = SCR::hash(node);
+		deviceState.device = node;
 		deviceState.state = SCR::DeviceState::STANDBY;
 		deviceStatePublisher->publish(deviceState);
+		deviceStates[node] = SCR::DeviceState::STANDBY;
 		publishState();
 	}
 
@@ -173,7 +202,7 @@ public:
 	{
 		// Publish a new device state of standby for them
 		auto deviceState = scr_msgs::msg::DeviceState();
-		deviceState.device = SCR::hash(node);
+		deviceState.device = node;
 		deviceState.state = SCR::DeviceState::OFF;
 		deviceStatePublisher->publish(deviceState);
 
@@ -197,24 +226,33 @@ public:
 
 	void onSetDeviceState(const std::shared_ptr<scr_msgs::srv::SetDeviceState::Request> request, std::shared_ptr<scr_msgs::srv::SetDeviceState::Response> response)
 	{
-		publishState();
+		if (deviceStates[request->device] == request->state)
+		{
+			response->ok = true;
+			return;
+		}
+
 		auto deviceState = scr_msgs::msg::DeviceState();
 		deviceState.device = request->device;
 		deviceState.state = request->state;
 		deviceStatePublisher->publish(deviceState);
+		deviceStates[request->device] = request->state;
 		response->ok = true;
+		publishState();
 	}
 
 private:
 	std::vector<std::string> requiredNodes;
 	std::vector<std::string> trackedNodes;
 	std::vector<std::string> waitingQueue;
+	std::map<std::string, uint8_t> deviceStates;
 	scr_msgs::msg::SystemState state;
 
 	std::shared_ptr<rclcpp::Publisher<scr_msgs::msg::DeviceState>> deviceStatePublisher;
 	std::shared_ptr<rclcpp::Publisher<scr_msgs::msg::SystemState>> systemStatePublisher;
 	std::shared_ptr<rclcpp::Service<scr_msgs::srv::SetSystemState>> systemStateService;
 	std::shared_ptr<rclcpp::Service<scr_msgs::srv::SetDeviceState>> deviceStateService;
+	std::shared_ptr<rclcpp::Subscription<std_msgs::msg::Empty>> broadcastSubscriber;
 	std::shared_ptr<rclcpp::TimerBase> stateTimer;
 };
 

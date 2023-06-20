@@ -1,17 +1,26 @@
 <launch>
+    <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
     <node pkg="scr_state" exec="statemanager" >
         <param name="mode" value="1" />
-        <param name="forced_state" value="autonomous" />
-        <param name="required_nodes" value="[autonav_display]" />
     </node>
     <node pkg="scr_logging" exec="logging">
         <param name="log_to_console" value="true" />
     </node>
-    <node pkg="autonav_display" exec="primary_display" output="screen" />
+    <node pkg="scr_configuration" exec="config">
+        <param name="preset" value="simulation" />
+    </node>
+    <node pkg="autonav_display" exec="broadcast.py" />
     <node pkg="autonav_vision" exec="transformations.py" />
     <node pkg="autonav_vision" exec="expandify" />
-    <node pkg="autonav_filters" exec="filters.py" />
-    <node pkg="autonav_nav" exec="astar.py" />
+    <node pkg="autonav_filters" exec="filters.py">
+        <param name="latitude_length" value="111086.2" />
+        <param name="longitude_length" value="81978.2" />
+        <param name="default_filter" value="0" />
+    </node>
+    <node pkg="autonav_nav" exec="astar.py">
+        <param name="latitude_length" value="111086.2" />
+        <param name="longitude_length" value="81978.2" />
+    </node>
     <node pkg="autonav_nav" exec="path_resolver.py" />
-    <include file="$(find-pkg-share rosbridge_server)/launch/rosbridge_websocket_launch.xml" />
+    <node pkg="autonav_playback" exec="playback.py" />
 </launch>
