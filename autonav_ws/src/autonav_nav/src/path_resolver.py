@@ -56,7 +56,7 @@ class PathResolverNode(Node):
         self.motorPublisher = self.create_publisher(MotorInput, "/autonav/MotorInput", 20)
         self.safetyLightsPublisher = self.create_publisher(SafetyLights, "/autonav/SafetyLights", 20)
         
-        self.config.setFloat(FORWARD_SPEED, 1.30)
+        self.config.setFloat(FORWARD_SPEED, 2.1)
         self.config.setFloat(REVERSE_SPEED, -0.4)
         self.config.setFloat(RADIUS_MULTIPLIER, 1.2)
         self.config.setFloat(RADIUS_MAX, 4.0)
