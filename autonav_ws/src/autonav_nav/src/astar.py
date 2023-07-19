@@ -30,12 +30,22 @@ CONFIG_WAYPOINT_DELAY = "waypoint_delay"
 # STARTING_PT = (42.6681268, -83.218887)
 
 competition_waypoints = [
-    [(42.6682697222 ,-83.2193403028),(42.6681206444,-83.2193606083),(42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417), (42.6681268, -83.218887)], # Start Facing North
-    # [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028), (42.6681268, -83.218887)], # Start Facing South
+    # Start Nomans, Frist Ramp, Middle Ramp, End Ramp, End Nomans
+    [(42.6682837222 ,-83.2193403028),(42.6681206444,-83.2193606083),(42.66809863885, -83.2193606083), (42.6680766333,-83.2193606083),(42.6679277056,-83.2193276417), (42.6679817056,-83.2193316417), (42.66794, -83.2189), (42.6681268, -83.218887)], # Start Facing North
+    # [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682837222 ,-83.2193403028), (42.668290020, -83.2189080), (42.6681268, -83.218887)], # Start Facing South
     # [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)], # Start Facing North
     # [(42.6679600583,-83.2184326556), (42.6680859611,-83.2184456444),(42.668222,-83.218472)], # Start Facing South
     [],
 ]
+
+# competition_waypoints = [
+#     # Start Nomans, Frist Ramp, Middle Ramp, End Ramp, End Nomans
+#     [(42.6682697222 ,-83.2193403028),(42.6681206444,-83.2193606083),(42.66809863885, -83.2193598833), (42.6680766333,-83.2193591583),(42.6679277056,-83.2193276417), (42.6681268, -83.218887)], # Start Facing North
+#     # [(42.6679277056,-83.2193276417),(42.6680766333,-83.2193591583),(42.6681206444,-83.2193606083),(42.6682697222,-83.2193403028), (42.6681268, -83.218887)], # Start Facing South
+#     # [(42.668222,-83.218472),(42.6680859611,-83.2184456444),(42.6679600583,-83.2184326556)], # Start Facing North
+#     # [(42.6679600583,-83.2184326556), (42.6680859611,-83.2184456444),(42.668222,-83.218472)], # Start Facing South
+#     [],
+# ]
 
 practice_waypoints = [
     [(35.2104852, -97.44193), (35.210483, -97.44207), (35.2104841, -97.4421986), (35.2104819, -97.4423302), (35.2105455, -97.4423329), (35.2106096, -97.4423347), (35.2106107, -97.4422153), (35.2106078, -97.4421059), (35.2105575, -97.4420365), (35.2104852, -97.44193)]
@@ -88,10 +98,10 @@ class AStarNode(Node):
 
         self.resetWhen = -1.0
 
-        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.5)
+        self.config.setFloat(CONFIG_WAYPOINT_POP_DISTANCE, 1.1)
         self.config.setInt(CONFIG_WAYPOINT_DIRECTION, 0)
         self.config.setBool(CONFIG_USE_ONLY_WAYPOINTS, False)
-        self.config.setFloat(CONFIG_WAYPOINT_DELAY, 10.0)
+        self.config.setFloat(CONFIG_WAYPOINT_DELAY, 17.5)
 
         self.setDeviceState(DeviceStateEnum.OPERATING)
 
@@ -250,7 +260,7 @@ class AStarNode(Node):
             pathingDebug.time_until_use_waypoints = time_remaining
             self.debugPublisher.publish(pathingDebug)
 
-        if time.time() > self.resetWhen and self.resetWhen != -1:
+        if time.time() > self.resetWhen and self.resetWhen != -1 and self.getSystemState().mobility:
             self.safetyLightsPublisher.publish(toSafetyLights(True, False, 2, 255, "#FFFFFF"))
             self.resetWhen = -1
 

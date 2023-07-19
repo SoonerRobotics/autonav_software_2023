@@ -44,7 +44,7 @@ class ImageTransformer(Node):
         self.config.setInt(LOWER_SATURATION, 0)
         self.config.setInt(LOWER_VALUE, 0) # 0
         self.config.setInt(UPPER_HUE, 255) # 255
-        self.config.setInt(UPPER_SATURATION, 100) # 140
+        self.config.setInt(UPPER_SATURATION, 95) # 140
         self.config.setInt(UPPER_VALUE, 210) #210
         self.config.setInt(BLUR, 5) # 5
         self.config.setInt(BLUR_ITERATIONS, 3) #3
