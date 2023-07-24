@@ -28,6 +28,7 @@ sudo apt install libglfw3-dev libglew-dev -y
 # Python deps
 sudo apt install python3-pip -y
 pip3 install python-can[serial]
+pip3 install websockets
 
 # Copy the udev rules to the correct location
 sudo cp autonav.rules /etc/udev/rules.d/autonav.rules
