@@ -2,10 +2,11 @@
 #include <ACAN2515.h>
 #include <Adafruit_NeoPixel.h>
 #include "ArduinoJson.h"
+#include <CONBus.h> 
+#include <CANBusDriver.h>
 
 // Config
 
-static const int BLINK_PERIOD_MS = 500;
 static const int DEFAULT_BRIGHTNESS = 50;
 
 // Definitions
@@ -30,6 +31,12 @@ bool is_mobility_stopped = false;
 bool is_autonomous = false;
 bool is_eco = false;
 int current_brightness = DEFAULT_BRIGHTNESS;
+
+// Setup CONBus variables
+CONBus::CONBus conbus;
+CONBus::CANBusDriver conbus_can(conbus, 0x11); // device id 0x11 (17)
+
+uint32_t blink_period_ms = 500;
 
 // Json packet
 StaticJsonDocument<256> json_in;
@@ -111,6 +118,7 @@ void modeSelector(){ // RGB mode selector
 }
 
 CANMessage frame;
+CANMessage out_frame;
 
 void onCanRecieve() {
   can.isr();
@@ -150,6 +158,8 @@ void setup() {
     Serial.print(errorCode);
   }
 
+  conbus.addRegister(0x00, &blink_period_ms);
+
 }
 
 void loop() {
@@ -187,6 +197,8 @@ void loop() {
     // Serial.print("Received CAN ");
     // Serial.println(frame.id);
 
+    conbus_can.readCanMessage(frame.id, frame.data);
+
     switch (frame.id) {
       case 1: // Mobility stop
         is_mobility_stopped = true;
@@ -216,6 +228,16 @@ void loop() {
   whiteFlash();
   modeSelector();
 
+  if (conbus_can.isReplyReady()) {
+    conbus_can.peekReply(outFrame.id, outFrame.len, outFrame.data);
+
+    bool success = can.tryToSend(outFrame);
+
+    if (success) {
+      conbus_can.popReply();
+    }
+  }
+
   // delay(10); // Just so we aren't looping too fast
 }
 
@@ -231,9 +253,9 @@ void whiteFlash() {
     return;
   }
   if (!is_eco) {
-    digitalWrite(WHITE_PIN, (millis() / BLINK_PERIOD_MS) % 2);
+    digitalWrite(WHITE_PIN, (millis() / blink_period_ms) % 2);
   } else {
-    analogWrite(WHITE_PIN,((millis() / BLINK_PERIOD_MS) % 2) * 128);
+    analogWrite(WHITE_PIN,((millis() / blink_period_ms) % 2) * 128);
   }
 }
 
@@ -245,7 +267,7 @@ void colorSolid() { // LED strip solid effect
 
 void colorFlash(){ // LED strip flashing effect
   strip.setBrightness(current_brightness);
-  if ((millis() / BLINK_PERIOD_MS) % 2 == 0){
+  if ((millis() / blink_period_ms) % 2 == 0){
     strip.fill(current_color);
     strip.show();
   }
@@ -255,7 +277,7 @@ void colorFlash(){ // LED strip flashing effect
 }
 
 void colorFade(){ // LED strip fading effect
-  strip.setBrightness(abs(sin(millis() / (float)BLINK_PERIOD_MS)) * current_brightness);
+  strip.setBrightness(abs(sin(millis() / (float)blink_period_ms)) * current_brightness);
   strip.fill(current_color);
   strip.show();
 }
