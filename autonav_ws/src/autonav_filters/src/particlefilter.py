@@ -4,11 +4,15 @@ import math
 import random
 
 class Particle:
-    def __init__(self, x = 0, y = 0, theta = 0, weight = 1) -> None:
+    def __init__(self, x = 0, y = 0, theta = 0, weight = 0.000001) -> None:
         self.x = x
         self.y = y
         self.theta = theta
         self.weight = weight
+
+    def get_particle_data(self):
+        data = [self.x, self.y, self.theta, self.weight]
+        return data
 
 class ParticleFilter:
     def __init__(self, latitudeLength, longitudeLength) -> None:
@@ -34,6 +38,7 @@ class ParticleFilter:
         sum_theta_y = 0
         sum_weight = 0
         
+        i = 0
         for particle in self.particles:
             particle.x += feedback.delta_x * 1.2 * math.cos(particle.theta) + feedback.delta_y * math.sin(particle.theta)
             particle.y += feedback.delta_x * 1.2 * math.sin(particle.theta) + feedback.delta_y * math.cos(particle.theta)
@@ -45,7 +50,8 @@ class ParticleFilter:
             sum_theta_x += math.cos(particle.theta) * weight
             sum_theta_y += math.sin(particle.theta) * weight
             sum_weight += weight
-            
+            i += 1
+
         if sum_weight < 0.000001:
             sum_weight = 0.000001
             
@@ -53,6 +59,12 @@ class ParticleFilter:
         avg_y = sum_y / sum_weight
         avg_theta = math.atan2(sum_theta_y / sum_weight, sum_theta_x / sum_weight) % (2 * math.pi)
         
+        print(f"{sum_theta_x},")
+        print(f"{sum_theta_y},")
+        print(f"{sum_weight},")
+        print(f"{avg_theta},")
+        print(f"{math.atan2(sum_theta_y / sum_weight, sum_theta_x / sum_weight)}")
+
         return [avg_x, avg_y, avg_theta]
     
     def gps(self, gps: GPSFeedback) -> list[float]:
@@ -86,3 +98,7 @@ class ParticleFilter:
             y = particle.y + rand_x * math.sin(particle.theta) + rand_y * math.cos(particle.theta)
             theta = np.random.normal(particle.theta, self.odom_noise[2]) % (2 * math.pi)
             self.particles.append(Particle(x, y, theta, particle.weight))
+
+    def get_particles_data(self):
+        data = [part.get_particle_data() for part in self.particles]
+        return data
