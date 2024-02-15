@@ -67,6 +67,10 @@ class ParticleFilter:
             particle.weight = math.exp(-dist_sqrt / (2 * self.gps_noise[0] ** 2))
             
         self.resample()
+        print(f"gps_vector in particle_filter header: x: {gps_x}, y: {gps_y}")
+        gps_log_file = open("py_gps_log.txt", "a")
+        gps_log_file.write(f"{gps_x}, {gps_y}\n")
+        gps_log_file.close()
         return [gps_x, gps_y]
     
     def resample(self) -> None:
