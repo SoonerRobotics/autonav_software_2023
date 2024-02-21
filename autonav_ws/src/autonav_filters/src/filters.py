@@ -42,7 +42,7 @@ class FiltersNode(Node):
         self.config.setBool(CONFIG_SEED_HEADING, False)
 
         self.create_subscription(GPSFeedback, "/autonav/gps", self.onGPSReceived, 20)
-        self.create_subscription(IMUData, "/autonav/imu", self.onIMUReceived, 20);
+        self.create_subscription(IMUData, "/autonav/imu", self.onIMUReceived, 20)
         self.create_subscription(MotorFeedback, "/autonav/MotorFeedback", self.onMotorFeedbackReceived, 20)
         self.positionPublisher = self.create_publisher(Position, "/autonav/position", 20)
 

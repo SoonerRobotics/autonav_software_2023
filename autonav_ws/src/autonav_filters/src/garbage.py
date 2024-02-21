@@ -62,9 +62,10 @@ py_particle_filter = particlefilter.ParticleFilter(111086.2, 81978.2)
 py_particle_filter.init_particles()
 
 for i in range(len(motor_feedbacks)):
-    py_particle_filter.feedback(motor_feedbacks[i])
+    position_vector = py_particle_filter.feedback(motor_feedbacks[i])
     gps_vector = py_particle_filter.gps(gps_feedbacks[i])
 
+print(position_vector)
 print(gps_vector)
 
 end_result = [18.49585229987204, 18.936964199952953]
