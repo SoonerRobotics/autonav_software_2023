@@ -12,7 +12,7 @@ class Particle:
 
 class ParticleFilter:
     def __init__(self, latitudeLength, longitudeLength) -> None:
-        self.num_particles = 10
+        self.num_particles = 2
         self.gps_noise = [0.45]
         self.odom_noise = [0.05, 0.05, 0.1]
         self.init_particles()
@@ -33,8 +33,10 @@ class ParticleFilter:
         sum_theta_x = 0
         sum_theta_y = 0
         sum_weight = 0
+        i = 0
         
         for particle in self.particles:
+            print(f"{particle.x}, {particle.y}, {particle.theta}\n")
             particle.x += feedback.delta_x * 1.2 * math.cos(particle.theta) + feedback.delta_y * math.sin(particle.theta)
             particle.y += feedback.delta_x * 1.2 * math.sin(particle.theta) + feedback.delta_y * math.cos(particle.theta)
             particle.theta += feedback.delta_theta
@@ -45,6 +47,10 @@ class ParticleFilter:
             sum_theta_x += math.cos(particle.theta) * weight
             sum_theta_y += math.sin(particle.theta) * weight
             sum_weight += weight
+
+            print(f"{sum_x}, {sum_y}, {sum_theta_x}, {sum_theta_y}, {sum_weight}\n")
+            print(f"{i}\n")
+            i += 1
             
         if sum_weight < 0.000001:
             sum_weight = 0.000001
@@ -52,6 +58,8 @@ class ParticleFilter:
         avg_x = sum_x / sum_weight
         avg_y = sum_y / sum_weight
         avg_theta = math.atan2(sum_theta_y / sum_weight, sum_theta_x / sum_weight) % (2 * math.pi)
+
+        print(f"{avg_x}, {avg_y}, {avg_theta}\n")
         
         return [avg_x, avg_y, avg_theta]
     
@@ -68,17 +76,17 @@ class ParticleFilter:
             
         self.resample()
         #print(f"gps_vector in particle_filter header: x: {gps_x}, y: {gps_y}")
-        gps_log_file = open("py_gps_log.txt", "a")
+        #gps_log_file = open("py_gps_log.txt", "a")
 
-        individual_particles_string = ""
-        for particle in self.particles:
-            individual_particles_string = individual_particles_string + f"{particle.x}, {particle.y}, "
+        #individual_particles_string = ""
+        #for particle in self.particles:
+            #individual_particles_string = individual_particles_string + f"{particle.x}, {particle.y}, "
             #print(f"{particle.x}, {particle.y}")
 
         #print(f"individual particle string is {individual_particles_string}")
-        individual_particles_string = individual_particles_string + f"{gps_x}, {gps_y}\n"
-        gps_log_file.write(individual_particles_string)
-        gps_log_file.close()
+        #individual_particles_string = individual_particles_string + f"{gps_x}, {gps_y}\n"
+        #gps_log_file.write(individual_particles_string)
+        #gps_log_file.close()
         return [gps_x, gps_y]
     
     def resample(self) -> None:
