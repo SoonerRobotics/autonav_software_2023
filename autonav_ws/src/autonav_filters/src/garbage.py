@@ -27,7 +27,7 @@ satellites = gps_feedback_data.iloc[:, 7].to_list()
 # assuming im reading csvs right lol
 
 proper_len = len(latitudes)
-proper_len = 10
+#proper_len = 10
 delta_xs = delta_xs[0:proper_len]
 delta_ys = delta_ys[0:proper_len]
 delta_thetas = delta_thetas[0:proper_len]
@@ -41,8 +41,11 @@ gps_feedbacks = []
 for i in range(len(delta_xs)):
     motor_message = MotorFeedback()
     motor_message.delta_x = delta_xs[i]
+    print(f"motor_message delta_x {motor_message.delta_x}")
     motor_message.delta_y = delta_ys[i]
+    print(f"motor_message delta_y {motor_message.delta_y}")
     motor_message.delta_theta = delta_thetas[i]
+    print(f"motor_message delta_theta {motor_message.delta_theta}\n")
 
     motor_feedbacks.append(motor_message)
 
