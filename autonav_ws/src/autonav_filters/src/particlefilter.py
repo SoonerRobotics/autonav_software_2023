@@ -12,7 +12,7 @@ class Particle:
 
 class ParticleFilter:
     def __init__(self, latitudeLength, longitudeLength) -> None:
-        self.num_particles = 10
+        self.num_particles = 1
         self.gps_noise = [0.45]
         self.odom_noise = [0.05, 0.05, 0.1]
         self.init_particles()
@@ -132,9 +132,10 @@ class ParticleFilter:
             print(f"rand_x, rand_y: {rand_x}, {rand_y}")
             x = particle.x + rand_x * math.cos(particle.theta) + rand_y * math.sin(particle.theta)
             y = particle.y + rand_x * math.sin(particle.theta) + rand_y * math.cos(particle.theta)
-            print(f"x, y: {x}, {y}")
+            print(f"x, y, theta: {x}, {y}, {particle.theta}")
             #np.random.seed(30)
             theta = np.random.normal(particle.theta, self.odom_noise[2]) % (2 * math.pi)
+            print(f"theta: {theta}")
             self.particles.append(Particle(x, y, theta, particle.weight))
         
         for particle in self.particles:

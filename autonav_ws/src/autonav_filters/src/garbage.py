@@ -27,7 +27,7 @@ satellites = gps_feedback_data.iloc[:, 7].to_list()
 # assuming im reading csvs right lol
 
 proper_len = len(latitudes)
-#proper_len = 10
+proper_len = 10
 delta_xs = delta_xs[0:proper_len]
 delta_ys = delta_ys[0:proper_len]
 delta_thetas = delta_thetas[0:proper_len]
