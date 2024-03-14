@@ -29,11 +29,11 @@ for i in range(int(cpp_data.shape[1] / 2)):
     print(i * 2 + 1)
     ax2.plot(np.multiply(cpp_data[:, i*2], 1).tolist(), np.multiply(cpp_data[:, (i*2)+1], 1).tolist(), label=f'cpp path {i}')
 
-    #ax2.plot(np.multiply(cpp_data[:, (i*2)+1], -1 * np.sin(15)).tolist(), np.multiply(cpp_data[:, i*2], -1 * np.cos(15)).tolist(), label=f'cpp path {i}')
+    #ax2.plot((np.multiply(cpp_data[:, (i*2)], np.cos(45)) + np.multiply(cpp_data[:, (i*2)+1], np.sin(45))).tolist(), (np.multiply(cpp_data[:, (i*2)], -1 * np.sin(45)) + np.multiply(cpp_data[:, (i*2)+1], np.cos(45))).tolist(), label=f'cpp path {i}')
 
 #plt.plot(cpp_data[:, 1].tolist(), cpp_data[:, 0].tolist(), '--', label="cpp")
 
-#ax1.legend()
-#ax2.legend()
+ax1.legend()
+ax2.legend()
 
 plt.show()
